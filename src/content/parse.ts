@@ -1,0 +1,281 @@
+/**
+ * Amazon product-page parser.
+ *
+ * This is the most fragile file in the project by a wide margin — Amazon
+ * restructures its markup regularly and runs many layout experiments
+ * concurrently, so any single selector will eventually break.
+ *
+ * Two rules govern everything here:
+ *
+ *  1. Every field uses a fallback chain and returns `undefined` rather than
+ *     throwing. A snapshot missing its histogram is still useful; a parser that
+ *     throws produces nothing at all.
+ *  2. We read only what the page already rendered. No fetches, no navigation,
+ *     no background requests against the user's session. See the design spec.
+ */
+
+import type { ProductSnapshot, Review, Star } from '../core/types.js';
+
+/** Try selectors in order, return the first element that matches. */
+function pick(root: ParentNode, selectors: string[]): Element | null {
+  for (const selector of selectors) {
+    try {
+      const el = root.querySelector(selector);
+      if (el) return el;
+    } catch {
+      // Malformed selector on an older Chrome — skip it.
+    }
+  }
+  return null;
+}
+
+function pickAll(root: ParentNode, selectors: string[]): Element[] {
+  for (const selector of selectors) {
+    try {
+      const els = [...root.querySelectorAll(selector)];
+      if (els.length > 0) return els;
+    } catch {
+      /* skip */
+    }
+  }
+  return [];
+}
+
+function textOf(el: Element | null): string {
+  return el?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+}
+
+/** Parse a number that may carry thousands separators, e.g. "12,345". */
+function parseCount(raw: string): number | undefined {
+  const match = raw.replace(/[  ]/g, ' ').match(/([\d][\d.,\s]*)/);
+  if (!match) return undefined;
+  const cleaned = match[1]!.replace(/[.,\s](?=\d{3}\b)/g, '').replace(/[,\s]/g, '');
+  const value = Number.parseInt(cleaned, 10);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+/** Pull the leading decimal from strings like "4.3 out of 5 stars". */
+function parseDecimal(raw: string): number | undefined {
+  const match = raw.match(/(\d+(?:[.,]\d+)?)/);
+  if (!match) return undefined;
+  const value = Number.parseFloat(match[1]!.replace(',', '.'));
+  return Number.isFinite(value) ? value : undefined;
+}
+
+// --- ASIN ------------------------------------------------------------------
+
+export function extractAsin(url: string = location.href, doc: Document = document): string | null {
+  const urlPatterns = [
+    /\/dp\/([A-Z0-9]{10})(?:[/?]|$)/i,
+    /\/gp\/product\/([A-Z0-9]{10})(?:[/?]|$)/i,
+    /\/product-reviews\/([A-Z0-9]{10})(?:[/?]|$)/i,
+    /[?&]asin=([A-Z0-9]{10})\b/i,
+  ];
+  for (const pattern of urlPatterns) {
+    const match = url.match(pattern);
+    if (match) return match[1]!.toUpperCase();
+  }
+
+  const el = pick(doc, ['input#ASIN', 'input[name="ASIN"]', '#averageCustomerReviews[data-asin]', '[data-asin]']);
+  const fromDom = el?.getAttribute('value') ?? el?.getAttribute('data-asin');
+  if (fromDom && /^[A-Z0-9]{10}$/i.test(fromDom)) return fromDom.toUpperCase();
+
+  return null;
+}
+
+export function isProductPage(url: string = location.href): boolean {
+  return /\/(dp|gp\/product|product-reviews)\//i.test(url);
+}
+
+// --- Product-level fields --------------------------------------------------
+
+function extractTitle(doc: Document): string | undefined {
+  const el = pick(doc, ['#productTitle', '#title span', 'h1#title', 'h1 span#productTitle']);
+  return textOf(el) || undefined;
+}
+
+function extractDisplayedRating(doc: Document): number | undefined {
+  const el = pick(doc, [
+    '[data-hook="rating-out-of-text"]',
+    '#acrPopover .a-icon-alt',
+    '#averageCustomerReviews .a-icon-alt',
+    'span[data-hook="average-star-rating"] .a-icon-alt',
+    '#acrPopover',
+  ]);
+  if (!el) return undefined;
+  // #acrPopover carries the value in its title when the inner text is hidden.
+  const raw = textOf(el) || el.getAttribute('title') || '';
+  const value = parseDecimal(raw);
+  return value !== undefined && value >= 1 && value <= 5 ? value : undefined;
+}
+
+function extractTotalRatings(doc: Document): number | undefined {
+  const el = pick(doc, [
+    '#acrCustomerReviewText',
+    '[data-hook="total-review-count"]',
+    '#reviewsMedley [data-hook="total-review-count"]',
+  ]);
+  return el ? parseCount(textOf(el)) : undefined;
+}
+
+/**
+ * The rating histogram.
+ *
+ * Amazon has shipped several markups for this. The most durable signal across
+ * all of them is the accessible label, which reads like
+ * "5 stars represent 78% of rating" — so we try that first and fall back to
+ * table scraping.
+ */
+export function extractHistogram(doc: Document): Partial<Record<Star, number>> | undefined {
+  const histogram: Partial<Record<Star, number>> = {};
+
+  // Strategy 1: aria-labels / link titles anywhere in the reviews module.
+  const labelled = pickAll(doc, [
+    '#histogramTable a[aria-label]',
+    '[data-hook="cr-histogram-row"] a[aria-label]',
+    '#cm_cr_dp_d_rating_histogram a[aria-label]',
+    'a[aria-label*="stars represent"]',
+    'a[title*="stars represent"]',
+  ]);
+  for (const el of labelled) {
+    const label = el.getAttribute('aria-label') ?? el.getAttribute('title') ?? '';
+    const starMatch = label.match(/([1-5])\s*star/i);
+    const pctMatch = label.match(/(\d{1,3})\s*%/);
+    if (starMatch && pctMatch) {
+      histogram[Number(starMatch[1]) as Star] = Number(pctMatch[1]);
+    }
+  }
+  if (Object.keys(histogram).length >= 3) return histogram;
+
+  // Strategy 2: walk the histogram table rows positionally (5-star first).
+  const rows = pickAll(doc, [
+    '#histogramTable tr',
+    '[data-hook="cr-histogram-row"]',
+    '#cm_cr_dp_d_rating_histogram tr',
+  ]);
+  rows.forEach((row) => {
+    const rowText = textOf(row);
+    const starMatch = rowText.match(/([1-5])\s*star/i);
+    const pctMatch = rowText.match(/(\d{1,3})\s*%/);
+    if (starMatch && pctMatch) {
+      histogram[Number(starMatch[1]) as Star] = Number(pctMatch[1]);
+    }
+  });
+
+  return Object.keys(histogram).length > 0 ? histogram : undefined;
+}
+
+// --- Reviews ---------------------------------------------------------------
+
+function parseReviewDate(raw: string): string | undefined {
+  // "Reviewed in the United States on June 3, 2026" / "on 3 June 2026"
+  const match = raw.match(/on\s+(.+)$/i);
+  const candidate = (match?.[1] ?? raw).trim();
+  const parsed = Date.parse(candidate);
+  if (!Number.isFinite(parsed)) return undefined;
+  return new Date(parsed).toISOString().slice(0, 10);
+}
+
+function parseRating(el: Element | null): Star | undefined {
+  if (!el) return undefined;
+  const raw = textOf(el) || el.getAttribute('title') || el.getAttribute('aria-label') || '';
+  const value = parseDecimal(raw);
+  if (value === undefined) return undefined;
+  const rounded = Math.round(value);
+  return rounded >= 1 && rounded <= 5 ? (rounded as Star) : undefined;
+}
+
+function parseHelpfulVotes(raw: string): number {
+  if (!raw) return 0;
+  // "One person found this helpful" has no digit.
+  if (/\bone\b/i.test(raw) && /helpful/i.test(raw)) return 1;
+  return parseCount(raw) ?? 0;
+}
+
+export function extractReviews(doc: Document = document): Review[] {
+  const nodes = pickAll(doc, [
+    'div[data-hook="review"]',
+    'li[data-hook="review"]',
+    '#cm-cr-dp-review-list div[data-hook="review"]',
+    '[id^="customer_review-"]',
+  ]);
+
+  const reviews: Review[] = [];
+
+  nodes.forEach((node, index) => {
+    try {
+      const rating = parseRating(
+        pick(node, [
+          '[data-hook="review-star-rating"] .a-icon-alt',
+          '[data-hook="cmps-review-star-rating"] .a-icon-alt',
+          '[data-hook="review-star-rating"]',
+          '.review-rating .a-icon-alt',
+          'i[class*="a-star-"]',
+        ]),
+      );
+      if (rating === undefined) return; // Without a rating the row is unusable.
+
+      const body = pick(node, [
+        '[data-hook="review-body"] span:not([class])',
+        '[data-hook="review-body"] span',
+        '[data-hook="review-collapsed"]',
+        '[data-hook="review-body"]',
+        '.review-text-content span',
+      ]);
+
+      const titleEl = pick(node, [
+        '[data-hook="review-title"] span:not([class])',
+        '[data-hook="review-title"] span:last-of-type',
+        '[data-hook="review-title"]',
+        '.review-title',
+      ]);
+      // The title element often contains the star rating as hidden text; drop
+      // any leading "5.0 out of 5 stars" fragment.
+      const title = textOf(titleEl).replace(/^\s*\d(?:\.\d)?\s*out of\s*5\s*stars?\s*/i, '').trim();
+
+      const dateRaw = textOf(pick(node, ['[data-hook="review-date"]', '.review-date']));
+      const verified = Boolean(pick(node, ['[data-hook="avp-badge"]', '.a-color-state.a-text-bold']));
+      const helpfulVotes = parseHelpfulVotes(
+        textOf(pick(node, ['[data-hook="helpful-vote-statement"]', '.cr-vote-text'])),
+      );
+
+      const profileLink = pick(node, ['a.a-profile', '[data-hook="genome-widget"] a']);
+      const reviewerId =
+        profileLink?.getAttribute('href')?.match(/\/profile\/([^/?#]+)/)?.[1] ?? undefined;
+      const reviewerName = textOf(pick(node, ['.a-profile-name'])) || undefined;
+
+      reviews.push({
+        id: node.id || `winnow-review-${index}`,
+        rating,
+        date: dateRaw ? parseReviewDate(dateRaw) : undefined,
+        verified,
+        text: textOf(body),
+        title: title || undefined,
+        helpfulVotes,
+        reviewerId,
+        reviewerName,
+      });
+    } catch {
+      // One malformed review must never cost us the rest of the page.
+    }
+  });
+
+  return reviews;
+}
+
+// --- Snapshot --------------------------------------------------------------
+
+export function buildSnapshot(doc: Document = document, url: string = location.href): ProductSnapshot | null {
+  const asin = extractAsin(url, doc);
+  if (!asin) return null;
+
+  return {
+    asin,
+    title: extractTitle(doc),
+    displayedRating: extractDisplayedRating(doc),
+    totalRatings: extractTotalRatings(doc),
+    histogram: extractHistogram(doc),
+    reviews: extractReviews(doc),
+    capturedAt: new Date().toISOString(),
+  };
+}
