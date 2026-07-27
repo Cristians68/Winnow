@@ -164,11 +164,18 @@ export function extractHistogram(doc: Document): Partial<Record<Star, number>> |
   }
   if (Object.keys(histogram).length >= 3) return histogram;
 
-  // Strategy 2: walk the histogram table rows positionally (5-star first).
+  // Strategy 2: walk the histogram rows.
+  //
+  // Amazon's 2026 rebuild turned #histogramTable from a <table> into a <ul>, so
+  // `tr` can never match it. Both shapes are listed, plus a class-based catch
+  // for the CSS-module markup, because the id has changed before too.
   const rows = pickAll(doc, [
+    '#histogramTable li',
     '#histogramTable tr',
     '[data-hook="cr-histogram-row"]',
+    '#cm_cr_dp_d_rating_histogram li',
     '#cm_cr_dp_d_rating_histogram tr',
+    '[class*="histogram"] li',
   ]);
   rows.forEach((row) => {
     const rowText = textOf(row);
@@ -209,6 +216,56 @@ function parseHelpfulVotes(raw: string): number {
   return parseCount(raw) ?? 0;
 }
 
+/**
+ * Review body text.
+ *
+ * Amazon's 2026 rebuild moved the body out of `[data-hook="review-body"]` and
+ * into CSS-module markup (`_Y3Itd_contain-rich-content_*`) holding real `<p>`
+ * elements. Named hooks are tried first, then a class-substring match, then —
+ * crucially — a structural fallback that collects the paragraphs directly.
+ *
+ * The structural fallback is the durable one: Amazon renames hooks and hashes
+ * class names between builds, but review prose has to live in text nodes
+ * somewhere, and it has been in `<p>` tags across every layout so far.
+ */
+export function extractBody(node: Element): string {
+  const named = pick(node, [
+    '[data-hook="review-body"] span:not([class])',
+    '[data-hook="review-body"] span',
+    '[data-hook="reviewText"]',
+    '[data-hook="reviewBody"]',
+    '[data-hook="review-collapsed"]',
+    '[data-hook="review-body"]',
+    '.review-text-content span',
+    '[class*="contain-rich-content"]',
+    '[class*="review-text"]',
+  ]);
+  if (named) {
+    const text = textOf(named);
+    if (text.length > 0) return stripExpanderChrome(text);
+  }
+
+  // Structural fallback: the paragraphs of the review itself.
+  const paragraphs = [...node.querySelectorAll('p')]
+    .map((p) => textOf(p))
+    .filter((text) => text.length > 0);
+
+  if (paragraphs.length > 0) return stripExpanderChrome(paragraphs.join(' '));
+
+  return '';
+}
+
+/** Amazon appends its own expander affordances to the text; drop them. */
+function stripExpanderChrome(text: string): string {
+  return text
+    .replace(/\s*Read more\s*Read less\s*$/i, '')
+    .replace(/\s*Read more\s*$/i, '')
+    .replace(/\s*,?\s*double tap to read (full|brief) content\.?/gi, '')
+    .replace(/\s*(Full|Brief) content visible\.?/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function extractReviews(doc: Document = document): Review[] {
   const nodes = pickAll(doc, [
     'div[data-hook="review"]',
@@ -232,18 +289,18 @@ export function extractReviews(doc: Document = document): Review[] {
       );
       if (rating === undefined) return; // Without a rating the row is unusable.
 
-      const body = pick(node, [
-        '[data-hook="review-body"] span:not([class])',
-        '[data-hook="review-body"] span',
-        '[data-hook="review-collapsed"]',
-        '[data-hook="review-body"]',
-        '.review-text-content span',
-      ]);
+      const body = extractBody(node);
 
+      // The title is an <h5> in the 2026 markup; the old hook may or may not
+      // still be attached to it, so the element type is the reliable anchor.
       const titleEl = pick(node, [
         '[data-hook="review-title"] span:not([class])',
         '[data-hook="review-title"] span:last-of-type',
         '[data-hook="review-title"]',
+        '[data-hook="reviewTitle"]',
+        '[class*="single-review-title"]',
+        'h5 a',
+        'h5',
         '.review-title',
       ]);
       // The title element often contains the star rating as hidden text; drop
@@ -266,7 +323,7 @@ export function extractReviews(doc: Document = document): Review[] {
         rating,
         date: dateRaw ? parseReviewDate(dateRaw) : undefined,
         verified,
-        text: textOf(body),
+        text: body,
         title: title || undefined,
         helpfulVotes,
         reviewerId,
