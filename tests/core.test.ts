@@ -7,6 +7,7 @@ import {
   sampleConfidenceFrom,
   toGrade,
   textExtractionFailed,
+  capGradeByDiscountedShare,
 } from '../src/core/score.js';
 import { distributionSignal, toShares } from '../src/core/signals/distribution.js';
 import { duplicationSignal } from '../src/core/signals/duplication.js';
@@ -232,6 +233,31 @@ describe('sample confidence', () => {
     expect(sampleConfidenceFrom(0)).toBe(0);
     expect(sampleConfidenceFrom(25)).toBeCloseTo(1, 5);
     expect(sampleConfidenceFrom(10)).toBeGreaterThan(sampleConfidenceFrom(5));
+  });
+});
+
+describe('grade cap by discounted share', () => {
+  it('leaves a clean sample untouched', () => {
+    expect(capGradeByDiscountedShare('A', 0, 13)).toBe('A');
+    expect(capGradeByDiscountedShare('A', 1, 13)).toBe('A');
+  });
+
+  it('stops a listing reading as genuine when a sixth of what you see is suspect', () => {
+    expect(capGradeByDiscountedShare('A', 2, 13)).toBe('B');
+  });
+
+  it('caps harder as the share grows', () => {
+    expect(capGradeByDiscountedShare('A', 3, 8)).toBe('C');
+    expect(capGradeByDiscountedShare('A', 5, 8)).toBe('D');
+  });
+
+  it('never improves a grade', () => {
+    expect(capGradeByDiscountedShare('F', 5, 8)).toBe('F');
+    expect(capGradeByDiscountedShare('D', 2, 13)).toBe('D');
+  });
+
+  it('does nothing without a sample', () => {
+    expect(capGradeByDiscountedShare('A', 0, 0)).toBe('A');
   });
 });
 

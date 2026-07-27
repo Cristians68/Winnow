@@ -95,7 +95,9 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
 
   return {
     asin: snapshot.asin,
-    grade: insufficientData ? 'C' : toGrade(trustScore),
+    grade: insufficientData
+      ? 'C'
+      : capGradeByDiscountedShare(toGrade(trustScore), discountedCount, sampleSize),
     trustScore,
     adjustedRating,
     displayedRating,
@@ -293,6 +295,34 @@ export function toGrade(trustScore: number): Grade {
   if (trustScore >= 55) return 'C';
   if (trustScore >= 40) return 'D';
   return 'F';
+}
+
+const GRADE_ORDER: Grade[] = ['A', 'B', 'C', 'D', 'F'];
+
+/**
+ * Cap the grade by how much of the visible sample we discounted.
+ *
+ * A product-level signal like the rating histogram carries real weight and full
+ * confidence, so a clean histogram can outvote the review-level evidence and
+ * pull a padded listing to an A. Calibration testing caught exactly that: a
+ * listing with three unverified, contentless five-star reviews out of eight
+ * still read as "Reviews look genuine".
+ *
+ * Averages are the wrong tool for that judgement. If a meaningful share of what
+ * a shopper can actually see is suspect, the headline must not say the reviews
+ * look genuine — whatever the aggregate says. This is deliberately a cap rather
+ * than a penalty: it can only lower a grade, never raise one, and it maps
+ * directly onto the "N of M visible reviews discounted" line already shown, so
+ * the user can see why.
+ */
+export function capGradeByDiscountedShare(grade: Grade, discounted: number, sampleSize: number): Grade {
+  if (sampleSize === 0) return grade;
+  const share = discounted / sampleSize;
+
+  const floor: Grade | null = share >= 0.5 ? 'D' : share >= 0.35 ? 'C' : share >= 0.15 ? 'B' : null;
+  if (!floor) return grade;
+
+  return GRADE_ORDER.indexOf(grade) >= GRADE_ORDER.indexOf(floor) ? grade : floor;
 }
 
 function confidenceLevel(
