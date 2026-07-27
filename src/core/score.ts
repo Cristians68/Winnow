@@ -37,11 +37,24 @@ const REVIEW_COMPONENT_WEIGHT = 1.6;
 /** Assumed star value of a manipulated review when back-solving a clean rating. */
 const MANIPULATED_RATING_ASSUMPTION = 5;
 
-export function analyse(snapshot: ProductSnapshot): Analysis {
-  const assessments = assessReviews(snapshot);
+/**
+ * Extra evidence from the deep-analysis server, folded into the local score.
+ *
+ * The server can see things a single page cannot — template reuse across
+ * products, reviewer networks, listing history — but the grade is still
+ * computed here, locally, from the combined evidence. That keeps the scoring
+ * logic in the open-source engine rather than behind an API nobody can audit.
+ */
+export interface DeepAugmentation {
+  reviewDeltas: Array<{ reviewId: string; delta: number; reason: string }>;
+  signals: SignalResult[];
+}
+
+export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Analysis {
+  const assessments = assessReviews(snapshot, deep);
   const reviewSignalResults = summariseReviewSignals(snapshot, assessments);
   const productSignalResults = PRODUCT_SIGNALS.map((s) => s.evaluate(snapshot));
-  const signals = [...productSignalResults, ...reviewSignalResults];
+  const signals = [...productSignalResults, ...reviewSignalResults, ...(deep?.signals ?? [])];
 
   const sampleSize = snapshot.reviews.length;
   const meanSuspicion =
@@ -61,7 +74,7 @@ export function analyse(snapshot: ProductSnapshot): Analysis {
     effectiveWeight += w;
   }
 
-  for (const signal of productSignalResults) {
+  for (const signal of [...productSignalResults, ...(deep?.signals ?? [])]) {
     if (signal.status === 'insufficient-data') continue;
     const w = signal.weight * signal.confidence;
     weightedSum += signal.score * w;
@@ -99,7 +112,7 @@ export function analyse(snapshot: ProductSnapshot): Analysis {
 }
 
 /** Run every review signal and accumulate per-review suspicion. */
-export function assessReviews(snapshot: ProductSnapshot): ReviewAssessment[] {
+export function assessReviews(snapshot: ProductSnapshot, deep?: DeepAugmentation): ReviewAssessment[] {
   const byReview = new Map<string, ReviewAssessment>(
     snapshot.reviews.map((r) => [r.id, { reviewId: r.id, suspicion: 0, reasons: [] }]),
   );
@@ -111,6 +124,13 @@ export function assessReviews(snapshot: ProductSnapshot): ReviewAssessment[] {
       assessment.suspicion += delta;
       assessment.reasons.push(reason);
     }
+  }
+
+  for (const { reviewId, delta, reason } of deep?.reviewDeltas ?? []) {
+    const assessment = byReview.get(reviewId);
+    if (!assessment) continue;
+    assessment.suspicion += delta;
+    assessment.reasons.push(reason);
   }
 
   for (const assessment of byReview.values()) {

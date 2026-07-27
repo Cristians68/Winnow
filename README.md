@@ -5,7 +5,9 @@
 Winnow analyses the integrity of Amazon reviews and shows you an adjusted rating — the
 rating a product would have if apparently manipulated reviews were removed.
 
-It runs entirely in your browser. It makes no network requests. It takes no affiliate money.
+Grading runs entirely in your browser and makes no network requests at all. One optional feature —
+deep analysis — asks our server to compare this product against the corpus, and only when you click
+the button. It takes no affiliate money, in any mode.
 
 ---
 
@@ -132,11 +134,51 @@ Do this after any Amazon layout change, or when a product's analysis looks obvio
 src/core/        pure scoring engine — no DOM, no network, no chrome APIs
 src/content/     Amazon DOM parser + on-page UI (shadow DOM)
 src/popup/       toolbar popup
-src/background/  service worker (near-empty by design)
+src/options/     settings + the public trust statement
+src/background/  service worker — the only file permitted to touch the network
+src/shared/      settings and the deep-analysis client contract
+server/          deep-analysis service (corpus-backed signals)
 ```
 
 `src/core` is deliberately dependency-free and side-effect-free. It is the part that must be
-independently verifiable, so it is the part with no way to phone home.
+independently verifiable, so it is the part with no way to phone home. Note that the **grade is
+always computed locally**, even after deep analysis: the server contributes evidence, never a
+verdict, so the scoring logic stays in the open-source engine rather than behind an API nobody can
+audit.
+
+### The deep-analysis server
+
+```bash
+cd server
+npm install
+npm test
+WINNOW_HASH_SALT=<secret> npm start   # :8787
+```
+
+Zero runtime dependencies — Node's built-in SQLite and HTTP server only. It computes the three
+signals a single page cannot support:
+
+- **Cross-product template reuse** — phrasing appearing on many unrelated products, the signature of
+  a review farm working from a script. This is the strongest signal in the system and is purely a
+  function of corpus size.
+- **Reviewer networks** — accounts whose review histories overlap far beyond chance.
+- **Review hijacking** — listings that swapped product while keeping their accumulated reviews.
+
+Results are cached per ASIN, so cost scales with products analysed rather than with users.
+
+Read [SECURITY.md](SECURITY.md) before deploying it — `WINNOW_HASH_SALT` and
+`WINNOW_ALLOWED_ORIGINS` both need setting, and the known gaps are listed honestly.
+
+## Accessibility, privacy and compliance
+
+- [PRIVACY.md](PRIVACY.md) — what is and isn't sent, in both modes
+- [SECURITY.md](SECURITY.md) — threat model, hardening, and known gaps
+- [docs/COMPLIANCE.md](docs/COMPLIANCE.md) — WCAG 2.2 AA / ADA / EN 301 549, GDPR, EU AI Act, and
+  Chrome Web Store policy, with each item marked Met, Partial or Outstanding
+
+The UI targets WCAG 2.2 AA: landmark regions, text alternatives for the grade, status never carried
+by colour alone, full keyboard operation with visible focus, live regions for async results, and
+`prefers-reduced-motion` support.
 
 ## Licence
 

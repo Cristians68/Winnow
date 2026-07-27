@@ -5,6 +5,7 @@
   "description": "What the reviews actually say. Analyses Amazon review integrity locally, in your browser. No affiliate links, ever.",
   "permissions": ["storage"],
   "host_permissions": [
+    "https://api.winnow.app/*",
     "*://*.amazon.com/*",
     "*://*.amazon.co.uk/*",
     "*://*.amazon.ca/*",

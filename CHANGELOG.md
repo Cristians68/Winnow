@@ -6,6 +6,36 @@ traced to the logic that produced it.
 
 ## [Unreleased]
 
+### Added — deep-analysis server
+- `server/` — zero-dependency deep-analysis service on Node's built-in SQLite and HTTP server,
+  computing the three signals a single page cannot support: cross-product template reuse, reviewer
+  networks, and review hijacking via rating/title history. Results cached per ASIN so cost scales
+  with products rather than users.
+- Deep analysis in the extension, behind an explicit user click. The grade is still computed
+  locally — the server contributes evidence, never a verdict.
+- Strict request sanitisation that **rejects** unknown fields rather than ignoring them, so a client
+  that ever started sending user identity would fail loudly. Reviewer ids are HMAC-hashed before
+  storage; product titles are sent only as hashes; reviewer display names never leave the browser.
+- Security hardening: locked-down CORS (extension origins only, constant-time when pinned), rate
+  limiting on hashed addresses held in memory only, security headers, body-size caps, parameterised
+  SQL, request timeouts, and deliberately no request logging.
+
+### Added — accessibility and compliance
+- WCAG 2.2 AA pass on the panel: landmark region, text alternative for the grade, status never
+  carried by colour alone, keyboard operation with a visible focus indicator, ≥24px targets,
+  `aria-expanded`/`aria-controls`/`aria-busy`, a `role="status"` live region for async results, and
+  `prefers-reduced-motion` support.
+- `SECURITY.md` — threat model, hardening, deployment requirements, and known gaps stated plainly.
+- `docs/COMPLIANCE.md` — WCAG 2.2 AA / ADA / EN 301 549, GDPR, EU AI Act and Chrome Web Store
+  policy, each marked Met, Partial or Outstanding.
+- UI polish: entry animation, loading state with spinner, refined type and colour scales.
+
+### Changed
+- **`PRIVACY.md` rewritten.** It previously claimed Winnow makes no network requests, full stop.
+  Deep analysis makes that untrue, so the policy now separates the default local-only mode from the
+  optional service and enumerates exactly what is and isn't sent.
+- Packaging guard extended to allow the single API endpoint while still failing on any other host.
+
 ### Added
 - Options page, doubling as the public statement of data handling, the no-affiliate commitment,
   and the limits of what Winnow claims.

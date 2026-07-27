@@ -3,3 +3,6 @@ dist/
 *.zip
 .DS_Store
 .vscode/
+*.db
+*.db-wal
+*.db-shm

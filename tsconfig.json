@@ -14,6 +14,9 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // tests/deep.test.ts imports the server's sanitiser directly, so the client
+    // payload is validated against the same code the real server runs.
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     "types": ["chrome", "vitest/globals"]
   },

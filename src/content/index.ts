@@ -12,8 +12,10 @@
 import { buildSnapshot, isProductPage } from './parse.js';
 import { analyse } from '../core/score.js';
 import { mountPanel } from './ui.js';
-import type { Analysis } from '../core/types.js';
+import type { Analysis, ProductSnapshot } from '../core/types.js';
+import type { DeepAugmentation } from '../core/score.js';
 import { DEFAULT_SETTINGS, getSettings, SETTINGS_KEY, type Settings } from '../shared/settings.js';
+import { buildRequest, toAugmentation, type DeepAnalysisResponse } from '../shared/deep.js';
 
 let currentAnalysis: Analysis | null = null;
 let settings: Settings = DEFAULT_SETTINGS;
@@ -27,16 +29,67 @@ function fingerprint(): string {
   return `${location.pathname}|${reviews}|${rating}`;
 }
 
+let currentSnapshot: ProductSnapshot | null = null;
+let augmentation: DeepAugmentation | undefined;
+let deepState: 'idle' | 'loading' | 'done' | 'error' = 'idle';
+let deepError: string | undefined;
+
+function render(): void {
+  if (!currentAnalysis || !settings.enabled) return;
+  mountPanel(currentAnalysis, {
+    expanded: settings.alwaysExpand,
+    onDeepAnalysis: runDeepAnalysis,
+    deepState,
+    deepError,
+  });
+}
+
+/**
+ * Deep analysis is the only code path in the extension that touches a network,
+ * and it runs solely from an explicit click. The request describes a public
+ * listing, never the person viewing it.
+ */
+async function runDeepAnalysis(): Promise<void> {
+  if (!currentSnapshot) return;
+  deepState = 'loading';
+
+  try {
+    const payload = await buildRequest(currentSnapshot);
+    const response = await chrome.runtime.sendMessage({ type: 'winnow:deep-analyse', payload });
+
+    if (!response?.ok) {
+      deepState = 'error';
+      deepError = response?.error ?? 'Deep analysis failed.';
+    } else {
+      augmentation = toAugmentation(response.data as DeepAnalysisResponse);
+      currentAnalysis = analyse(currentSnapshot, augmentation);
+      deepState = 'done';
+      deepError = undefined;
+    }
+  } catch {
+    deepState = 'error';
+    deepError = 'Deep analysis failed.';
+  }
+
+  render();
+}
+
 function run(): void {
   if (!isProductPage()) return;
 
   const snapshot = buildSnapshot();
   if (!snapshot) return;
 
-  currentAnalysis = analyse(snapshot);
-  if (settings.enabled) {
-    mountPanel(currentAnalysis, { expanded: settings.alwaysExpand });
+  // A different product invalidates any deep result we were showing.
+  if (currentSnapshot && currentSnapshot.asin !== snapshot.asin) {
+    augmentation = undefined;
+    deepState = 'idle';
+    deepError = undefined;
   }
+
+  currentSnapshot = snapshot;
+  currentAnalysis = analyse(snapshot, augmentation);
+  render();
 }
 
 function removePanel(): void {
@@ -68,8 +121,8 @@ async function start(): Promise<void> {
     settings = { ...DEFAULT_SETTINGS, ...(changes[SETTINGS_KEY].newValue as Partial<Settings>) };
     if (!settings.enabled) {
       removePanel();
-    } else if (currentAnalysis) {
-      mountPanel(currentAnalysis, { expanded: settings.alwaysExpand });
+    } else {
+      render();
     }
   });
 

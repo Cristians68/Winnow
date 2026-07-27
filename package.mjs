@@ -31,8 +31,14 @@ if (extra.length > 0) {
   problems.push(`unexpected permissions: ${extra.join(', ')} (minimal permissions are a product promise)`);
 }
 
-if ((manifest.host_permissions ?? []).some((h) => !/amazon\./.test(h))) {
-  problems.push('host_permissions contains a non-Amazon origin');
+// Amazon storefronts, plus the single deep-analysis endpoint. Anything else is
+// a mistake: the privacy policy tells users exactly which hosts we can reach.
+const ALLOWED_HOSTS = [/amazon\./, /^https:\/\/api\.winnow\.app\/\*$/];
+const strayHosts = (manifest.host_permissions ?? []).filter(
+  (h) => !ALLOWED_HOSTS.some((pattern) => pattern.test(h)),
+);
+if (strayHosts.length > 0) {
+  problems.push(`unexpected host_permissions: ${strayHosts.join(', ')}`);
 }
 
 for (const required of ['dist/manifest.json', 'dist/content/index.js', 'dist/popup/ui/popup.html', 'dist/options/ui/options.html', 'dist/icons/icon128.png']) {
