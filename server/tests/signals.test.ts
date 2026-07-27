@@ -65,6 +65,22 @@ describe('cross-product template detection', () => {
     expect(result.templatedReviewCount).toBe(1);
   });
 
+  // Regression. Corroboration used to be tracked per phrase/product *pair*,
+  // which required the same product to be deep-analysed on two separate days
+  // before its text counted for anything. Organic traffic almost never does
+  // that — most products are analysed once, ever — so the strongest signal in
+  // the system was dark in exactly the situation it exists for: one template,
+  // many products, each seen once. This is that situation.
+  it('flags a template spread across products that were each seen only once', () => {
+    ['B00000401', 'B00000402', 'B00000403', 'B00000404'].forEach((asin, i) => {
+      corpus.recordShingles(asin, shingleHashes(TEMPLATE), `2026-07-0${i + 1}`);
+    });
+
+    const result = analyseText('B00000499', [review({ id: 'target', text: TEMPLATE })], corpus);
+    expect(result.templatedReviewCount).toBe(1);
+    expect(result.findings[0]!.source).toBe('cross-product-template');
+  });
+
   it('does not let repeat submissions on the same day manufacture corroboration', () => {
     for (let i = 0; i < 10; i++) {
       corpus.recordShingles('B00000301', shingleHashes(TEMPLATE), '2026-07-01');
@@ -277,6 +293,22 @@ describe('retention enforcement', () => {
       observedAt: monthsAgo(30), displayedRating: 4.1, totalRatings: 500, titleHash: 'x', histogram: null,
     });
     expect(corpus.pruneExpired().observations).toBe(1);
+  });
+
+  // Day records outliving their phrases would let a pruned phrase return
+  // already-corroborated, so the first sighting after retention could
+  // immediately count against another product.
+  it('forgets phrase day records once the phrases themselves are pruned', () => {
+    const hashes = shingleHashes(
+      'a distinctive sequence of words used here purely to exercise the retention sweep behaviour',
+    );
+    corpus.recordShingles('B00000055', hashes, '2026-07-01');
+    corpus.recordShingles('B00000055', hashes, '2026-07-02');
+    expect(corpus.shingleDays(hashes[0]!)).toBe(2);
+
+    // No reviews reference this ASIN, so the sweep drops its phrases.
+    corpus.pruneExpired();
+    expect(corpus.shingleDays(hashes[0]!)).toBe(0);
   });
 });
 

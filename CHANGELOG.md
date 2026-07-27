@@ -6,6 +6,25 @@ traced to the logic that produced it.
 
 ## [Unreleased]
 
+### Fixed
+- **Cross-product template reuse could not fire in normal use.** Phrase corroboration was tracked
+  per phrase/product *pair*, which required the same product to be deep-analysed on two separate
+  calendar days before its text counted toward anything. Organic traffic rarely does that — most
+  products are analysed once, ever — so the strongest signal in the system was effectively dark in
+  precisely the case it exists for: one template across many products, each seen once. A farm
+  template on five unrelated products measured a spread of zero and reported "no templated text
+  detected". Corroboration is now tracked per phrase across the whole corpus, so a phrase counts
+  once it has been seen on two separate days anywhere. The anti-poisoning floor is unchanged: a
+  single-day burst still scores zero, however many products or submissions it involves, and any one
+  phrase/product pair still counts at most once per day. Regression tests cover both directions.
+- The retention sweep now drops phrase day-records alongside the phrases they corroborate, so a
+  pruned phrase cannot return already-corroborated.
+
+### Added — verification
+- `tools/deep-smoke.mjs` — end-to-end smoke test running the real extension request builder over
+  real HTTP through the real sanitiser and corpus. Covers the seam the unit suites stub out, and
+  asserts the privacy guarantees against the actual serialised wire format. `npm run smoke`.
+
 ### Added — deep-analysis server
 - `server/` — zero-dependency deep-analysis service on Node's built-in SQLite and HTTP server,
   computing the three signals a single page cannot support: cross-product template reuse, reviewer

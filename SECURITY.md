@@ -73,9 +73,19 @@ What remains worth defending:
 Stated plainly rather than omitted.
 
 1. **Corpus poisoning.** A determined attacker could submit fabricated observations to make a
-   product look clean, or to make a competitor look manipulated. Current defences (rate limiting,
-   per-ASIN caching) raise the cost but do not solve it. Cross-submission agreement checks — trusting
-   a claim only when independent clients corroborate it — are the intended fix and are not yet built.
+   product look clean, or to make a competitor look manipulated. The sharpest version is framing:
+   submitting a rival's genuine review text under other ASINs until it looks like a farm template.
+
+   Defences in place: rate limiting, per-ASIN caching, and **time-based corroboration** — a phrase
+   contributes nothing to any other product's score until it has been observed on at least two
+   separate calendar days (`MIN_CORROBORATION` in `server/src/db.ts`), and any single phrase/product
+   pair counts at most once per day. A burst of fabricated submissions, however large, therefore
+   scores zero: verified at four ASINs × 50 submissions in one day → spread 0.
+
+   What this does **not** solve: because clients cannot be identified — that is the privacy
+   guarantee — "independent" is approximated by elapsed time, so an attacker willing to spread the
+   same submissions across two days pays little. Cross-submission agreement checks, trusting a claim
+   only when genuinely independent clients corroborate it, remain the intended fix and are not built.
 2. **The endpoint is unauthenticated.** Appropriate while the service is free, but it means anyone
    can contribute to the corpus. This is the same problem as (1).
 3. **`node:sqlite` is an experimental Node API.** Its interface may change. Acceptable for a corpus

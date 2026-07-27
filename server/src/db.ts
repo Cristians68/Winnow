@@ -94,6 +94,15 @@ CREATE TABLE IF NOT EXISTS shingles (
 );
 CREATE INDEX IF NOT EXISTS idx_shingles_hash ON shingles(shingle_hash);
 
+-- Distinct calendar days a phrase has been seen anywhere in the corpus.
+-- Corroboration is tracked per phrase rather than per phrase/product pair; see
+-- recordShingles() for why.
+CREATE TABLE IF NOT EXISTS shingle_days (
+  shingle_hash   TEXT NOT NULL,
+  day            TEXT NOT NULL,
+  PRIMARY KEY (shingle_hash, day)
+);
+
 CREATE TABLE IF NOT EXISTS cache (
   asin           TEXT PRIMARY KEY,
   payload        TEXT NOT NULL,
@@ -102,8 +111,9 @@ CREATE TABLE IF NOT EXISTS cache (
 `;
 
 /**
- * Separate days a phrase must be seen on a product before it counts toward
- * cross-product template detection. See recordShingles().
+ * Separate calendar days a phrase must have been seen on — anywhere in the
+ * corpus — before it counts toward cross-product template detection.
+ * See recordShingles().
  */
 export const MIN_CORROBORATION = 2;
 
@@ -218,42 +228,66 @@ export class Corpus {
    * Anti-poisoning measure. Without it, one attacker could submit fabricated
    * reviews and make a rival's genuine text look like a farm template. We
    * deliberately cannot identify clients — that is the privacy guarantee — so
-   * "independent" is approximated by *time*: a given phrase/product pair counts
-   * at most once per calendar day, so manufacturing corroboration requires
-   * sustained submissions across days rather than a single burst.
+   * "independent" is approximated by *time*.
    *
-   * This raises the cost of poisoning substantially. It does not eliminate it;
-   * see SECURITY.md.
+   * Corroboration is tracked **per phrase, corpus-wide** rather than per
+   * phrase/product pair. The pair-wise rule this replaced required the *same
+   * product* to be deep-analysed on two separate days before its text counted
+   * for anything, which almost never happens: most products are analysed once,
+   * ever. The strongest signal in the system was therefore dark in normal use —
+   * a farm template sitting on five unrelated products scored zero spread — while
+   * an attacker paid only a two-day wait. Tracking days per phrase keeps that
+   * same two-day floor against a single burst without discarding the long tail.
+   *
+   * Each phrase/product pair is still counted at most once per day, so one
+   * product cannot inflate a phrase by repeat submission.
+   *
+   * This raises the cost of poisoning. It does not eliminate it; see SECURITY.md.
    */
   recordShingles(asin: string, shingleHashes: Iterable<string>, today = new Date().toISOString().slice(0, 10)): void {
-    const stmt = this.db.prepare(
+    const pair = this.db.prepare(
       `INSERT INTO shingles (shingle_hash, asin, sightings, last_counted)
        VALUES (?, ?, 1, ?)
        ON CONFLICT(shingle_hash, asin) DO UPDATE SET
          sightings    = sightings + CASE WHEN IFNULL(last_counted,'') = excluded.last_counted THEN 0 ELSE 1 END,
          last_counted = excluded.last_counted`,
     );
-    for (const hash of shingleHashes) stmt.run(hash, asin, today);
+    const day = this.db.prepare(`INSERT OR IGNORE INTO shingle_days (shingle_hash, day) VALUES (?, ?)`);
+
+    for (const hash of shingleHashes) {
+      pair.run(hash, asin, today);
+      day.run(hash, today);
+    }
+  }
+
+  /** Distinct calendar days a phrase has been observed on, anywhere in the corpus. */
+  shingleDays(shingleHash: string): number {
+    const row = this.db
+      .prepare(`SELECT COUNT(*) AS n FROM shingle_days WHERE shingle_hash = ?`)
+      .get(shingleHash) as unknown as { n: number } | undefined;
+    return row?.n ?? 0;
   }
 
   /**
-   * How many *other* products each phrase has been corroborated on.
+   * How many *other* products each phrase has been seen on.
    *
-   * Only pairs seen on at least MIN_CORROBORATION separate days count, so a
-   * single submission can never by itself brand another product's text as
-   * templated.
+   * A phrase contributes nothing until it has been observed on at least
+   * MIN_CORROBORATION separate days, so a single burst of submissions can never
+   * by itself brand another product's text as templated.
    */
   shingleSpread(shingleHashes: string[], excludeAsin: string): Map<string, number> {
     const spread = new Map<string, number>();
     if (shingleHashes.length === 0) return spread;
 
     const stmt = this.db.prepare(
-      `SELECT COUNT(DISTINCT asin) AS n FROM shingles
-       WHERE shingle_hash = ? AND asin != ? AND sightings >= ?`,
+      `SELECT
+         (SELECT COUNT(*) FROM shingle_days WHERE shingle_hash = ?) AS days,
+         (SELECT COUNT(DISTINCT asin) FROM shingles WHERE shingle_hash = ? AND asin != ?) AS n`,
     );
     for (const hash of shingleHashes) {
-      const row = stmt.get(hash, excludeAsin, MIN_CORROBORATION) as unknown as { n: number } | undefined;
-      spread.set(hash, row?.n ?? 0);
+      const row = stmt.get(hash, hash, excludeAsin) as unknown as { days: number; n: number } | undefined;
+      const corroborated = (row?.days ?? 0) >= MIN_CORROBORATION;
+      spread.set(hash, corroborated ? (row?.n ?? 0) : 0);
     }
     return spread;
   }
@@ -321,6 +355,10 @@ export class Corpus {
 
     // Phrase hashes for products no longer represented carry no further value.
     this.db.exec(`DELETE FROM shingles WHERE asin NOT IN (SELECT DISTINCT asin FROM reviews)`);
+
+    // Day records must not outlive the phrases they corroborate, or a pruned
+    // phrase would come back pre-corroborated the next time it is seen.
+    this.db.exec(`DELETE FROM shingle_days WHERE shingle_hash NOT IN (SELECT DISTINCT shingle_hash FROM shingles)`);
 
     return { reviews, observations, cache };
   }
