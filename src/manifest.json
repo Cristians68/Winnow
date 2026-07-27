@@ -45,6 +45,10 @@
   "background": {
     "service_worker": "background/index.js"
   },
+  "options_ui": {
+    "page": "options/ui/options.html",
+    "open_in_tab": true
+  },
   "action": {
     "default_popup": "popup/ui/popup.html",
     "default_title": "Winnow",

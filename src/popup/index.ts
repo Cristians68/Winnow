@@ -101,5 +101,13 @@ async function wireSettings(): Promise<void> {
   });
 }
 
+function wireOptionsLink(): void {
+  document.getElementById('options')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    chrome.runtime.openOptionsPage();
+  });
+}
+
 void loadAnalysis();
 void wireSettings();
+wireOptionsLink();

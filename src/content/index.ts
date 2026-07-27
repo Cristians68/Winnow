@@ -13,9 +13,10 @@ import { buildSnapshot, isProductPage } from './parse.js';
 import { analyse } from '../core/score.js';
 import { mountPanel } from './ui.js';
 import type { Analysis } from '../core/types.js';
-import { getSettings } from '../shared/settings.js';
+import { DEFAULT_SETTINGS, getSettings, SETTINGS_KEY, type Settings } from '../shared/settings.js';
 
 let currentAnalysis: Analysis | null = null;
+let settings: Settings = DEFAULT_SETTINGS;
 let lastFingerprint = '';
 let scheduled: number | undefined;
 
@@ -33,7 +34,13 @@ function run(): void {
   if (!snapshot) return;
 
   currentAnalysis = analyse(snapshot);
-  mountPanel(currentAnalysis);
+  if (settings.enabled) {
+    mountPanel(currentAnalysis, { expanded: settings.alwaysExpand });
+  }
+}
+
+function removePanel(): void {
+  document.getElementById('winnow-root')?.remove();
 }
 
 function scheduleRun(): void {
@@ -53,8 +60,18 @@ function scheduleRun(): void {
 }
 
 async function start(): Promise<void> {
-  const settings = await getSettings();
-  if (!settings.enabled) return;
+  settings = await getSettings();
+
+  // React to the popup/options toggles without needing a page reload.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes[SETTINGS_KEY]) return;
+    settings = { ...DEFAULT_SETTINGS, ...(changes[SETTINGS_KEY].newValue as Partial<Settings>) };
+    if (!settings.enabled) {
+      removePanel();
+    } else if (currentAnalysis) {
+      mountPanel(currentAnalysis, { expanded: settings.alwaysExpand });
+    }
+  });
 
   scheduleRun();
 

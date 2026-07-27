@@ -207,7 +207,12 @@ function renderSignal(signal: SignalResult): HTMLElement {
   return item;
 }
 
-export function renderPanel(analysis: Analysis): HTMLElement {
+export interface PanelOptions {
+  /** Start with the signal breakdown open instead of collapsed. */
+  expanded?: boolean;
+}
+
+export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTMLElement {
   const host = el('div');
   host.id = HOST_ID;
   const shadow = host.attachShadow({ mode: 'open' });
@@ -235,13 +240,18 @@ export function renderPanel(analysis: Analysis): HTMLElement {
   card.append(el('p', 'basis', analysis.basis));
 
   // --- expandable breakdown
+  const startExpanded = options.expanded ?? false;
   const signals = el('ul', 'signals');
-  signals.hidden = true;
+  signals.hidden = !startExpanded;
   for (const signal of analysis.signals) signals.append(renderSignal(signal));
 
-  const toggle = el('button', 'toggle', 'Show the breakdown') as HTMLButtonElement;
+  const toggle = el(
+    'button',
+    'toggle',
+    startExpanded ? 'Hide the breakdown' : 'Show the breakdown',
+  ) as HTMLButtonElement;
   toggle.type = 'button';
-  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-expanded', String(startExpanded));
   toggle.addEventListener('click', () => {
     const open = signals.hidden;
     signals.hidden = !open;
@@ -267,9 +277,9 @@ export function renderPanel(analysis: Analysis): HTMLElement {
 }
 
 /** Insert the panel above the reviews section, or below the title as a fallback. */
-export function mountPanel(analysis: Analysis): void {
+export function mountPanel(analysis: Analysis, options: PanelOptions = {}): void {
   document.getElementById(HOST_ID)?.remove();
-  const panel = renderPanel(analysis);
+  const panel = renderPanel(analysis, options);
 
   const anchors = [
     '#reviewsMedley',

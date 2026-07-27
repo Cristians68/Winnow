@@ -12,12 +12,12 @@ export const DEFAULT_SETTINGS: Settings = {
   alwaysExpand: false,
 };
 
-const KEY = 'winnow:settings';
+export const SETTINGS_KEY = 'winnow:settings';
 
 export async function getSettings(): Promise<Settings> {
   try {
-    const stored = await chrome.storage.local.get(KEY);
-    return { ...DEFAULT_SETTINGS, ...(stored[KEY] as Partial<Settings> | undefined) };
+    const stored = await chrome.storage.local.get(SETTINGS_KEY);
+    return { ...DEFAULT_SETTINGS, ...(stored[SETTINGS_KEY] as Partial<Settings> | undefined) };
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -25,6 +25,6 @@ export async function getSettings(): Promise<Settings> {
 
 export async function setSettings(patch: Partial<Settings>): Promise<Settings> {
   const next = { ...(await getSettings()), ...patch };
-  await chrome.storage.local.set({ [KEY]: next });
+  await chrome.storage.local.set({ [SETTINGS_KEY]: next });
   return next;
 }

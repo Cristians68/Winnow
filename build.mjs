@@ -14,6 +14,7 @@ const entryPoints = {
   'content/index': 'src/content/index.ts',
   'background/index': 'src/background/index.ts',
   'popup/index': 'src/popup/index.ts',
+  'options/index': 'src/options/index.ts',
 };
 
 const buildOptions = {
@@ -33,7 +34,7 @@ const buildOptions = {
 /** Copy static assets and the manifest into dist. */
 async function copyStatic() {
   await cp('src/manifest.json', path.join(outdir, 'manifest.json'));
-  for (const dir of ['public', 'src/popup/ui', 'src/content/ui']) {
+  for (const dir of ['public', 'src/popup/ui', 'src/options/ui']) {
     if (existsSync(dir)) {
       const dest = dir.startsWith('src/')
         ? path.join(outdir, dir.slice(4))

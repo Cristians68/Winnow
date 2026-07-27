@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Winnow — Settings</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 40px 24px 64px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px; line-height: 1.55;
+        background: #f7f8fa; color: #16181d;
+      }
+      .wrap { max-width: 640px; margin: 0 auto; }
+      header { margin-bottom: 26px; }
+      h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+      .tagline { color: #6b7280; margin-top: 2px; }
+      section {
+        background: #fff; border: 1px solid #e4e7ec; border-radius: 12px;
+        padding: 4px 20px; margin-bottom: 20px;
+      }
+      h2 {
+        font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+        color: #6b7280; margin: 20px 0 4px;
+      }
+      .setting {
+        display: flex; gap: 16px; align-items: flex-start;
+        justify-content: space-between; padding: 14px 0;
+        border-bottom: 1px solid #f0f1f4;
+      }
+      .setting:last-child { border-bottom: 0; }
+      .setting .label { font-weight: 600; }
+      .setting .help { color: #6b7280; font-size: 13px; margin-top: 2px; }
+      input[type="checkbox"] { width: 18px; height: 18px; flex: none; margin-top: 2px; }
+      .prose { padding: 4px 0 18px; }
+      .prose p { margin: 10px 0; }
+      .prose strong { font-weight: 700; }
+      .pledge {
+        border-left: 3px solid #17663a; padding: 2px 0 2px 14px;
+        margin: 16px 0; color: #17663a; font-weight: 600;
+      }
+      code {
+        background: #f0f1f4; padding: 1px 5px; border-radius: 4px;
+        font-size: 12.5px;
+      }
+      a { color: #0b5cab; }
+      .saved {
+        font-size: 12px; color: #17663a; font-weight: 600;
+        opacity: 0; transition: opacity .18s;
+      }
+      .saved.show { opacity: 1; }
+      @media (prefers-color-scheme: dark) {
+        body { background: #101216; color: #e8eaed; }
+        section { background: #16181d; border-color: #2c313a; }
+        .setting { border-color: #24272e; }
+        .tagline, .setting .help, h2 { color: #9aa1ab; }
+        code { background: #24272e; }
+        a { color: #6fb0f0; }
+        .pledge { border-color: #6ee7a0; color: #6ee7a0; }
+        .saved { color: #6ee7a0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Winnow</h1>
+        <div class="tagline">What the reviews actually say.</div>
+      </header>
+
+      <h2>Settings</h2>
+      <section>
+        <div class="setting">
+          <div>
+            <div class="label">Show the panel on Amazon</div>
+            <div class="help">Turn this off to hide Winnow without uninstalling it.</div>
+          </div>
+          <input type="checkbox" id="enabled" />
+        </div>
+        <div class="setting">
+          <div>
+            <div class="label">Always expand the breakdown</div>
+            <div class="help">
+              Open the per-signal detail automatically instead of collapsing it behind a link.
+            </div>
+          </div>
+          <input type="checkbox" id="alwaysExpand" />
+        </div>
+        <div class="setting" style="border-top: 1px solid #f0f1f4">
+          <div class="help">Changes save immediately and apply to open tabs.</div>
+          <span class="saved" id="saved">Saved</span>
+        </div>
+      </section>
+
+      <h2>What Winnow does with your data</h2>
+      <section>
+        <div class="prose">
+          <p>
+            <strong>Nothing leaves your browser.</strong> All scoring runs locally on the page you
+            are already looking at. Winnow makes no network requests, has no server, and has no
+            account system. The only permission it requests is <code>storage</code>, used to
+            remember the two settings above.
+          </p>
+          <p>
+            <strong>Winnow never crawls Amazon using your session.</strong> Amazon's terms prohibit
+            automated data mining, and scraping through a logged-in session puts <em>your</em>
+            account at risk. Winnow only reads what your browser already rendered. This costs some
+            analysis depth, and that is a deliberate trade.
+          </p>
+        </div>
+      </section>
+
+      <h2>How we make money</h2>
+      <section>
+        <div class="prose">
+          <p class="pledge">You pay us. Nobody else does.</p>
+          <p>
+            Winnow carries no affiliate links, no sponsored placements, and no merchant
+            relationships — permanently, as a commitment rather than a current policy. A tool that
+            earns a commission when you buy cannot credibly tell you not to buy.
+          </p>
+          <p>
+            The scoring engine is
+            <a href="https://github.com/winnow-app/winnow" target="_blank" rel="noopener noreferrer">open source</a>
+            precisely so you can verify no merchant is paying for a better grade.
+          </p>
+        </div>
+      </section>
+
+      <h2>What Winnow does not claim</h2>
+      <section>
+        <div class="prose">
+          <p>
+            Every result is an <strong>estimate, not proof</strong>. Winnow cannot know that any
+            individual review is fake. It identifies patterns that manipulated reviews tend to
+            produce, and it tells you what each judgement was based on and how confident it is.
+          </p>
+          <p>
+            Typically only 8–13 reviews are visible on a product page, and those are
+            <em>featured</em> reviews — a biased sample. Winnow shrinks its rating adjustment to
+            account for that, and declines to state an adjusted rating at all when too little of the
+            sample looks trustworthy. "Couldn't read this page" is not a verdict about the product.
+          </p>
+          <p>
+            <a href="https://github.com/winnow-app/winnow#methodology" target="_blank" rel="noopener noreferrer">
+              Read the full methodology →
+            </a>
+          </p>
+        </div>
+      </section>
+    </div>
+    <script src="../index.js"></script>
+  </body>
+</html>

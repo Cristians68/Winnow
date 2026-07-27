@@ -7,9 +7,7 @@
  * will still never see session cookies or browsing history.
  */
 
-import { DEFAULT_SETTINGS } from '../shared/settings.js';
-
-const SETTINGS_KEY = 'winnow:settings';
+import { DEFAULT_SETTINGS, SETTINGS_KEY } from '../shared/settings.js';
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   const stored = await chrome.storage.local.get(SETTINGS_KEY);
