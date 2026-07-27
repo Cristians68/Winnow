@@ -18,7 +18,11 @@
     // payload is validated against the same code the real server runs.
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["chrome", "vitest/globals"]
+    // "node" is required because that same server import pulls node:crypto and
+    // `process` into this program. Vitest 2 happened to supply the node types
+    // transitively; Vitest 4 does not, so the dependency is declared here rather
+    // than left to the test runner's internals.
+    "types": ["chrome", "vitest/globals", "node"]
   },
   "include": ["src/**/*", "tests/**/*", "build.mjs"]
 }
