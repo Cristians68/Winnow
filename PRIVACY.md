@@ -154,4 +154,4 @@ never altered quietly in this document.
 
 ## Contact
 
-<https://github.com/winnow-app/winnow/issues>
+<https://github.com/Cristians68/Winnow/issues>

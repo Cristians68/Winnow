@@ -388,7 +388,7 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   const foot = el('div', 'foot');
   foot.append(el('span', 'pledge', 'No affiliate links. You pay us, nobody else does.'));
   const method = document.createElement('a');
-  method.href = 'https://github.com/winnow-app/winnow#methodology';
+  method.href = 'https://github.com/Cristians68/Winnow#methodology';
   method.target = '_blank';
   method.rel = 'noopener noreferrer';
   method.textContent = `How this is calculated (engine v${analysis.engineVersion})`;

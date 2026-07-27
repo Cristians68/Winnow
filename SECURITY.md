@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Open a security advisory at <https://github.com/winnow-app/winnow/security/advisories> rather than a
+Open a security advisory at <https://github.com/Cristians68/Winnow/security/advisories> rather than a
 public issue. We aim to acknowledge within 72 hours.
 
 If you find a way to make Winnow transmit anything about a *user* rather than a *product listing*,

@@ -84,7 +84,7 @@ PRIVACY
   rendered. Automated scraping through a logged-in session can put YOUR Amazon account at
   risk, and we will not do that to you.
 
-Open source: https://github.com/winnow-app/winnow
+Open source: https://github.com/Cristians68/Winnow
 ```
 
 ---
