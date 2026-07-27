@@ -33,10 +33,24 @@ WCAG 2.2 AA is the single target.
 | 4.1.3 Status Messages | Deep-analysis progress and results land in `role="status"` `aria-live="polite"` — announced without stealing focus | Met |
 | 2.3.3 Animation from Interactions | `prefers-reduced-motion` removes entry animation and transitions | Met (AAA, done anyway) |
 
-**Verified in CI:** 15 automated checks in `tests/a11y.test.ts` cover contrast, landmark structure,
+**Verified in CI:** 19 automated checks in `tests/a11y.test.ts` cover contrast, landmark structure,
 text alternatives, disclosure wiring, live regions, target size, reduced motion and safe external links.
 
-**Outstanding:** a real screen-reader run (NVDA + VoiceOver), which cannot be automated.
+**Also verified in CI:** `tests/axe.test.ts` runs the axe-core rule set (WCAG 2.0/2.1/2.2 A and AA,
+plus best-practice) across all 14 states the panel can be in — collapsed, expanded, light, dark,
+each grade, insufficient-data, and all four deep-analysis states. Zero violations.
+
+Two honest qualifications on that result:
+
+- **axe catches roughly 30–50% of WCAG issues.** Passing is necessary, not sufficient. It finds
+  missing names, broken relationships and invalid ARIA; it cannot judge whether the panel's wording
+  makes sense when read aloud, or whether the reading order tells a coherent story.
+- The panel renders inside a shadow root, so the suite explicitly proves axe crosses that boundary
+  before trusting any clean result. Without that check, a tool unable to see into the shadow DOM
+  would report zero violations on markup it never inspected — a passing build that verified nothing.
+
+**Outstanding:** a real screen-reader run (NVDA + VoiceOver), which cannot be automated and which
+the above does not substitute for.
 
 ---
 
