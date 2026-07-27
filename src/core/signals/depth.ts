@@ -35,7 +35,7 @@ export const depthSignal: ReviewSignal = {
         reason:
           words === 0
             ? `${review.rating}-star rating with no written review`
-            : `${review.rating}-star rating with only ${words} words and no specifics`,
+            : `${review.rating}-star rating with only ${words} ${words === 1 ? 'word' : 'words'} and no specifics`,
       });
     }
 

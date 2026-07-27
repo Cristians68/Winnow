@@ -155,6 +155,14 @@ describe('depth signal', () => {
     expect(depthSignal.evaluate(snapshot({ reviews: [r] })).has(r.id)).toBe(false);
   });
 
+  it('gets the plural right, since this text is shown to users', () => {
+    const one = review({ rating: 5, text: 'Great' });
+    expect(depthSignal.evaluate(snapshot({ reviews: [one] })).get(one.id)!.reason).toContain('only 1 word and');
+
+    const several = review({ rating: 5, text: 'Great product love it' });
+    expect(depthSignal.evaluate(snapshot({ reviews: [several] })).get(several.id)!.reason).toContain('4 words');
+  });
+
   it('ignores brief middle ratings', () => {
     const r = review({ rating: 3, text: "It's fine" });
     expect(depthSignal.evaluate(snapshot({ reviews: [r] })).has(r.id)).toBe(false);
