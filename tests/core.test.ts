@@ -6,6 +6,7 @@ import {
   estimateAdjustedRating,
   sampleConfidenceFrom,
   toGrade,
+  textExtractionFailed,
 } from '../src/core/score.js';
 import { distributionSignal, toShares } from '../src/core/signals/distribution.js';
 import { duplicationSignal } from '../src/core/signals/duplication.js';
@@ -233,6 +234,74 @@ describe('grade thresholds', () => {
     expect(toGrade(60)).toBe('C');
     expect(toGrade(45)).toBe('D');
     expect(toGrade(10)).toBe('F');
+  });
+});
+
+// Regression suite for a real failure seen on a live Amazon page: body
+// extraction broke, and Winnow confidently reported "12 of 13 reviews are
+// 5 stars with no written review" — flagging nearly every review on the page
+// for a defect in our own parser.
+describe('parser-failure detection', () => {
+  const blankTextReviews = (n: number) =>
+    Array.from({ length: n }, (_, i) =>
+      review({ id: `blank-${i}`, rating: 5 as Star, text: '', verified: true, date: `2026-0${(i % 6) + 1}-11` }),
+    );
+
+  it('recognises wholesale text-extraction failure', () => {
+    expect(textExtractionFailed(snapshot({ reviews: blankTextReviews(13) }))).toBe(true);
+  });
+
+  it('does not mistake a few genuinely terse reviews for a failure', () => {
+    const reviews = [
+      ...blankTextReviews(2),
+      ...Array.from({ length: 8 }, (_, i) =>
+        review({ id: `real-${i}`, text: 'A properly written review with real content in it.' }),
+      ),
+    ];
+    expect(textExtractionFailed(snapshot({ reviews }))).toBe(false);
+  });
+
+  it('stays quiet on tiny samples where the ratio proves nothing', () => {
+    expect(textExtractionFailed(snapshot({ reviews: blankTextReviews(2) }))).toBe(false);
+  });
+
+  it('skips the text-dependent checks instead of flagging every review', () => {
+    const result = analyse(
+      snapshot({ reviews: blankTextReviews(13), histogram: NATURAL_HISTOGRAM, totalRatings: 5000, displayedRating: 4.6 }),
+    );
+
+    for (const id of ['depth', 'phrasing', 'duplication']) {
+      const signal = result.signals.find((s) => s.id === id)!;
+      expect(signal.status).toBe('insufficient-data');
+      expect(signal.detail).toMatch(/couldn't read the review text/i);
+    }
+    expect(result.discountedCount).toBe(0);
+  });
+
+  it('tells the user the grade rests on less evidence than usual', () => {
+    const result = analyse(
+      snapshot({ reviews: blankTextReviews(13), histogram: NATURAL_HISTOGRAM, totalRatings: 5000, displayedRating: 4.6 }),
+    );
+    expect(result.basis).toMatch(/couldn't read the review text/i);
+  });
+
+  it('mentions a missing rating breakdown too', () => {
+    const result = analyse(snapshot({ reviews: [review(), review(), review()], displayedRating: 4.4 }));
+    expect(result.basis).toMatch(/rating breakdown wasn't readable/i);
+  });
+
+  it('still lets non-text signals do their job', () => {
+    // Unverified purchases are readable without body text, so they must survive.
+    const reviews = Array.from({ length: 13 }, (_, i) =>
+      review({ id: `u-${i}`, rating: 5 as Star, text: '', verified: false }),
+    );
+    const result = analyse(snapshot({ reviews, histogram: IMPLAUSIBLE_HISTOGRAM, totalRatings: 5000, displayedRating: 4.9 }));
+    expect(result.signals.find((s) => s.id === 'verified')!.status).toBe('fail');
+    // Suspicion accrues from the unverified signal alone (0.3), which is below
+    // the 0.4 "discounted" bar by design — one weak signal should not be enough
+    // to write a review off. What matters is that the check still ran.
+    expect(result.assessments.every((a) => a.suspicion > 0)).toBe(true);
+    expect(result.assessments[0]!.reasons.join()).toMatch(/Unverified purchase/);
   });
 });
 

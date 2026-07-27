@@ -111,13 +111,43 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
   };
 }
 
+/** Signals that are meaningless if we failed to read the review text. */
+const TEXT_DEPENDENT_SIGNALS = new Set(['phrasing', 'duplication', 'depth']);
+
+/**
+ * Share of sampled reviews we actually recovered text for.
+ *
+ * This exists because of a real failure: when Amazon changed its markup, body
+ * extraction silently returned empty strings, and Winnow confidently reported
+ * "12 of 13 reviews are 5 stars with no written review" — flagging almost every
+ * review on the page for a defect in our own parser.
+ *
+ * A tool whose entire pitch is calibrated honesty cannot fail that way. When
+ * coverage collapses, the correct answer is "we couldn't read this", not a
+ * grade built on absence of evidence.
+ */
+export function textCoverage(snapshot: ProductSnapshot): number {
+  if (snapshot.reviews.length === 0) return 0;
+  const withText = snapshot.reviews.filter((r) => (r.text ?? '').trim().length > 0).length;
+  return withText / snapshot.reviews.length;
+}
+
+/** Below this, we treat missing text as a parser failure rather than a finding. */
+const MIN_TEXT_COVERAGE = 0.35;
+
+export function textExtractionFailed(snapshot: ProductSnapshot): boolean {
+  return snapshot.reviews.length >= 3 && textCoverage(snapshot) < MIN_TEXT_COVERAGE;
+}
+
 /** Run every review signal and accumulate per-review suspicion. */
 export function assessReviews(snapshot: ProductSnapshot, deep?: DeepAugmentation): ReviewAssessment[] {
+  const textBroken = textExtractionFailed(snapshot);
   const byReview = new Map<string, ReviewAssessment>(
     snapshot.reviews.map((r) => [r.id, { reviewId: r.id, suspicion: 0, reasons: [] }]),
   );
 
   for (const signal of REVIEW_SIGNALS) {
+    if (textBroken && TEXT_DEPENDENT_SIGNALS.has(signal.id)) continue;
     for (const [reviewId, { delta, reason }] of signal.evaluate(snapshot)) {
       const assessment = byReview.get(reviewId);
       if (!assessment) continue;
@@ -183,8 +213,9 @@ function summariseReviewSignals(
   const sampleSize = snapshot.reviews.length;
   const confidence = sampleConfidenceFrom(sampleSize);
 
+  const textBroken = textExtractionFailed(snapshot);
+
   return REVIEW_SIGNALS.map((signal) => {
-    const flagged = signal.evaluate(snapshot);
     const base = { id: signal.id, label: signal.label, weight: 1, confidence };
 
     if (sampleSize === 0) {
@@ -196,6 +227,20 @@ function summariseReviewSignals(
         detail: 'No reviews were readable on this page.',
       };
     }
+
+    // Say we couldn't read the text, rather than reporting its absence as a
+    // property of the reviews themselves.
+    if (textBroken && TEXT_DEPENDENT_SIGNALS.has(signal.id)) {
+      return {
+        ...base,
+        status: 'insufficient-data' as const,
+        score: 0.5,
+        confidence: 0,
+        detail: "Winnow couldn't read the review text on this page, so this check was skipped.",
+      };
+    }
+
+    const flagged = signal.evaluate(snapshot);
 
     const share = flagged.size / sampleSize;
     const score = clamp(1 - share);
@@ -287,7 +332,18 @@ function describeBasis(
     );
   }
 
-  return `Based on ${parts.join(' and ')}. This is an estimate, not proof.`;
+  const caveats: string[] = [];
+  if (textExtractionFailed(snapshot)) {
+    caveats.push(
+      "Winnow couldn't read the review text on this page, so the language checks were skipped and this grade rests on less evidence than usual",
+    );
+  }
+  if (!snapshot.histogram) {
+    caveats.push("the rating breakdown wasn't readable either");
+  }
+
+  const caveat = caveats.length > 0 ? ` Note: ${caveats.join(', and ')}.` : '';
+  return `Based on ${parts.join(' and ')}. This is an estimate, not proof.${caveat}`;
 }
 
 function round1(value: number): number {
