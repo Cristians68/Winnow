@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Winnow — What the reviews actually say</title>
+    <meta
+      name="description"
+      content="Amazon review-integrity analysis computed locally in your browser. See the adjusted rating a product would have without its manipulated reviews. No affiliate links, ever."
+    />
+    <meta name="color-scheme" content="light dark" />
+
+    <meta property="og:title" content="Winnow — What the reviews actually say" />
+    <meta property="og:description" content="Amazon review-integrity analysis, computed locally in your browser. No affiliate links, ever." />
+    <meta property="og:type" content="website" />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23125c33'/%3E%3Ctext x='50' y='50' font-family='system-ui,sans-serif' font-size='62' font-weight='700' fill='%23e3f5ea' text-anchor='middle' dominant-baseline='central'%3EW%3C/text%3E%3C/svg%3E" />
+
+    <style>
+      :root {
+        --bg: #ffffff;
+        --surface: #f5f6f8;
+        --text: #16181d;
+        --muted: #4a525e;
+        --line: #e2e6ec;
+        --accent: #125c33;
+        --accent-soft: #e3f5ea;
+        --link: #0a4f9c;
+        --bad: #8c1f19;
+        --bad-soft: #fdeaea;
+        --radius: 14px;
+        --measure: 68ch;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1115;
+          --surface: #16181d;
+          --text: #e9ebee;
+          --muted: #a8b0ba;
+          --line: #2a2f38;
+          --accent: #74e3a2;
+          --accent-soft: #0e2f1c;
+          --link: #7cb8f5;
+          --bad: #f79a94;
+          --bad-soft: #371411;
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        * { animation: none !important; transition: none !important; }
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        font-size: 17px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .skip {
+        position: absolute; left: -9999px; top: 0;
+        background: var(--accent); color: var(--bg);
+        padding: 10px 16px; border-radius: 0 0 8px 0; z-index: 10;
+      }
+      .skip:focus { left: 0; }
+
+      a { color: var(--link); }
+      a:focus-visible, button:focus-visible {
+        outline: 3px solid var(--link); outline-offset: 3px; border-radius: 4px;
+      }
+
+      .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+      .prose { max-width: var(--measure); }
+
+      header.site {
+        border-bottom: 1px solid var(--line);
+        padding: 18px 0;
+      }
+      header.site .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+      .mark {
+        width: 30px; height: 30px; border-radius: 8px;
+        background: var(--accent-soft); color: var(--accent);
+        display: grid; place-items: center; font-weight: 700; font-size: 17px;
+      }
+      nav.site a { margin-left: 22px; color: var(--muted); text-decoration: none; font-size: 15px; }
+      nav.site a:hover { color: var(--text); text-decoration: underline; }
+      @media (max-width: 620px) { nav.site { display: none; } }
+
+      .hero { padding: 84px 0 64px; }
+      h1 {
+        font-size: clamp(34px, 6vw, 54px);
+        line-height: 1.08; letter-spacing: -.025em;
+        margin: 0 0 20px; max-width: 20ch;
+      }
+      .lede { font-size: clamp(18px, 2.2vw, 21px); color: var(--muted); max-width: 56ch; margin: 0 0 32px; }
+
+      .cta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+      .btn {
+        display: inline-block; padding: 13px 22px; border-radius: 10px;
+        font-weight: 600; font-size: 16px; text-decoration: none;
+        min-height: 44px; border: 1px solid transparent;
+      }
+      .btn-primary { background: var(--accent); color: var(--bg); }
+      .btn-primary:hover { opacity: .9; }
+      .btn-secondary { border-color: var(--line); color: var(--text); }
+      .btn-secondary:hover { border-color: var(--link); }
+      .cta-note { font-size: 14px; color: var(--muted); }
+
+      section { padding: 56px 0; border-top: 1px solid var(--line); }
+      h2 { font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -.02em; margin: 0 0 14px; }
+      h3 { font-size: 18px; margin: 0 0 6px; }
+      p { margin: 0 0 18px; }
+
+      .pledge {
+        background: var(--accent-soft); color: var(--accent);
+        border-radius: var(--radius); padding: 26px 28px; margin: 26px 0 0;
+      }
+      .pledge p { margin: 0; color: inherit; }
+      .pledge strong { font-size: 21px; display: block; margin-bottom: 8px; }
+
+      .grid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-top: 30px; }
+      .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+      .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+      dl.faq { margin: 26px 0 0; }
+      dl.faq dt { font-weight: 700; margin-top: 26px; }
+      dl.faq dd { margin: 6px 0 0; color: var(--muted); }
+
+      table { border-collapse: collapse; width: 100%; margin-top: 22px; font-size: 15px; }
+      .scroller { overflow-x: auto; }
+      th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+
+      .callout {
+        border-left: 3px solid var(--bad); background: var(--bad-soft);
+        padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 26px 0 0;
+      }
+      .callout p { margin: 0; }
+
+      footer.site { border-top: 1px solid var(--line); padding: 40px 0 60px; color: var(--muted); font-size: 15px; }
+      footer.site a { color: var(--link); }
+      .foot-links { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 14px; }
+    </style>
+  </head>
+
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site">
+      <div class="wrap">
+        <div class="brand"><span class="mark" aria-hidden="true">W</span> Winnow</div>
+        <nav class="site" aria-label="Primary">
+          <a href="#how">How it works</a>
+          <a href="#money">How we make money</a>
+          <a href="#privacy">Privacy</a>
+          <a href="https://github.com/Cristians68/Winnow">Source</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="hero wrap">
+        <h1>What the reviews actually say.</h1>
+        <p class="lede">
+          Winnow analyses the reviews on an Amazon product page and shows you the rating that
+          product would have if its manipulated reviews were removed — along with exactly why.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/Cristians68/Winnow">Get the extension</a>
+          <a class="btn btn-secondary" href="#how">See how it works</a>
+        </div>
+        <p class="cta-note" style="margin-top:18px">
+          Free. Runs on your device. No account, no tracking, no affiliate links.
+        </p>
+      </div>
+
+      <section id="why">
+        <div class="wrap prose">
+          <h2>Why this exists</h2>
+          <p>
+            Mozilla shut Fakespot down in July 2025, and ReviewMeta went dark in early 2026. Ten
+            million people lost the tools they used to sanity-check reviews, and nothing credible
+            replaced them.
+          </p>
+          <p>
+            Meanwhile the problem got worse. AI-generated fake reviews nearly doubled as a share of
+            fake reviews in a single year, and 74% of them are five stars — against 59% of genuine
+            reviews.
+          </p>
+          <div class="callout">
+            <p>
+              The replacements have their own problems. The most-recommended Fakespot alternative
+              ships an <strong>undisclosed Amazon affiliate tag</strong> on its "Buy Now" button. And
+              Honey lost roughly eight million users after being caught overwriting creators'
+              affiliate links. A tool that earns a commission when you buy cannot credibly tell you
+              not to buy.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="how">
+        <div class="wrap">
+          <div class="prose">
+            <h2>How it works</h2>
+            <p>
+              Winnow scores every review it can see on the page, then recomputes the product's
+              rating with the suspicious ones down-weighted. Nothing is hidden behind a number —
+              every signal shows its reasoning.
+            </p>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <h3>Rating distribution</h3>
+              <p>
+                Genuine products keep a one-star tail from damage and defects. Campaigns can add
+                five-star reviews but cannot remove organic one-star ones, so a perfect spread with
+                no negative tail is a tell.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Review language</h3>
+              <p>
+                Disclosed incentives, template-farm boilerplate, and the uniform rhythm and missing
+                specifics that mark generated text.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Duplicate text</h3>
+              <p>
+                Review farms paraphrase from templates. Character-level comparison catches what
+                word matching misses.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Review timing</h3>
+              <p>
+                Paid campaigns land in waves. Organic reviews trickle in with sales.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Substance and response</h3>
+              <p>
+                Five-star ratings carrying six generic words. Featured reviews months old that
+                nobody ever found helpful.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Cross-product patterns</h3>
+              <p>
+                Optional deeper analysis spots phrasing reused across unrelated products, reviewer
+                accounts that move together, and listings that swapped product while keeping their
+                reviews.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="money">
+        <div class="wrap prose">
+          <h2>How we make money</h2>
+          <div class="pledge">
+            <p><strong>You pay us. Nobody else does.</strong></p>
+            <p>
+              No affiliate links. No referral tags. No sponsored placements. No merchant
+              relationships. Not as current practice — as a binding commitment in our privacy policy.
+            </p>
+          </div>
+          <p style="margin-top:26px">
+            The scoring engine is open source specifically so you can verify that no merchant is
+            paying for a better grade. You don't have to take our word for it, which is the point.
+          </p>
+        </div>
+      </section>
+
+      <section id="privacy">
+        <div class="wrap prose">
+          <h2>What leaves your browser</h2>
+          <p>
+            Grading happens entirely on your device and makes <strong>no network requests at
+            all</strong>. One optional feature sends data about the product listing — never about
+            you — and only when you click a button to ask for it.
+          </p>
+          <div class="scroller">
+            <table>
+              <caption class="sr-only">What Winnow sends and never sends</caption>
+              <thead>
+                <tr><th scope="col">Sent, only on request</th><th scope="col">Never sent</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>The product's public Amazon ID, its rating, and the reviews already shown on the page</td>
+                  <td>Any identifier for you — no account, user ID, device ID or cookie</td>
+                </tr>
+                <tr>
+                  <td>A hash of the product title, never the title</td>
+                  <td>Your Amazon session, orders, addresses or payment details</td>
+                </tr>
+                <tr>
+                  <td>Amazon's public reviewer IDs, hashed before storage</td>
+                  <td>Your browsing history or any page you didn't ask about</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin-top:24px">
+            The server <strong>rejects</strong> any request carrying a field it doesn't expect,
+            rather than ignoring it. If a future version were changed to send something extra, the
+            request would fail rather than quietly succeed.
+          </p>
+          <p>
+            Winnow also never crawls Amazon using your session. Automated scraping through a
+            logged-in session can get <em>your</em> Amazon account suspended, so Winnow reads only
+            what your browser already loaded. That costs some depth, and it's a trade we make on
+            purpose.
+          </p>
+        </div>
+      </section>
+
+      <section id="limits">
+        <div class="wrap prose">
+          <h2>What Winnow doesn't claim</h2>
+          <p>
+            Every result is an <strong>estimate, not proof</strong>. Winnow cannot know that any
+            individual review is fake — it identifies patterns that manipulated reviews tend to
+            produce, and it tells you what each judgement rested on.
+          </p>
+          <p>
+            Usually only 8–13 reviews are visible on a product page, and those are <em>featured</em>
+            reviews — a biased sample. Winnow shrinks its adjustment to account for that, and
+            declines to state an adjusted rating at all when too little of the sample looks
+            trustworthy. "Couldn't read this page" is never a verdict about the product.
+          </p>
+        </div>
+      </section>
+
+      <section id="faq">
+        <div class="wrap prose">
+          <h2>Questions</h2>
+          <dl class="faq">
+            <dt>Why an extension instead of a website?</dt>
+            <dd>
+              Because a website can't do this any more. Since May 2026, Amazon returns "Page Not
+              Found" to any server requesting review pages without session cookies, and full review
+              text left the public HTML. Every tool that analyses from a server is now working blind
+              — which is why they all return roughly the same score for everything. An extension
+              reads the page you're already looking at.
+            </dd>
+
+            <dt>Does it slow down Amazon?</dt>
+            <dd>
+              No. The grade is computed from the page your browser already rendered, in about a
+              millisecond, with no extra requests.
+            </dd>
+
+            <dt>Will this get my Amazon account banned?</dt>
+            <dd>
+              No. Winnow makes no automated requests to Amazon at all. It only reads what your
+              browser already loaded for a page you chose to visit.
+            </dd>
+
+            <dt>What if it says a good product is bad?</dt>
+            <dd>
+              Open the breakdown and check the reasoning — every flag shows why it fired. If it
+              looks wrong, it may well be. Amazon changes its page markup often, and a parsing
+              failure can produce a bad grade. Winnow tries to detect that and say so, and we'd
+              rather hear about it: report it on GitHub.
+            </dd>
+
+            <dt>Which sites does it work on?</dt>
+            <dd>
+              Amazon storefronts only, in fifteen countries. Doing one marketplace properly beats
+              doing several badly, which is the failing of every current alternative.
+            </dd>
+          </dl>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <div class="foot-links">
+          <a href="https://github.com/Cristians68/Winnow">Source code</a>
+          <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">Privacy policy</a>
+          <a href="https://github.com/Cristians68/Winnow/blob/main/SECURITY.md">Security</a>
+          <a href="https://github.com/Cristians68/Winnow#methodology">Methodology</a>
+          <a href="https://github.com/Cristians68/Winnow/issues">Report an issue</a>
+        </div>
+        <p style="margin:0">
+          Winnow is an independent project and is not affiliated with, endorsed by, or connected to
+          Amazon. Amazon and the Amazon logo are trademarks of Amazon.com, Inc. or its affiliates.
+        </p>
+      </div>
+    </footer>
+
+    <style>
+      .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+      }
+    </style>
+  </body>
+</html>
