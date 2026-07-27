@@ -88,9 +88,47 @@
           </div>
           <input type="checkbox" id="alwaysExpand" />
         </div>
+        <div class="setting">
+          <div>
+            <div class="label"><label for="theme">Appearance</label></div>
+            <div class="help">
+              How the panel looks on Amazon. "Match system" follows your OS setting.
+            </div>
+          </div>
+          <select
+            id="theme"
+            style="font: inherit; padding: 7px 10px; border-radius: 7px; border: 1px solid #ccd2db; min-height: 34px"
+          >
+            <option value="system">Match system</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
         <div class="setting" style="border-top: 1px solid #f0f1f4">
           <div class="help">Changes save immediately and apply to open tabs.</div>
           <span class="saved" id="saved">Saved</span>
+        </div>
+      </section>
+
+      <h2>Developer</h2>
+      <section>
+        <div class="setting" style="display: block">
+          <div>
+            <label class="label" for="devApiEndpoint">Local deep-analysis server</label>
+            <div class="help" style="margin-bottom: 10px">
+              Send deep-analysis requests to a server running on this machine instead of the live
+              one. Only <code>localhost</code> and <code>127.0.0.1</code> are accepted — a field that
+              took any address would be a way to send page data anywhere, which has no place in a
+              privacy tool. Leave blank for normal use.
+            </div>
+            <input
+              type="url"
+              id="devApiEndpoint"
+              placeholder="http://localhost:8787/v1/analyse"
+              style="width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid #ccd2db; font: inherit"
+            />
+            <p class="help" id="devStatus" style="margin: 8px 0 0"></p>
+          </div>
         </div>
       </section>
 

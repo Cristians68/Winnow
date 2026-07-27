@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Winnow — Review Integrity",
+  "name": "Winnow — Amazon Review Integrity",
   "version": "0.1.0",
   "description": "What the reviews actually say. Analyses Amazon review integrity locally, in your browser. No affiliate links, ever.",
   "permissions": ["storage"],
+  "optional_host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
   "host_permissions": [
     "https://api.winnow.app/*",
     "*://*.amazon.com/*",

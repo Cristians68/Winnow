@@ -88,6 +88,8 @@ CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_hash);
 CREATE TABLE IF NOT EXISTS shingles (
   shingle_hash   TEXT NOT NULL,
   asin           TEXT NOT NULL,
+  sightings      INTEGER NOT NULL DEFAULT 1,
+  last_counted   TEXT,
   PRIMARY KEY (shingle_hash, asin)
 );
 CREATE INDEX IF NOT EXISTS idx_shingles_hash ON shingles(shingle_hash);
@@ -98,6 +100,12 @@ CREATE TABLE IF NOT EXISTS cache (
   computed_at    TEXT NOT NULL
 );
 `;
+
+/**
+ * Separate days a phrase must be seen on a product before it counts toward
+ * cross-product template detection. See recordShingles().
+ */
+export const MIN_CORROBORATION = 2;
 
 export function sha(value: string): string {
   return createHash('sha256').update(value).digest('hex').slice(0, 32);
@@ -203,21 +211,48 @@ export class Corpus {
 
   // --- shingles (cross-product template reuse) -----------------------------
 
-  recordShingles(asin: string, shingleHashes: Iterable<string>): void {
-    const stmt = this.db.prepare(`INSERT OR IGNORE INTO shingles (shingle_hash, asin) VALUES (?, ?)`);
-    for (const hash of shingleHashes) stmt.run(hash, asin);
+  /**
+   * A phrase must be independently corroborated before it can influence any
+   * other product's score.
+   *
+   * Anti-poisoning measure. Without it, one attacker could submit fabricated
+   * reviews and make a rival's genuine text look like a farm template. We
+   * deliberately cannot identify clients — that is the privacy guarantee — so
+   * "independent" is approximated by *time*: a given phrase/product pair counts
+   * at most once per calendar day, so manufacturing corroboration requires
+   * sustained submissions across days rather than a single burst.
+   *
+   * This raises the cost of poisoning substantially. It does not eliminate it;
+   * see SECURITY.md.
+   */
+  recordShingles(asin: string, shingleHashes: Iterable<string>, today = new Date().toISOString().slice(0, 10)): void {
+    const stmt = this.db.prepare(
+      `INSERT INTO shingles (shingle_hash, asin, sightings, last_counted)
+       VALUES (?, ?, 1, ?)
+       ON CONFLICT(shingle_hash, asin) DO UPDATE SET
+         sightings    = sightings + CASE WHEN IFNULL(last_counted,'') = excluded.last_counted THEN 0 ELSE 1 END,
+         last_counted = excluded.last_counted`,
+    );
+    for (const hash of shingleHashes) stmt.run(hash, asin, today);
   }
 
-  /** How many *other* products each of these shingles has been seen on. */
+  /**
+   * How many *other* products each phrase has been corroborated on.
+   *
+   * Only pairs seen on at least MIN_CORROBORATION separate days count, so a
+   * single submission can never by itself brand another product's text as
+   * templated.
+   */
   shingleSpread(shingleHashes: string[], excludeAsin: string): Map<string, number> {
     const spread = new Map<string, number>();
     if (shingleHashes.length === 0) return spread;
 
     const stmt = this.db.prepare(
-      `SELECT COUNT(DISTINCT asin) AS n FROM shingles WHERE shingle_hash = ? AND asin != ?`,
+      `SELECT COUNT(DISTINCT asin) AS n FROM shingles
+       WHERE shingle_hash = ? AND asin != ? AND sightings >= ?`,
     );
     for (const hash of shingleHashes) {
-      const row = stmt.get(hash, excludeAsin) as unknown as { n: number } | undefined;
+      const row = stmt.get(hash, excludeAsin, MIN_CORROBORATION) as unknown as { n: number } | undefined;
       spread.set(hash, row?.n ?? 0);
     }
     return spread;

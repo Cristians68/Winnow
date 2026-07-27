@@ -38,6 +38,7 @@ function render(): void {
   if (!currentAnalysis || !settings.enabled) return;
   mountPanel(currentAnalysis, {
     expanded: settings.alwaysExpand,
+    theme: settings.theme,
     onDeepAnalysis: runDeepAnalysis,
     deepState,
     deepError,

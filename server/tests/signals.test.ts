@@ -28,10 +28,16 @@ describe('cross-product template detection', () => {
   const TEMPLATE =
     'this product arrived quickly and the build quality is absolutely outstanding for the price i paid overall';
 
+  /** Seed a product across two days, so the phrase clears corroboration. */
+  const seedCorroborated = (asin: string, text: string) => {
+    corpus.recordShingles(asin, shingleHashes(text), '2026-07-01');
+    corpus.recordShingles(asin, shingleHashes(text), '2026-07-02');
+  };
+
   it('flags phrasing that has appeared on several other products', () => {
     // Seed the corpus: the same template used across four unrelated products.
     for (const asin of ['B00000001', 'B00000002', 'B00000003', 'B00000004']) {
-      contributeShingles(asin, [review({ id: 'x', text: TEMPLATE })], corpus);
+      seedCorroborated(asin, TEMPLATE);
     }
 
     const result = analyseText('B00000009', [review({ id: 'target', text: TEMPLATE })], corpus);
@@ -40,9 +46,36 @@ describe('cross-product template detection', () => {
     expect(result.findings[0]!.reason).toMatch(/other unrelated products/);
   });
 
+  // Anti-poisoning: a burst of submissions on one day must not be enough to
+  // brand another product's text as templated.
+  it('ignores phrases seen only within a single day, however many products', () => {
+    for (const asin of ['B00000101', 'B00000102', 'B00000103', 'B00000104', 'B00000105']) {
+      corpus.recordShingles(asin, shingleHashes(TEMPLATE), '2026-07-01');
+    }
+    const result = analyseText('B00000199', [review({ id: 'target', text: TEMPLATE })], corpus);
+    expect(result.templatedReviewCount).toBe(0);
+  });
+
+  it('counts a phrase once corroborated across separate days', () => {
+    for (const asin of ['B00000201', 'B00000202', 'B00000203', 'B00000204']) {
+      corpus.recordShingles(asin, shingleHashes(TEMPLATE), '2026-07-01');
+      corpus.recordShingles(asin, shingleHashes(TEMPLATE), '2026-07-05');
+    }
+    const result = analyseText('B00000299', [review({ id: 'target', text: TEMPLATE })], corpus);
+    expect(result.templatedReviewCount).toBe(1);
+  });
+
+  it('does not let repeat submissions on the same day manufacture corroboration', () => {
+    for (let i = 0; i < 10; i++) {
+      corpus.recordShingles('B00000301', shingleHashes(TEMPLATE), '2026-07-01');
+    }
+    const spread = corpus.shingleSpread(shingleHashes(TEMPLATE), 'B00000399');
+    expect([...spread.values()].every((n) => n === 0)).toBe(true);
+  });
+
   it('leaves genuinely original text alone', () => {
     for (const asin of ['B00000001', 'B00000002', 'B00000003', 'B00000004']) {
-      contributeShingles(asin, [review({ id: 'x', text: TEMPLATE })], corpus);
+      seedCorroborated(asin, TEMPLATE);
     }
     const original = review({
       id: 'target',

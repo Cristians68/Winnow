@@ -41,6 +41,14 @@ if (strayHosts.length > 0) {
   problems.push(`unexpected host_permissions: ${strayHosts.join(', ')}`);
 }
 
+// Optional hosts exist only for the local dev server and must stay loopback.
+const strayOptional = (manifest.optional_host_permissions ?? []).filter(
+  (h) => !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/\*$/.test(h),
+);
+if (strayOptional.length > 0) {
+  problems.push(`optional_host_permissions must be loopback only, found: ${strayOptional.join(', ')}`);
+}
+
 for (const required of ['dist/manifest.json', 'dist/content/index.js', 'dist/popup/ui/popup.html', 'dist/options/ui/options.html', 'dist/icons/icon128.png']) {
   if (!existsSync(required)) problems.push(`missing ${required}`);
 }

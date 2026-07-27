@@ -11,7 +11,7 @@
  * Accessibility Act therefore requires, and which US ADA case law converges on.
  */
 import { describe, it, expect } from 'vitest';
-import { renderPanel, STYLES } from '../src/content/ui.js';
+import { renderPanel, STYLES, LIGHT_TOKENS, DARK_TOKENS } from '../src/content/ui.js';
 import type { Analysis } from '../src/core/types.js';
 
 // --- contrast maths (WCAG 2.x relative luminance) --------------------------
@@ -41,39 +41,60 @@ export function contrastRatio(foreground: string, background: string): number {
   return (light + 0.05) / (dark + 0.05);
 }
 
-/** Pull every rule that sets both a hex background and a hex colour. */
-function colourPairs(css: string): Array<{ selector: string; fg: string; bg: string }> {
-  const pairs: Array<{ selector: string; fg: string; bg: string }> = [];
-  const ruleRe = /([^{}]+)\{([^}]*)\}/g;
-
-  let match: RegExpExecArray | null;
-  while ((match = ruleRe.exec(css)) !== null) {
-    const selector = match[1]!.trim().replace(/\s+/g, ' ');
-    const body = match[2]!;
-    if (selector.startsWith('@') || selector.includes('keyframes')) continue;
-
-    const bg = body.match(/background(?:-color)?:\s*(#[0-9a-f]{3,6})\b/i)?.[1];
-    const fg = body.match(/(?:^|[;\s])color:\s*(#[0-9a-f]{3,6})\b/i)?.[1];
-    if (bg && fg) pairs.push({ selector, fg, bg });
+/** Parse a `--name: #value;` token block into a lookup. */
+function tokens(block: string): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const [, name, value] of block.matchAll(/(--[\w-]+):\s*(#[0-9a-f]{3,6})\b/gi)) {
+    map[name!] = value!;
   }
-  return pairs;
+  return map;
 }
 
-describe('colour contrast (WCAG 2.2 AA)', () => {
-  const pairs = colourPairs(STYLES);
+/**
+ * The semantic foreground/background pairs the panel actually renders.
+ * Both themes must satisfy every one of them.
+ */
+const PAIRS: Array<[fg: string, bg: string, label: string]> = [
+  ['--text', '--bg', 'body text'],
+  ['--muted', '--bg', 'secondary text'],
+  ['--muted-strong', '--surface', 'basis line'],
+  ['--link', '--bg', 'links and toggle'],
+  ['--good-fg', '--good-bg', 'clear pill / grade A'],
+  ['--mixed-fg', '--mixed-bg', 'caution pill / grade C'],
+  ['--bad-fg', '--bad-bg', 'flagged pill / grade F'],
+  ['--none-fg', '--none-bg', 'no-data pill'],
+  ['--good-fg', '--foot-bg', 'no-affiliate pledge'],
+  ['--link', '--foot-bg', 'footer link'],
+  ['--muted', '--foot-bg', 'footer text'],
+  ['--strike', '--bg', 'struck-through original rating'],
+];
 
-  it('finds the panel colour pairs to check', () => {
-    // Guards against the parser silently matching nothing and vacuously passing.
-    expect(pairs.length).toBeGreaterThan(15);
+describe('colour contrast (WCAG 2.2 AA)', () => {
+  const themes = { light: tokens(LIGHT_TOKENS), dark: tokens(DARK_TOKENS) };
+
+  it('defines the same tokens in both themes, so neither can silently drift', () => {
+    expect(Object.keys(themes.light).sort()).toEqual(Object.keys(themes.dark).sort());
+    expect(Object.keys(themes.light).length).toBeGreaterThan(15);
   });
 
-  it('every foreground/background pair meets 4.5:1', () => {
-    const failures = pairs
-      .map((pair) => ({ ...pair, ratio: contrastRatio(pair.fg, pair.bg) }))
-      .filter((pair) => pair.ratio < 4.5)
-      .map((p) => `${p.selector}: ${p.fg} on ${p.bg} = ${p.ratio.toFixed(2)}:1`);
+  for (const [name, theme] of Object.entries(themes)) {
+    it(`every ${name} pair meets 4.5:1`, () => {
+      const failures = PAIRS.map(([fg, bg, label]) => {
+        const fgHex = theme[fg]!;
+        const bgHex = theme[bg]!;
+        return { label, ratio: contrastRatio(fgHex, bgHex), fgHex, bgHex };
+      })
+        .filter((r) => r.ratio < 4.5)
+        .map((r) => `${r.label}: ${r.fgHex} on ${r.bgHex} = ${r.ratio.toFixed(2)}:1`);
 
-    expect(failures).toEqual([]);
+      expect(failures).toEqual([]);
+    });
+  }
+
+  it('white button text clears 4.5:1 on the deep-analysis button in both themes', () => {
+    for (const theme of Object.values(themes)) {
+      expect(contrastRatio('#ffffff', theme['--deep-bg']!)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it('computes known ratios correctly', () => {
@@ -189,6 +210,18 @@ describe('panel structure', () => {
       expect(link.getAttribute('rel')).toMatch(/noopener/);
       expect(link.getAttribute('rel')).toMatch(/noreferrer/);
     }
+  });
+
+  it('makes the hidden attribute win over the display value', () => {
+    // Regression: `.signals { display: grid }` defeated [hidden], so the
+    // breakdown was permanently visible and the disclosure button did nothing.
+    expect(STYLES).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important/);
+  });
+
+  it('applies an explicit theme class when the user overrides the system setting', () => {
+    expect(shadowOf(analysis(), { theme: 'dark' }).querySelector('.card')!.className).toContain('theme-dark');
+    expect(shadowOf(analysis(), { theme: 'light' }).querySelector('.card')!.className).toContain('theme-light');
+    expect(shadowOf(analysis(), { theme: 'system' }).querySelector('.card')!.className).not.toMatch(/theme-/);
   });
 
   it('honours reduced-motion and keeps focus visible', () => {

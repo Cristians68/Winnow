@@ -46,19 +46,80 @@ const STATUS_LABEL: Record<SignalResult['status'], string> = {
  * Colour tokens are chosen for contrast, not just aesthetics. Foreground values
  * clear 4.5:1 against their paired surface in both themes.
  */
+export const LIGHT_TOKENS = `
+  --bg: #ffffff;
+  --border: #d3d8e0;
+  --text: #16181d;
+  --muted: #545c68;
+  --muted-strong: #4a525e;
+  --surface: #f5f6f8;
+  --foot-bg: #fafbfc;
+  --foot-line: #e8ebf0;
+  --link: #0a4f9c;
+  --focus: #0a5cb8;
+  --good-bg: #e3f5ea;  --good-fg: #125c33;
+  --mixed-bg: #fdf3e3; --mixed-fg: #7a4e00;
+  --bad-bg: #fdeaea;   --bad-fg: #8c1f19;
+  --none-bg: #eef0f3;  --none-fg: #4a525e;
+  --btn-border: #ccd2db;
+  --btn-hover: #f2f5fa;
+  --deep-bg: #12395f;
+  --deep-hover: #0d2b49;
+  --shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.05);
+  --strike: #6b7280;
+`;
+
+export const DARK_TOKENS = `
+  --bg: #16181d;
+  --border: #333944;
+  --text: #e9ebee;
+  --muted: #a8b0ba;
+  --muted-strong: #a8b0ba;
+  --surface: #1e2128;
+  --foot-bg: #131519;
+  --foot-line: #333944;
+  --link: #7cb8f5;
+  --focus: #7cb8f5;
+  --good-bg: #0e2f1c;  --good-fg: #74e3a2;
+  --mixed-bg: #302408; --mixed-fg: #f2c76a;
+  --bad-bg: #371411;   --bad-fg: #f79a94;
+  --none-bg: #232730;  --none-fg: #a8b0ba;
+  --btn-border: #3d4450;
+  --btn-hover: #232730;
+  --deep-bg: #2a6db5;
+  --deep-hover: #3480d0;
+  --shadow: none;
+  --strike: #949ca6;
+`;
+
+/**
+ * Themed with custom properties so an explicit user choice can override the
+ * system preference. The token sets are interpolated into both the media query
+ * and the explicit `.theme-dark` selector, so the two can never drift apart.
+ */
 export const STYLES = `
 :host { all: initial; display: block; }
 * { box-sizing: border-box; }
 
+.card { ${LIGHT_TOKENS} }
+@media (prefers-color-scheme: dark) { .card:not(.theme-light) { ${DARK_TOKENS} } }
+.card.theme-dark { ${DARK_TOKENS} }
+.card.theme-light { ${LIGHT_TOKENS} }
+
+/* The hidden attribute only sets display:none via the UA stylesheet, so any
+   author display value silently defeats it. This kept the breakdown list
+   permanently visible and made the disclosure button appear to do nothing. */
+[hidden] { display: none !important; }
+
 .card {
   font-family: "Amazon Ember", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #16181d;
-  background: #fff;
-  border: 1px solid #d3d8e0;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 18px 20px;
   margin: 16px 0;
-  box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.05);
+  box-shadow: var(--shadow);
   line-height: 1.5;
   animation: winnow-in .28s cubic-bezier(.2,.7,.3,1) both;
 }
@@ -70,24 +131,24 @@ export const STYLES = `
   display: grid; place-items: center;
   font-size: 29px; font-weight: 700; letter-spacing: -.02em;
 }
-.grade.good    { background: #e3f5ea; color: #125c33; }
-.grade.mixed   { background: #fdf3e3; color: #7a4e00; }
-.grade.bad     { background: #fdeaea; color: #8c1f19; }
-.grade.unknown { background: #eef0f3; color: #4a525e; font-size: 23px; }
+.grade.good    { background: var(--good-bg);  color: var(--good-fg); }
+.grade.mixed   { background: var(--mixed-bg); color: var(--mixed-fg); }
+.grade.bad     { background: var(--bad-bg);   color: var(--bad-fg); }
+.grade.unknown { background: var(--none-bg);  color: var(--none-fg); font-size: 23px; }
 
 .headline { min-width: 0; }
 .headline h2 { margin: 0; font-size: 16.5px; font-weight: 700; letter-spacing: -.005em; }
-.headline p { margin: 2px 0 0; font-size: 13px; color: #545c68; }
+.headline p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 
 .ratings { display: flex; gap: 22px; margin: 16px 0 2px; flex-wrap: wrap; }
-.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #5b6472; }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .stat .value { font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
-.stat .value.muted { color: #545c68; font-weight: 600; font-size: 15px; }
-.stat .value del { color: #767d88; font-weight: 500; font-size: 14px; margin-left: 7px; }
+.stat .value.muted { color: var(--muted); font-weight: 600; font-size: 15px; }
+.stat .value del { color: var(--strike); font-weight: 500; font-size: 14px; margin-left: 7px; }
 
 .basis {
-  font-size: 12.5px; color: #4a525e;
-  background: #f5f6f8; border-radius: 9px;
+  font-size: 12.5px; color: var(--muted-strong);
+  background: var(--surface); border-radius: 9px;
   padding: 9px 11px; margin: 13px 0 0;
 }
 
@@ -98,13 +159,13 @@ button {
   border-radius: 8px; cursor: pointer;
   transition: background-color .15s ease, border-color .15s ease;
 }
-button:focus-visible { outline: 3px solid #0a5cb8; outline-offset: 2px; }
+button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
-.toggle { background: none; border: 1px solid #ccd2db; color: #0a4f9c; }
-.toggle:hover { background: #f2f5fa; border-color: #0a5cb8; }
+.toggle { background: none; border: 1px solid var(--btn-border); color: var(--link); }
+.toggle:hover { background: var(--btn-hover); border-color: var(--focus); }
 
-.deep { background: #12395f; border: 1px solid #12395f; color: #fff; }
-.deep:hover:not(:disabled) { background: #0d2b49; }
+.deep { background: var(--deep-bg); border: 1px solid var(--deep-bg); color: #fff; }
+.deep:hover:not(:disabled) { background: var(--deep-hover); }
 .deep:disabled { opacity: .65; cursor: progress; }
 
 .spinner {
@@ -115,8 +176,8 @@ button:focus-visible { outline: 3px solid #0a5cb8; outline-offset: 2px; }
 }
 @keyframes winnow-spin { to { transform: rotate(360deg); } }
 
-.note { font-size: 12px; color: #545c68; margin: 9px 0 0; }
-.note.error { color: #8c1f19; }
+.note { font-size: 12px; color: var(--muted); margin: 9px 0 0; }
+.note.error { color: var(--bad-fg); }
 
 .signals { margin: 13px 0 0; padding: 0; list-style: none; display: grid; gap: 9px; }
 .signal { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
@@ -124,53 +185,29 @@ button:focus-visible { outline: 3px solid #0a5cb8; outline-offset: 2px; }
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   padding: 3px 7px; border-radius: 999px; white-space: nowrap; margin-top: 3px;
 }
-.pill.pass { background: #e3f5ea; color: #125c33; }
-.pill.warn { background: #fdf3e3; color: #7a4e00; }
-.pill.fail { background: #fdeaea; color: #8c1f19; }
-.pill.insufficient-data { background: #eef0f3; color: #4a525e; }
+.pill.pass { background: var(--good-bg);  color: var(--good-fg); }
+.pill.warn { background: var(--mixed-bg); color: var(--mixed-fg); }
+.pill.fail { background: var(--bad-bg);   color: var(--bad-fg); }
+.pill.insufficient-data { background: var(--none-bg); color: var(--none-fg); }
 .signal .name { font-size: 13px; font-weight: 600; }
-.signal .detail { font-size: 12.5px; color: #454d59; margin: 1px 0 0; }
-.signal .evidence { margin: 5px 0 0; padding-left: 17px; font-size: 12px; color: #545c68; }
+.signal .detail { font-size: 12.5px; color: var(--muted-strong); margin: 1px 0 0; }
+.signal .evidence { margin: 5px 0 0; padding-left: 17px; font-size: 12px; color: var(--muted); }
 .signal .evidence li { margin: 2px 0; }
 
 .foot {
   margin: 15px -20px -18px; padding: 11px 20px;
-  border-top: 1px solid #e8ebf0; background: #fafbfc;
+  border-top: 1px solid var(--foot-line); background: var(--foot-bg);
   border-radius: 0 0 14px 14px;
-  font-size: 11.5px; color: #545c68;
+  font-size: 11.5px; color: var(--muted);
   display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
 }
-.foot a { color: #0a4f9c; }
-.foot a:focus-visible { outline: 3px solid #0a5cb8; outline-offset: 2px; border-radius: 3px; }
-.pledge { font-weight: 600; color: #125c33; }
+.foot a { color: var(--link); }
+.foot a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+.pledge { font-weight: 600; color: var(--good-fg); }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .card { background: #16181d; border-color: #333944; color: #e9ebee; box-shadow: none; }
-  .headline p, .stat .label, .signal .detail, .signal .evidence, .foot, .note { color: #a8b0ba; }
-  .stat .value.muted { color: #a8b0ba; }
-  .stat .value del { color: #949ca6; }
-  .basis { background: #1e2128; color: #a8b0ba; }
-  .foot { background: #131519; border-color: #333944; }
-  .foot a, .toggle { color: #7cb8f5; }
-  .toggle { border-color: #3d4450; }
-  .grade.good { background: #0e2f1c; color: #74e3a2; }
-  .grade.mixed { background: #302408; color: #f2c76a; }
-  .grade.bad { background: #371411; color: #f79a94; }
-  .grade.unknown { background: #232730; color: #a8b0ba; }
-  .pill.pass { background: #0e2f1c; color: #74e3a2; }
-  .pill.warn { background: #302408; color: #f2c76a; }
-  .pill.fail { background: #371411; color: #f79a94; }
-  .pill.insufficient-data { background: #232730; color: #a8b0ba; }
-  .pledge { color: #74e3a2; }
-  .note.error { color: #f79a94; }
-  .deep { background: #2a6db5; border-color: #2a6db5; }
-  .deep:hover:not(:disabled) { background: #3480d0; }
-  button:focus-visible, .foot a:focus-visible { outline-color: #7cb8f5; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -276,6 +313,8 @@ function renderSignal(signal: SignalResult): HTMLElement {
 
 export interface PanelOptions {
   expanded?: boolean;
+  /** 'system' follows the OS; 'light' and 'dark' override it. */
+  theme?: 'system' | 'light' | 'dark';
   /** Invoked when the user asks for deep analysis. Omit to hide the button. */
   onDeepAnalysis?: () => Promise<void>;
   deepState?: 'idle' | 'loading' | 'done' | 'error';
@@ -291,7 +330,8 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   style.textContent = STYLES;
   shadow.append(style);
 
-  const card = el('section', 'card');
+  const theme = options.theme ?? 'system';
+  const card = el('section', `card${theme === 'system' ? '' : ` theme-${theme}`}`);
   card.setAttribute('role', 'region');
   card.setAttribute('aria-labelledby', 'winnow-heading');
   card.setAttribute('lang', 'en');

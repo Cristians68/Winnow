@@ -8,7 +8,7 @@
  * talk to the network — easy to audit, easy to keep honest.
  */
 
-import { DEFAULT_SETTINGS, SETTINGS_KEY } from '../shared/settings.js';
+import { DEFAULT_SETTINGS, SETTINGS_KEY, getSettings, isDevEndpoint } from '../shared/settings.js';
 import { API_ENDPOINT } from '../shared/deep.js';
 
 const REQUEST_TIMEOUT_MS = 12_000;
@@ -32,7 +32,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch(API_ENDPOINT, {
+      // A dev override is honoured only when it points at loopback, so this can
+      // never become a route for sending page data to an arbitrary host.
+      const { devApiEndpoint } = await getSettings();
+      const endpoint = isDevEndpoint(devApiEndpoint) ? devApiEndpoint : API_ENDPOINT;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(message.payload),

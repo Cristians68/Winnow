@@ -9,8 +9,16 @@ rejection.
 ## Name (75 char limit)
 
 ```
-Winnow — Review Integrity for Amazon
+Winnow — Amazon Review Integrity
 ```
+
+Must match `name` in `src/manifest.json` exactly — the store takes the listing name from the
+manifest, so a mismatch here is just a stale doc.
+
+"Amazon" is included for store search, where people type the marketplace rather than the problem.
+This is descriptive use and is the same pattern established listings use (e.g. "Keepa - Amazon Price
+Tracker"), but it is trademark-adjacent: the listing must never imply endorsement, and the site
+footer carries an explicit non-affiliation disclaimer for the same reason.
 
 ## Short description (132 char limit)
 
