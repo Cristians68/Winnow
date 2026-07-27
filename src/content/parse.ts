@@ -143,8 +143,69 @@ function extractTotalRatings(doc: Document): number | undefined {
  * "5 stars represent 78% of rating" — so we try that first and fall back to
  * table scraping.
  */
+/**
+ * Pair star labels with percentages positionally.
+ *
+ * Amazon's 2026 histogram is laid out in columns, not rows: one column holds
+ * "5 star", "4 star", … and another holds "83%", "8%", …. Parsing row by row
+ * grabs the first star and the first percentage it meets, yielding `{5: 83}`,
+ * which normalises to a confident and completely wrong "100% 5-star".
+ *
+ * Reading the two sequences separately and zipping them by index handles both
+ * the column and row layouts, since either way labels and percentages appear in
+ * the same order.
+ */
+function pairHistogramColumns(container: ParentNode): Partial<Record<Star, number>> | null {
+  const leaves = [...container.querySelectorAll('*')].filter((el) => el.children.length === 0);
+
+  const stars: Star[] = [];
+  const percentages: number[] = [];
+
+  for (const leaf of leaves) {
+    const text = textOf(leaf);
+    const star = text.match(/^([1-5])\s*stars?$/i);
+    if (star) {
+      stars.push(Number(star[1]) as Star);
+      continue;
+    }
+    const percentage = text.match(/^(\d{1,3})\s*%$/);
+    if (percentage) percentages.push(Number(percentage[1]));
+  }
+
+  if (stars.length < 4 || stars.length !== percentages.length) return null;
+
+  const histogram: Partial<Record<Star, number>> = {};
+  stars.forEach((star, index) => {
+    histogram[star] = percentages[index]!;
+  });
+  return histogram;
+}
+
+/**
+ * A half-read histogram is worse than none.
+ *
+ * A single captured bucket normalises to "100% 5-star with no negative tail" —
+ * the exact signature of manipulation — so a parsing failure would masquerade
+ * as strong evidence of fraud. Require near-complete, near-summing data before
+ * trusting it, and return nothing otherwise.
+ */
+export function isPlausibleHistogram(histogram: Partial<Record<Star, number>>): boolean {
+  const values = ([1, 2, 3, 4, 5] as Star[]).map((s) => histogram[s]).filter((v): v is number => v !== undefined);
+  if (values.length < 4) return false;
+  const total = values.reduce((sum, v) => sum + v, 0);
+  return total >= 80 && total <= 120;
+}
+
 export function extractHistogram(doc: Document): Partial<Record<Star, number>> | undefined {
   const histogram: Partial<Record<Star, number>> = {};
+
+  // Strategy 0: positional pairing inside the histogram container.
+  for (const selector of ['#histogramTable', '#cm_cr_dp_d_rating_histogram', '[class*="ratings-histogram"]']) {
+    const container = doc.querySelector(selector);
+    if (!container) continue;
+    const paired = pairHistogramColumns(container);
+    if (paired && isPlausibleHistogram(paired)) return paired;
+  }
 
   // Strategy 1: aria-labels / link titles anywhere in the reviews module.
   const labelled = pickAll(doc, [
@@ -162,7 +223,7 @@ export function extractHistogram(doc: Document): Partial<Record<Star, number>> |
       histogram[Number(starMatch[1]) as Star] = Number(pctMatch[1]);
     }
   }
-  if (Object.keys(histogram).length >= 3) return histogram;
+  if (isPlausibleHistogram(histogram)) return histogram;
 
   // Strategy 2: walk the histogram rows.
   //
@@ -186,7 +247,9 @@ export function extractHistogram(doc: Document): Partial<Record<Star, number>> |
     }
   });
 
-  return Object.keys(histogram).length > 0 ? histogram : undefined;
+  // Anything less than a plausible, near-complete histogram is discarded: the
+  // "no data" state is honest, a partial one actively lies.
+  return isPlausibleHistogram(histogram) ? histogram : undefined;
 }
 
 // --- Reviews ---------------------------------------------------------------

@@ -7,6 +7,7 @@ import {
   buildSnapshot,
   isProductPage,
   isInterstitial,
+  isPlausibleHistogram,
 } from '../src/content/parse.js';
 
 function docFrom(html: string): Document {
@@ -221,6 +222,49 @@ describe('Amazon 2026 review markup', () => {
     expect(review!.text).toContain('Build quality is solid');
   });
 
+  // The column layout captured from the live page: star labels in one column,
+  // percentages in another, NOT paired row by row.
+  it('reads the column-laid-out histogram from the live markup', () => {
+    const doc = docFrom(`
+      <div id="cm_cr_dp_d_rating_histogram">
+        <ul id="histogramTable" class="a-unordered-list a-nostyle a-vertical">
+          <li><a><span class="_cr-ratings-histogram_style_histogram-column-space__RKUAd">5 star</span></a></li>
+          <li><a><span class="_cr-ratings-histogram_style_histogram-column-space__RKUAd">4 star</span></a></li>
+          <li><a><span class="_cr-ratings-histogram_style_histogram-column-space__RKUAd">3 star</span></a></li>
+          <li><a><span class="_cr-ratings-histogram_style_histogram-column-space__RKUAd">2 star</span></a></li>
+          <li><a><span class="_cr-ratings-histogram_style_histogram-column-space__RKUAd">1 star</span></a></li>
+          <li><span>83%</span></li>
+          <li><span>8%</span></li>
+          <li><span>4%</span></li>
+          <li><span>1%</span></li>
+          <li><span>4%</span></li>
+        </ul>
+      </div>`);
+    expect(extractHistogram(doc)).toEqual({ 5: 83, 4: 8, 3: 4, 2: 1, 1: 4 });
+  });
+
+  // Regression: a partial read normalises to "100% 5-star, 0% 1-star", which is
+  // the signature of manipulation — so a parser failure looked like hard
+  // evidence of fraud and flagged an honest listing.
+  it('returns nothing rather than a partial histogram that would read as fraud', () => {
+    const doc = docFrom(`
+      <ul id="histogramTable">
+        <li><span>5 star</span><span>83%</span></li>
+      </ul>`);
+    expect(extractHistogram(doc)).toBeUndefined();
+  });
+
+  it('rejects buckets that do not add up', () => {
+    expect(isPlausibleHistogram({ 5: 83, 4: 8, 3: 4, 2: 1, 1: 4 })).toBe(true);
+    expect(isPlausibleHistogram({ 5: 83 })).toBe(false);
+    expect(isPlausibleHistogram({ 5: 20, 4: 10, 3: 5, 2: 2, 1: 3 })).toBe(false);
+    expect(isPlausibleHistogram({ 5: 200, 4: 50, 3: 20, 2: 10, 1: 5 })).toBe(false);
+  });
+
+  it('tolerates rounding that does not sum to exactly 100', () => {
+    expect(isPlausibleHistogram({ 5: 83, 4: 8, 3: 4, 2: 1, 1: 3 })).toBe(true);
+  });
+
   it('reads the histogram now that it is a <ul> rather than a <table>', () => {
     const doc = docFrom(`
       <ul id="histogramTable" class="a-unordered-list a-nostyle a-vertical">
@@ -291,6 +335,8 @@ describe('snapshot assembly', () => {
         <a aria-label="5 stars represent 62% of rating" href="#"></a>
         <a aria-label="4 stars represent 18% of rating" href="#"></a>
         <a aria-label="3 stars represent 8% of rating" href="#"></a>
+        <a aria-label="2 stars represent 4% of rating" href="#"></a>
+        <a aria-label="1 star represents 8% of rating" href="#"></a>
       </div>
       <div data-hook="review" id="R2">
         <i data-hook="review-star-rating"><span class="a-icon-alt">5.0 out of 5 stars</span></i>
