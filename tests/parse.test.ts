@@ -6,6 +6,7 @@ import {
   extractReviews,
   buildSnapshot,
   isProductPage,
+  isInterstitial,
 } from '../src/content/parse.js';
 
 function docFrom(html: string): Document {
@@ -134,6 +135,32 @@ describe('review extraction', () => {
 
   it('returns an empty array on a page with no reviews', () => {
     expect(extractReviews(docFrom('<div>no reviews</div>'))).toEqual([]);
+  });
+});
+
+describe('bot-check interstitials', () => {
+  // Captured from a real response: Amazon keeps the /dp/<ASIN> URL but serves
+  // none of the product content, so the ASIN alone is not enough to proceed.
+  const interstitial = `
+    <div>
+      <p>Click the button below to continue shopping</p>
+      <form action="https://www.amazon.com/errors/validateCaptcha"><button>Continue shopping</button></form>
+    </div>`;
+
+  it('detects the interstitial by its captcha form', () => {
+    expect(isInterstitial(docFrom(interstitial))).toBe(true);
+  });
+
+  it('detects the interstitial by its wording alone', () => {
+    expect(isInterstitial(docFrom('<p>Enter the characters you see below</p>'))).toBe(true);
+  });
+
+  it('does not mistake a normal product page for an interstitial', () => {
+    expect(isInterstitial(docFrom('<span id="productTitle">Test Headphones</span>'))).toBe(false);
+  });
+
+  it('refuses to build a snapshot from an interstitial even though the URL has an ASIN', () => {
+    expect(buildSnapshot(docFrom(interstitial), 'https://www.amazon.com/dp/B08N5WRWNW')).toBeNull();
   });
 });
 

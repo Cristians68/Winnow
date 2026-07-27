@@ -87,6 +87,23 @@ export function isProductPage(url: string = location.href): boolean {
   return /\/(dp|gp\/product|product-reviews)\//i.test(url);
 }
 
+/**
+ * Amazon's bot-check interstitial.
+ *
+ * These pages keep the product URL — `/dp/<ASIN>` and all — while serving none
+ * of the product content. Without this check the ASIN still parses, the review
+ * list comes back empty, and we would cheerfully mount a "couldn't read this
+ * page" panel on top of a captcha wall. Better to say nothing at all.
+ */
+export function isInterstitial(doc: Document = document): boolean {
+  if (doc.querySelector('form[action*="validateCaptcha"], form[action*="/errors/"]')) return true;
+
+  const text = doc.body?.innerText ?? '';
+  return /click the button below to continue shopping|enter the characters you see below|we just need to make sure you'?re not a robot|type the characters you see in this image/i.test(
+    text,
+  );
+}
+
 // --- Product-level fields --------------------------------------------------
 
 function extractTitle(doc: Document): string | undefined {
@@ -266,6 +283,8 @@ export function extractReviews(doc: Document = document): Review[] {
 // --- Snapshot --------------------------------------------------------------
 
 export function buildSnapshot(doc: Document = document, url: string = location.href): ProductSnapshot | null {
+  if (isInterstitial(doc)) return null;
+
   const asin = extractAsin(url, doc);
   if (!asin) return null;
 

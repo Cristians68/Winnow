@@ -107,12 +107,24 @@ A grade of "couldn't read this page" is not a verdict about the product.
 
 ```bash
 npm install
-npm test          # 47 tests covering the engine and the parser
+npm test          # 51 tests covering the engine and the parser
 npm run typecheck
 npm run build     # → dist/
 ```
 
 Load `dist/` via `chrome://extensions` → Developer mode → **Load unpacked**.
+
+### Verifying the parser against live Amazon
+
+Amazon serves a bot-check interstitial to automated sessions, so the parser cannot be validated by
+a headless run — it has to be checked against markup a real person actually loaded.
+
+Open an Amazon product page in normal browsing, scroll the reviews into view, and paste
+[`tools/selector-probe.js`](tools/selector-probe.js) into the DevTools console. It reports which
+selector chain currently satisfies each field and which have gone stale. Anything showing ❌ is a
+selector that needs updating in `src/content/parse.ts`.
+
+Do this after any Amazon layout change, or when a product's analysis looks obviously wrong.
 
 ### Layout
 
