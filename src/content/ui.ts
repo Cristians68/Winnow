@@ -46,7 +46,7 @@ const STATUS_LABEL: Record<SignalResult['status'], string> = {
  * Colour tokens are chosen for contrast, not just aesthetics. Foreground values
  * clear 4.5:1 against their paired surface in both themes.
  */
-const STYLES = `
+export const STYLES = `
 :host { all: initial; display: block; }
 * { box-sizing: border-box; }
 

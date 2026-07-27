@@ -79,8 +79,10 @@ CREATE TABLE IF NOT EXISTS reviews (
   reviewer_hash  TEXT,
   word_count     INTEGER NOT NULL,
   first_seen     TEXT NOT NULL,
+  last_seen      TEXT,
   PRIMARY KEY (asin, review_key)
 );
+CREATE INDEX IF NOT EXISTS idx_reviews_last_seen ON reviews(last_seen);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_hash);
 
 CREATE TABLE IF NOT EXISTS shingles (
@@ -167,11 +169,14 @@ export class Corpus {
   // --- reviews --------------------------------------------------------------
 
   upsertReview(asin: string, r: CorpusReview & { helpfulVotes: number; wordCount: number }): void {
+    const now = new Date().toISOString();
     this.db
       .prepare(
-        `INSERT INTO reviews (asin, review_key, rating, review_date, verified, helpful_votes, reviewer_hash, word_count, first_seen)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(asin, review_key) DO UPDATE SET helpful_votes = excluded.helpful_votes`,
+        `INSERT INTO reviews (asin, review_key, rating, review_date, verified, helpful_votes, reviewer_hash, word_count, first_seen, last_seen)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(asin, review_key) DO UPDATE SET
+           helpful_votes = excluded.helpful_votes,
+           last_seen = excluded.last_seen`,
       )
       .run(
         asin,
@@ -182,7 +187,8 @@ export class Corpus {
         r.helpfulVotes,
         r.reviewerHash,
         r.wordCount,
-        new Date().toISOString(),
+        now,
+        now,
       );
   }
 
@@ -243,6 +249,45 @@ export class Corpus {
 
   invalidateCache(asin: string): void {
     this.db.prepare(`DELETE FROM cache WHERE asin = ?`).run(asin);
+  }
+
+  // --- retention ------------------------------------------------------------
+
+  /**
+   * Enforce the retention promise in PRIVACY.md.
+   *
+   * The policy states reviewer data is kept for 24 months from last sighting
+   * and then deleted. A documented policy that nothing executes is not a
+   * guarantee, so this runs on a timer and is covered by tests.
+   *
+   * Returns the number of rows removed, per table.
+   */
+  pruneExpired(retentionMonths = 24, now = new Date()): { reviews: number; observations: number; cache: number } {
+    const cutoff = new Date(now);
+    cutoff.setMonth(cutoff.getMonth() - retentionMonths);
+    const iso = cutoff.toISOString();
+
+    const countRows = (sql: string, ...params: unknown[]): number =>
+      (this.db.prepare(sql).get(...params) as { n: number }).n;
+
+    const reviews = countRows(
+      `SELECT COUNT(*) AS n FROM reviews WHERE COALESCE(last_seen, first_seen) < ?`,
+      iso,
+    );
+    this.db.prepare(`DELETE FROM reviews WHERE COALESCE(last_seen, first_seen) < ?`).run(iso);
+
+    const observations = countRows(`SELECT COUNT(*) AS n FROM observations WHERE observed_at < ?`, iso);
+    this.db.prepare(`DELETE FROM observations WHERE observed_at < ?`).run(iso);
+
+    // Cached analyses are derived data and expire far sooner than the policy.
+    const staleCache = new Date(now.getTime() - 7 * 86_400_000).toISOString();
+    const cache = countRows(`SELECT COUNT(*) AS n FROM cache WHERE computed_at < ?`, staleCache);
+    this.db.prepare(`DELETE FROM cache WHERE computed_at < ?`).run(staleCache);
+
+    // Phrase hashes for products no longer represented carry no further value.
+    this.db.exec(`DELETE FROM shingles WHERE asin NOT IN (SELECT DISTINCT asin FROM reviews)`);
+
+    return { reviews, observations, cache };
   }
 
   observationCount(asin: string): number {

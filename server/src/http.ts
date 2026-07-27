@@ -182,9 +182,30 @@ export function createApp(corpus: Corpus) {
   });
 }
 
+/** How often the retention sweep runs. Daily is ample for a 24-month policy. */
+const RETENTION_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
 export function startServer(port = Number(process.env.PORT ?? 8787)): ReturnType<typeof createApp> {
   const corpus = new Corpus();
   const server = createApp(corpus);
+
+  // Enforce the retention promise in PRIVACY.md. Run once at boot so a restart
+  // after downtime catches up, then daily.
+  const sweep = () => {
+    try {
+      const removed = corpus.pruneExpired();
+      if (removed.reviews || removed.observations || removed.cache) {
+        // Counts only — naming the products would be the logging we promise not to do.
+        console.log(
+          `[winnow] retention sweep: removed ${removed.reviews} reviews, ${removed.observations} observations, ${removed.cache} cached analyses`,
+        );
+      }
+    } catch (error) {
+      console.error('[winnow] retention sweep failed:', error instanceof Error ? error.message : 'unknown');
+    }
+  };
+  sweep();
+  setInterval(sweep, RETENTION_INTERVAL_MS).unref();
   server.headersTimeout = 10_000;
   server.requestTimeout = 20_000;
   server.listen(port, () => {

@@ -80,7 +80,7 @@ Stated plainly rather than omitted.
    can contribute to the corpus. This is the same problem as (1).
 3. **`node:sqlite` is an experimental Node API.** Its interface may change. Acceptable for a corpus
    that can be rebuilt from client contributions; revisit before it holds anything irreplaceable.
-4. **No automated dependency scanning yet.** Low risk given zero runtime dependencies, but CI should
-   still run `npm audit`.
-5. **The retention policy is documented but not automated.** The 24-month reviewer expiry in
-   PRIVACY.md needs a scheduled job before it is a real guarantee.
+4. **Corpus poisoning remains the main open risk** — see (1). Everything else below is now closed.
+
+Closed since first writing: dependency auditing runs weekly in CI, and the 24-month retention policy
+is implemented in `Corpus.pruneExpired()` rather than merely documented.

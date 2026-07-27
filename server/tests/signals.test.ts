@@ -194,6 +194,59 @@ describe('rating-history analysis', () => {
   });
 });
 
+// --- retention -------------------------------------------------------------
+
+describe('retention enforcement', () => {
+  const monthsAgo = (n: number) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - n);
+    return d.toISOString();
+  };
+
+  it('deletes reviewer data past the 24-month promise in PRIVACY.md', () => {
+    corpus.upsertReview('B00000051', {
+      reviewKey: 'old', rating: 5, date: '2023-01-01', verified: 1,
+      helpfulVotes: 0, reviewerHash: hashIdentifier('stale'), wordCount: 30,
+    });
+    // Backdate the sighting to 30 months ago.
+    const db = corpus as unknown as { db: { prepare(sql: string): { run(...p: unknown[]): unknown } } };
+    db.db.prepare(`UPDATE reviews SET last_seen = ?, first_seen = ? WHERE review_key = 'old'`)
+      .run(monthsAgo(30), monthsAgo(30));
+
+    expect(corpus.pruneExpired().reviews).toBe(1);
+    expect(corpus.asinsForReviewer(hashIdentifier('stale'))).toEqual([]);
+  });
+
+  it('keeps data inside the retention window', () => {
+    corpus.upsertReview('B00000052', {
+      reviewKey: 'fresh', rating: 5, date: '2026-06-01', verified: 1,
+      helpfulVotes: 0, reviewerHash: hashIdentifier('active'), wordCount: 30,
+    });
+    expect(corpus.pruneExpired().reviews).toBe(0);
+    expect(corpus.asinsForReviewer(hashIdentifier('active'))).toEqual(['B00000052']);
+  });
+
+  it('refreshes last_seen when a review is seen again, so active data is not aged out', () => {
+    const row = {
+      reviewKey: 'seen-again', rating: 5, date: '2026-01-01', verified: 1,
+      helpfulVotes: 0, reviewerHash: hashIdentifier('recurring'), wordCount: 30,
+    };
+    corpus.upsertReview('B00000053', row);
+    const db = corpus as unknown as { db: { prepare(sql: string): { run(...p: unknown[]): unknown } } };
+    db.db.prepare(`UPDATE reviews SET last_seen = ? WHERE review_key = 'seen-again'`).run(monthsAgo(30));
+
+    corpus.upsertReview('B00000053', { ...row, helpfulVotes: 4 }); // seen again today
+    expect(corpus.pruneExpired().reviews).toBe(0);
+  });
+
+  it('drops stale observations and cached analyses', () => {
+    corpus.recordObservation('B00000054', {
+      observedAt: monthsAgo(30), displayedRating: 4.1, totalRatings: 500, titleHash: 'x', histogram: null,
+    });
+    expect(corpus.pruneExpired().observations).toBe(1);
+  });
+});
+
 // --- orchestration ---------------------------------------------------------
 
 describe('deep analysis orchestration', () => {

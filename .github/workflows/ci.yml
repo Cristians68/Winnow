@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Weekly, so a newly-disclosed advisory surfaces even without a commit.
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  extension:
+    name: Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      # Also enforces the packaging guard: the build fails if the manifest ever
+      # gains a permission beyond "storage" or a host beyond Amazon and the API.
+      # Minimum permissions are a public promise, so drift must break CI rather
+      # than reach the Chrome Web Store reviewer.
+      - name: Package
+        run: npm run package
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: winnow-extension
+          path: winnow-*.zip
+          if-no-files-found: error
+
+  server:
+    name: Server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Boot the server and probe it
+        # Catches what unit tests cannot: Node's type stripping rejects syntax
+        # (parameter properties) that Vitest happily transpiles, so the server
+        # can pass every test and still fail to start.
+        run: |
+          WINNOW_DB=':memory:' PORT=8799 node src/index.ts &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8799/health >/dev/null && break
+            sleep 0.5
+          done
+          curl -sf http://127.0.0.1:8799/health | grep -q '"ok"'
+
+          echo "--- a web origin must be refused ---"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8799/v1/analyse \
+            -H 'content-type: application/json' -H 'origin: https://evil.example' \
+            -d '{"contractVersion":1,"asin":"B08N5WRWNW","reviews":[]}')
+          [ "$code" = "403" ] || { echo "expected 403, got $code"; exit 1; }
+
+          echo "--- a smuggled identity field must be rejected ---"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8799/v1/analyse \
+            -H 'content-type: application/json' \
+            -d '{"contractVersion":1,"asin":"B08N5WRWNW","reviews":[],"userId":"me"}')
+          [ "$code" = "400" ] || { echo "expected 400, got $code"; exit 1; }
+
+          echo "privacy and CORS guarantees hold"
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Audit extension
+        run: npm audit --audit-level=high
+      - name: Audit server
+        run: npm audit --audit-level=high
+        working-directory: server

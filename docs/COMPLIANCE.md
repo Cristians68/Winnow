@@ -19,8 +19,8 @@ WCAG 2.2 AA is the single target.
 | 1.1.1 Non-text Content | Grade badge is `role="img"` with a full text alternative ("Grade D of A to F. Many reviews look manipulated"); decorative star and spinner are `aria-hidden` | Met |
 | 1.3.1 Info and Relationships | Panel is a `role="region"` landmark labelled by its heading; signals are a real `<ul>`; headings are genuine `<h2>` | Met |
 | 1.4.1 Use of Color | Every status pill carries a text label (Clear / Caution / Flagged / No data). Colour is never the sole carrier of meaning | Met |
-| 1.4.3 Contrast (Minimum) | All foreground/surface pairs selected for ≥4.5:1 in both light and dark themes | Partial — computed by design, not yet machine-verified |
-| 1.4.11 Non-text Contrast | Focus indicator and control borders meet 3:1 | Partial |
+| 1.4.3 Contrast (Minimum) | All foreground/surface pairs ≥4.5:1 in both themes | **Met** — `tests/a11y.test.ts` parses the panel stylesheet and computes every pair, so a colour change that breaks WCAG fails CI |
+| 1.4.11 Non-text Contrast | Focus indicator and control borders meet 3:1 | Partial — verified for filled controls, borders not yet computed |
 | 1.4.12 Text Spacing | No fixed heights on text containers; content reflows | Met |
 | 2.1.1 Keyboard | Every control is a native `<button>` or `<a>`; no custom key handling to trap focus | Met |
 | 2.4.3 Focus Order | DOM order matches visual order | Met |
@@ -33,8 +33,10 @@ WCAG 2.2 AA is the single target.
 | 4.1.3 Status Messages | Deep-analysis progress and results land in `role="status"` `aria-live="polite"` — announced without stealing focus | Met |
 | 2.3.3 Animation from Interactions | `prefers-reduced-motion` removes entry animation and transitions | Met (AAA, done anyway) |
 
-**Outstanding:** an automated axe-core pass and a real screen-reader run (NVDA + VoiceOver). Neither
-can be done without loading the extension on a live page.
+**Verified in CI:** 15 automated checks in `tests/a11y.test.ts` cover contrast, landmark structure,
+text alternatives, disclosure wiring, live regions, target size, reduced motion and safe external links.
+
+**Outstanding:** a real screen-reader run (NVDA + VoiceOver), which cannot be automated.
 
 ---
 
@@ -45,7 +47,7 @@ can be done without loading the extension on a live page.
 | Lawful basis | Default mode processes no personal data at all. Deep analysis processes pseudonymised **reviewer** identifiers under legitimate interest (Art. 6(1)(f)) — see PRIVACY.md for the balancing rationale |
 | Data minimisation (Art. 5(1)(c)) | Title sent as a hash; reviewer ids HMAC-hashed before storage; review text stored only as phrase hashes; reviewer *display names* never leave the browser (enforced in code, covered by a test) |
 | Purpose limitation | Corpus is used solely to detect review manipulation |
-| Storage limitation (Art. 5(1)(e)) | Reviewer rows retained 24 months from last sighting; analysis cache expires after 6 hours |
+| Storage limitation (Art. 5(1)(e)) | **Implemented** — `Corpus.pruneExpired()` deletes reviewer rows 24 months after last sighting, runs at boot and daily, covered by tests |
 | Integrity and confidentiality (Art. 5(1)(f)) | TLS in transit; HMAC at rest; no request logging; strict input allowlisting |
 | Data subject rights | No user data exists to access or erase. Amazon reviewers may request removal of their hashed identifier |
 | Automated decision-making (Art. 22) | Grades concern products, not people, and carry no legal or similarly significant effect on any individual. Reasoning is disclosed in-product |
@@ -53,9 +55,8 @@ can be done without loading the extension on a live page.
 | International transfers | **Outstanding** — depends on where the service is hosted. EU hosting is the simplest answer and is recommended before EU launch |
 | CCPA "sale" of personal information | None occurs. No data is sold, shared or disclosed |
 
-**Outstanding before EU launch:** choose hosting region, appoint an EU representative if required
-under Art. 27, and publish the retention job (the 24-month deletion is documented policy but is not
-yet implemented as a scheduled task).
+**Outstanding before EU launch:** choose a hosting region and appoint an EU representative if
+required under Art. 27. The retention job is implemented and scheduled.
 
 ---
 
@@ -93,11 +94,11 @@ See [SECURITY.md](../SECURITY.md).
 
 ## Verification checklist before public launch
 
-- [ ] axe-core automated accessibility pass on the injected panel
+- [ ] **Repository made public** — the panel, popup, options page and privacy policy all state the
+      engine is open source "so you can check". While the repo is private that claim is false, and a
+      trust product cannot ship a false claim about its own verifiability
 - [ ] Manual screen-reader pass (NVDA on Windows, VoiceOver on macOS)
-- [ ] Automated colour-contrast verification of every token pair
 - [ ] Hosting region chosen and documented; EU representative appointed if required
-- [ ] Retention job implemented and scheduled (24-month reviewer expiry)
 - [ ] `WINNOW_HASH_SALT` provisioned from a secret manager, never from source
 - [ ] `WINNOW_ALLOWED_ORIGINS` pinned to the published extension id
 - [ ] TLS termination configured; HSTS confirmed in production
