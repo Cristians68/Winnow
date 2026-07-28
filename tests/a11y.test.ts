@@ -183,6 +183,26 @@ function shadowOf(a: Analysis, options = {}): ShadowRoot {
   return host.shadowRoot!;
 }
 
+describe('brand mark', () => {
+  // The mark repeats information the wordmark beside it already carries, so it
+  // must be decorative. If it ever gained a text alternative, a screen reader
+  // would announce the brand twice before reaching the actual finding.
+  it('is hidden from assistive technology', () => {
+    const shadow = shadowOf(analysis());
+    const mark = shadow.querySelector('.mark')!;
+    expect(mark).toBeTruthy();
+    expect(mark.getAttribute('aria-hidden')).toBe('true');
+    expect(mark.getAttribute('focusable')).toBe('false');
+  });
+
+  it('leaves the heading name unchanged', () => {
+    const shadow = shadowOf(analysis());
+    const heading = shadow.querySelector('#winnow-heading')!;
+    // Exactly the wordmark and the finding, with no stray characters from the SVG.
+    expect(heading.textContent?.trim()).toBe('Winnow — Many reviews look manipulated');
+  });
+});
+
 describe('panel structure', () => {
   it('exposes a labelled landmark region', () => {
     const shadow = shadowOf(analysis());

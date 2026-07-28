@@ -22,6 +22,55 @@ import { buildVerdict } from '../core/verdict.js';
 
 const HOST_ID = 'winnow-root';
 
+/**
+ * The Winnow mark, inline.
+ *
+ * Geometry mirrors tools/make-icons.ps1 on a 0..1 unit square, so the panel and
+ * the installed icon are recognisably the same thing: a winnowing funnel with
+ * grain falling through and chaff thrown clear. That is the whole product in one
+ * shape — separating what is real from what is not.
+ *
+ * Inline rather than an <img> pointing at the packaged PNG, for three reasons:
+ * it needs no web_accessible_resources entry (the manifest stays at zero
+ * additions), it stays crisp at any zoom, and it can take its colours from the
+ * theme tokens instead of shipping two bitmaps.
+ *
+ * Decorative: the word "Winnow" sits directly beside it, so it is aria-hidden
+ * rather than given a redundant text alternative a screen reader would repeat.
+ */
+function winnowMark(): SVGSVGElement {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('class', 'mark');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+
+  const add = (tag: string, attrs: Record<string, string | number>) => {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
+    svg.append(node);
+  };
+
+  // Rounded badge, matching the icon's 0.22 corner radius.
+  add('rect', { x: 0, y: 0, width: 100, height: 100, rx: 22, class: 'mark-bg' });
+
+  // Funnel bar, cone and stem — the large-size proportions from the generator.
+  add('rect', { x: 16, y: 30, width: 68, height: 7.5, rx: 3, class: 'mark-fg' });
+  add('path', { d: 'M16 36.3 H84 L56.5 60 H43.5 Z', class: 'mark-fg' });
+  add('rect', { x: 43.5, y: 59, width: 13, height: 15.5, rx: 2.5, class: 'mark-fg' });
+
+  // Grain through the funnel.
+  for (const cx of [34, 50, 66]) add('circle', { cx, cy: 88.5, r: 5.5, class: 'mark-fg' });
+
+  // Chaff thrown clear — two right, one left, so it reads as sorting.
+  add('circle', { cx: 84.5, cy: 18.5, r: 4.8, class: 'mark-fg' });
+  add('circle', { cx: 90, cy: 34.5, r: 3.8, class: 'mark-fg' });
+  add('circle', { cx: 15.5, cy: 18.5, r: 3.8, class: 'mark-fg' });
+
+  return svg;
+}
+
 const GRADE_TONE: Record<Grade, 'good' | 'mixed' | 'bad'> = {
   A: 'good', B: 'good', C: 'mixed', D: 'bad', F: 'bad',
 };
@@ -138,7 +187,17 @@ export const STYLES = `
 .grade.unknown { background: var(--none-bg);  color: var(--none-fg); font-size: 23px; }
 
 .headline { min-width: 0; }
-.headline h2 { margin: 0; font-size: 16.5px; font-weight: 700; letter-spacing: -.005em; }
+.headline h2 {
+  margin: 0; font-size: 16.5px; font-weight: 700; letter-spacing: -.005em;
+  display: flex; align-items: center; gap: 7px;
+}
+
+/* Brand mark. Takes the grade-A pill colours, which are already contrast-checked
+   in both themes, so it stays legible on light and dark without shipping two
+   bitmaps or inverting into something that no longer looks like the icon. */
+.mark { flex: none; width: 19px; height: 19px; border-radius: 5px; }
+.mark-bg { fill: var(--good-fg); }
+.mark-fg { fill: var(--good-bg); }
 .headline p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 
 .ratings { display: flex; gap: 22px; margin: 16px 0 2px; flex-wrap: wrap; }
@@ -399,8 +458,12 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
 
   const { title, sub } = headlineFor(analysis);
   const headline = el('div', 'headline');
-  const h2 = el('h2', undefined, `Winnow — ${title}`);
+  const h2 = el('h2');
   h2.id = 'winnow-heading';
+  // The mark sits inside the heading so it reads as a lockup with the wordmark
+  // rather than a floating decoration; it is aria-hidden, so the accessible name
+  // of the heading is unchanged.
+  h2.append(winnowMark(), document.createTextNode(`Winnow — ${title}`));
   headline.append(h2, el('p', undefined, sub));
   head.append(headline);
   card.append(head);
