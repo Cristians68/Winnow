@@ -11,7 +11,25 @@ import type { ProductSnapshot, SignalResult } from '../core/types.js';
 
 export const CONTRACT_VERSION = 1;
 
-export const API_ENDPOINT = 'https://api.winnow.app/v1/analyse';
+/**
+ * The hosted deep-analysis endpoint, or null when there isn't one.
+ *
+ * It is deliberately null in the shipped build. Deep analysis is the paid tier
+ * and no service is running yet, so there is nothing honest to point at — and
+ * pointing at a domain this project does not own would mean shipping a standing
+ * host permission that could later resolve to somebody else's server.
+ *
+ * While this is null the extension reaches no network at all: the manifest
+ * carries no host permission beyond Amazon itself, and the panel hides the deep
+ * button rather than offering an action that can only fail. Deep analysis is
+ * still fully usable against a local server via the loopback developer endpoint
+ * in Options.
+ *
+ * To enable it: set this to the real URL and add the matching host permission to
+ * src/manifest.json and ALLOWED_HOSTS in package.mjs. The packaging guard fails
+ * the build if those disagree.
+ */
+export const API_ENDPOINT: string | null = null;
 
 export interface DeepReviewFinding {
   reviewId: string;

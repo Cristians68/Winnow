@@ -31,9 +31,12 @@ if (extra.length > 0) {
   problems.push(`unexpected permissions: ${extra.join(', ')} (minimal permissions are a product promise)`);
 }
 
-// Amazon storefronts, plus the single deep-analysis endpoint. Anything else is
-// a mistake: the privacy policy tells users exactly which hosts we can reach.
-const ALLOWED_HOSTS = [/amazon\./, /^https:\/\/api\.winnow\.app\/\*$/];
+// Amazon storefronts and nothing else. The shipped build reaches no server at
+// all: grading is local, and deep analysis is only reachable via the loopback
+// dev endpoint below. If a hosted endpoint is ever added it must be added here
+// deliberately, because the privacy policy tells users exactly which hosts this
+// extension can reach.
+const ALLOWED_HOSTS = [/amazon\./];
 const strayHosts = (manifest.host_permissions ?? []).filter(
   (h) => !ALLOWED_HOSTS.some((pattern) => pattern.test(h)),
 );

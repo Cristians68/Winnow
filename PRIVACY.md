@@ -9,9 +9,18 @@
 
 Winnow has no account, no analytics, and no tracking of any kind.
 
-Grading happens entirely on your own device and involves no network access at all. One optional
-feature — **deep analysis** — sends information about the *product listing* to our service, and only
-when you click a button to ask for it. It never sends information about you.
+**The version you can install today makes no network requests whatsoever.** Grading happens entirely
+on your own device, and the extension holds no permission to contact any server — only Amazon's own
+pages, which your browser is loading anyway. You can verify that in `manifest.json`: outside Amazon
+storefronts, the host permission list is empty.
+
+Part 2 below describes **deep analysis**, an optional feature that would send information about a
+*product listing* — never about you — and only when you click a button to ask for it. It is not
+enabled in the published build: there is no service running, so the extension ships with no endpoint
+and the button is hidden. The section is kept because the code is in the open repository and can be
+run against your own local server, and because you should be able to read what a future version
+would do before it does it. If that changes, this policy and the requested permissions change with
+it, visibly.
 
 ---
 
@@ -34,7 +43,12 @@ Winnow requests the `storage` permission.
 
 ---
 
-## Part 2 — Deep analysis (optional, and only when you ask)
+## Part 2 — Deep analysis (optional, and not enabled in the published build)
+
+> **Status:** no hosted service exists yet, so the published extension has no endpoint compiled in,
+> requests no permission to reach one, and hides the button. Everything below describes how the
+> feature behaves when it is enabled — today that means running the open-source server yourself on
+> `localhost` and pointing Options at it. Nothing here happens in the shipped build.
 
 Some checks are impossible from a single page. Whether a review's phrasing appears on forty other
 products, whether a group of reviewers move together across listings, whether this listing used to

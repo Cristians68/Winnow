@@ -5,9 +5,17 @@
 Winnow analyses the integrity of Amazon reviews and shows you an adjusted rating — the
 rating a product would have if apparently manipulated reviews were removed.
 
-Grading runs entirely in your browser and makes no network requests at all. One optional feature —
-deep analysis — asks our server to compare this product against the corpus, and only when you click
-the button. It takes no affiliate money, in any mode.
+Grading runs entirely in your browser and makes no network requests at all. **The published build
+makes none whatsoever** — it holds no host permission outside Amazon's own pages, so it cannot
+contact a server even in principle.
+
+An optional feature, deep analysis, compares a product against a corpus held by a server. No hosted
+service exists yet, so it ships disabled: no endpoint is compiled in and the button is hidden. The
+server lives in `server/` and you can run it locally today and point Options at it. Enabling it in a
+release would mean adding a host permission, which is visible in the manifest and in the install
+prompt before anything is sent.
+
+It takes no affiliate money, in any mode.
 
 ---
 

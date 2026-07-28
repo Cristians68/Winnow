@@ -93,7 +93,7 @@ AI system even though it uses no machine-learning model.
 | Requirement | Position |
 |---|---|
 | Single purpose | Review-integrity analysis on Amazon product pages. Nothing else ships |
-| Minimum permissions | `storage` only, plus Amazon hosts and one API endpoint. `npm run package` **fails the build** if this drifts |
+| Minimum permissions | `storage` only, plus Amazon storefronts. **No other host permission at all** — the published build reaches no server, so it asks for nothing it does not use. Loopback is an *optional* permission, requested at the moment a developer configures a local endpoint. `npm run package` **fails the build** if any of this drifts |
 | No remote code | All code is bundled. Nothing is fetched and evaluated |
 | Affiliate-link policy | Winnow injects no affiliate links and rewrites no links. This policy exists because of the 2024 Honey affiliate-hijacking scandal; Winnow is positioned as its opposite |
 | Disclosure of data use | PRIVACY.md, linked from the listing, the popup and the options page |
@@ -112,11 +112,24 @@ See [SECURITY.md](../SECURITY.md).
       engine is open source "so you can check". While the repo is private that claim is false, and a
       trust product cannot ship a false claim about its own verifiability.
       Done: <https://github.com/Cristians68/Winnow>
+- [x] **No host permission the build does not use.** The published build reaches no server, so the
+      hosted endpoint and its host permission were removed rather than shipped unused and pointing at
+      a domain this project does not own
 - [ ] Manual screen-reader pass (NVDA on Windows, VoiceOver on macOS)
+- [ ] One known-manipulated listing checked end to end, to confirm the thresholds match reality
+      rather than only the fixtures
+
+### Not required for the local-only launch
+
+The published extension has no server, so none of the following gate a Chrome Web Store submission.
+They become required the moment deep analysis is enabled — at which point the privacy policy, the
+manifest and this checklist all change together.
+
 - [ ] Hosting region chosen and documented; EU representative appointed if required
 - [ ] `WINNOW_HASH_SALT` provisioned from a secret manager, never from source — and **kept stable
-      across deploys**. The server now warns at boot when it is unset and errors when it has changed
+      across deploys**. The server warns at boot when it is unset and errors when it has changed
       under an existing corpus, but nothing can recover reviewer hashes computed under a lost salt
 - [ ] `WINNOW_ALLOWED_ORIGINS` pinned to the published extension id
 - [ ] TLS termination configured; HSTS confirmed in production
 - [ ] Penetration test of the `/v1/analyse` endpoint
+- [ ] A domain that this project actually owns, for the API and the landing site

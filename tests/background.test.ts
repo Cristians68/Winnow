@@ -67,18 +67,36 @@ function send(message: unknown): Promise<{ ok: boolean; error?: string; data?: u
 
 const PAYLOAD = { type: 'winnow:deep-analyse', payload: { contractVersion: 1, asin: 'B000000001', reviews: [] } };
 
+/** The only destination this build can reach, so most tests configure it. */
+const LOOPBACK = 'http://127.0.0.1:8787/v1/analyse';
+
 beforeEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('deep-analysis broker', () => {
-  it('ignores a developer endpoint that is not loopback', async () => {
-    await loadWorker({ devApiEndpoint: 'https://evil.example.com/collect' });
-    await send(PAYLOAD);
+  // This build ships with no hosted endpoint (API_ENDPOINT is null), so the
+  // only reachable destination is a loopback address the user configured.
+  it('has no hosted endpoint compiled in', () => {
+    expect(API_ENDPOINT).toBeNull();
+  });
 
-    const [url] = fetchMock.mock.calls[0]!;
-    expect(url).toBe(API_ENDPOINT);
-    expect(url).not.toContain('evil.example.com');
+  it('refuses when no endpoint is configured at all, rather than inventing one', async () => {
+    await loadWorker();
+    const result = await send(PAYLOAD);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: 'Deep analysis is not configured in this build.' });
+  });
+
+  it('refuses a developer endpoint that is not loopback', async () => {
+    await loadWorker({ devApiEndpoint: 'https://evil.example.com/collect' });
+    const result = await send(PAYLOAD);
+
+    // Nothing is sent anywhere. With no hosted fallback there is not even a
+    // benign destination to fall back to, so the request simply does not happen.
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
   });
 
   it.each([
@@ -91,7 +109,7 @@ describe('deep-analysis broker', () => {
   });
 
   it('sends no cookies, credentials or referrer', async () => {
-    await loadWorker();
+    await loadWorker({ devApiEndpoint: LOOPBACK });
     await send(PAYLOAD);
 
     const [, init] = fetchMock.mock.calls[0]! as [string, RequestInit];
@@ -102,7 +120,7 @@ describe('deep-analysis broker', () => {
   });
 
   it('transmits the payload unchanged and adds nothing to it', async () => {
-    await loadWorker();
+    await loadWorker({ devApiEndpoint: LOOPBACK });
     await send(PAYLOAD);
 
     const [, init] = fetchMock.mock.calls[0]! as [string, RequestInit];
@@ -116,7 +134,7 @@ describe('deep-analysis broker', () => {
   });
 
   it('reports a server error without leaking the response body', async () => {
-    await loadWorker();
+    await loadWorker({ devApiEndpoint: LOOPBACK });
     fetchMock.mockResolvedValueOnce(new Response('stack trace here', { status: 500 }));
 
     const result = await send(PAYLOAD);
@@ -126,7 +144,7 @@ describe('deep-analysis broker', () => {
   });
 
   it('reports an unreachable service rather than throwing', async () => {
-    await loadWorker();
+    await loadWorker({ devApiEndpoint: LOOPBACK });
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
     const result = await send(PAYLOAD);
@@ -134,7 +152,7 @@ describe('deep-analysis broker', () => {
   });
 
   it('reports a timeout distinctly, so the user knows to retry', async () => {
-    await loadWorker();
+    await loadWorker({ devApiEndpoint: LOOPBACK });
     const abort = new Error('aborted');
     abort.name = 'AbortError';
     fetchMock.mockRejectedValueOnce(abort);
@@ -144,14 +162,14 @@ describe('deep-analysis broker', () => {
   });
 
   it('passes a successful response straight through', async () => {
-    await loadWorker();
+    await loadWorker({ devApiEndpoint: LOOPBACK });
     const result = await send(PAYLOAD);
     expect(result.ok).toBe(true);
     expect(result.data).toEqual({ asin: 'B000000001' });
   });
 
   it('aborts the request rather than hanging forever', async () => {
-    await loadWorker();
+    await loadWorker({ devApiEndpoint: LOOPBACK });
     await send(PAYLOAD);
     const [, init] = fetchMock.mock.calls[0]! as [string, RequestInit];
     expect(init.signal).toBeInstanceOf(AbortSignal);

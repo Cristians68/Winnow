@@ -60,7 +60,17 @@ const settle = async (ms = 600) => {
 /** happy-dom exposes URL control off-spec, so it is reached through a cast. */
 type HappyWindow = Window & { happyDOM?: { setURL?: (url: string) => void } };
 
-async function loadContentScript(url = 'https://www.amazon.com/dp/B08N5WRWNW'): Promise<void> {
+/**
+ * This build ships with no hosted endpoint, so the panel offers deep analysis
+ * only when a loopback one is configured. Tests that exercise the button opt in
+ * via `devApiEndpoint`; the default is the shipping configuration.
+ */
+const LOOPBACK = 'http://127.0.0.1:8787/v1/analyse';
+
+async function loadContentScript(
+  url = 'https://www.amazon.com/dp/B08N5WRWNW',
+  settings: Record<string, unknown> = {},
+): Promise<void> {
   (window as HappyWindow).happyDOM?.setURL?.(url);
   document.body.innerHTML = PRODUCT_PAGE;
 
@@ -73,7 +83,10 @@ async function loadContentScript(url = 'https://www.amazon.com/dp/B08N5WRWNW'): 
       onMessage: { addListener: vi.fn() },
     },
     storage: {
-      local: { get: vi.fn(async () => ({})), set: vi.fn(async () => undefined) },
+      local: {
+        get: vi.fn(async (key: string) => ({ [key]: settings })),
+        set: vi.fn(async () => undefined),
+      },
       onChanged: { addListener: (fn: (c: unknown, a: string) => void) => storageListeners.push(fn) },
     },
   };
@@ -132,8 +145,18 @@ describe('content script on a product page', () => {
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
-  it('runs deep analysis on click and folds the result into the grade', async () => {
+  // The shipping configuration. Offering a control that can only fail is worse
+  // than offering none, so the button is absent until an endpoint exists.
+  it('offers no deep-analysis button when no endpoint is configured', async () => {
     await loadContentScript();
+
+    expect(panel()).not.toBeNull();
+    expect(deepButton()).toBeNull();
+    expect(panelText()).not.toMatch(/deep analysis/i);
+  });
+
+  it('runs deep analysis on click and folds the result into the grade', async () => {
+    await loadContentScript(undefined, { devApiEndpoint: LOOPBACK });
 
     const before = panelText();
     const button = deepButton();
@@ -153,7 +176,7 @@ describe('content script on a product page', () => {
   });
 
   it('surfaces a failure instead of silently showing a stale grade', async () => {
-    await loadContentScript();
+    await loadContentScript(undefined, { devApiEndpoint: LOOPBACK });
     sendMessage.mockResolvedValueOnce({ ok: false, error: 'Could not reach the deep-analysis service.' });
 
     deepButton()!.click();
@@ -163,7 +186,7 @@ describe('content script on a product page', () => {
   });
 
   it('survives the broker throwing', async () => {
-    await loadContentScript();
+    await loadContentScript(undefined, { devApiEndpoint: LOOPBACK });
     sendMessage.mockRejectedValueOnce(new Error('port closed'));
 
     deepButton()!.click();

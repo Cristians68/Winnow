@@ -37,6 +37,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       const { devApiEndpoint } = await getSettings();
       const endpoint = isDevEndpoint(devApiEndpoint) ? devApiEndpoint : API_ENDPOINT;
 
+      // No hosted service in this build, and no local one configured. The panel
+      // hides the button in that state, so reaching here means something asked
+      // for deep analysis anyway — refuse rather than invent a destination.
+      if (endpoint === null) {
+        sendResponse({ ok: false, error: 'Deep analysis is not configured in this build.' });
+        return;
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

@@ -127,6 +127,21 @@ site, does not use the "tabs" permission, and makes no network requests of any k
 extension has no server to send anything to.
 ```
 
+### Optional host permissions (`http://localhost/*`, `http://127.0.0.1/*`)
+
+```
+Not requested at install, and not used by the published extension.
+
+Winnow's analysis engine and its optional server component are open source. A developer running
+that server on their own machine can point the extension at it from the options page, which is
+the only situation in which this permission is requested — at that moment, by explicit user
+action, via chrome.permissions.request.
+
+The setting accepts loopback addresses only; any other address is rejected and never stored, and
+the service worker independently refuses to send to a non-loopback endpoint. A normal install
+never holds this permission and never contacts anything.
+```
+
 ### Remote code
 
 ```

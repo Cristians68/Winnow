@@ -6,7 +6,6 @@
   "permissions": ["storage"],
   "optional_host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
   "host_permissions": [
-    "https://api.winnow.app/*",
     "*://*.amazon.com/*",
     "*://*.amazon.co.uk/*",
     "*://*.amazon.ca/*",

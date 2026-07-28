@@ -14,8 +14,8 @@ import { analyse } from '../core/score.js';
 import { mountPanel } from './ui.js';
 import type { Analysis, ProductSnapshot } from '../core/types.js';
 import type { DeepAugmentation } from '../core/score.js';
-import { DEFAULT_SETTINGS, getSettings, SETTINGS_KEY, type Settings } from '../shared/settings.js';
-import { buildRequest, toAugmentation, type DeepAnalysisResponse } from '../shared/deep.js';
+import { DEFAULT_SETTINGS, getSettings, isDevEndpoint, SETTINGS_KEY, type Settings } from '../shared/settings.js';
+import { API_ENDPOINT, buildRequest, toAugmentation, type DeepAnalysisResponse } from '../shared/deep.js';
 
 let currentAnalysis: Analysis | null = null;
 let settings: Settings = DEFAULT_SETTINGS;
@@ -34,12 +34,22 @@ let augmentation: DeepAugmentation | undefined;
 let deepState: 'idle' | 'loading' | 'done' | 'error' = 'idle';
 let deepError: string | undefined;
 
+/**
+ * Deep analysis is offered only when there is somewhere to send it: a hosted
+ * endpoint, or a loopback one the user configured in Options. Otherwise the
+ * button is hidden rather than shown and left to fail, since a control that
+ * cannot work is worse than no control.
+ */
+function deepAnalysisAvailable(): boolean {
+  return API_ENDPOINT !== null || isDevEndpoint(settings.devApiEndpoint);
+}
+
 function render(): void {
   if (!currentAnalysis || !settings.enabled) return;
   mountPanel(currentAnalysis, {
     expanded: settings.alwaysExpand,
     theme: settings.theme,
-    onDeepAnalysis: runDeepAnalysis,
+    ...(deepAnalysisAvailable() ? { onDeepAnalysis: runDeepAnalysis } : {}),
     deepState,
     deepError,
   });
