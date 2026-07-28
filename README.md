@@ -21,7 +21,9 @@ It takes no affiliate money, in any mode.
 
 ## How we make money
 
-You pay us. Nobody else does.
+Today: we don't. Winnow is free, there is nothing to buy, and no money changes hands.
+
+When that changes, the rule is: **you pay us, nobody else does.**
 
 That sentence is the whole product. Winnow exists because the alternatives failed this test:
 

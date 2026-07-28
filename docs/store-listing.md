@@ -61,7 +61,8 @@ WHAT IT CHECKS
 
 HOW WE MAKE MONEY
 
-You pay us. Nobody else does.
+Right now, we don't. Winnow is free and there is nothing to buy. If that ever changes, it
+will be you paying us — never a merchant.
 
 Winnow carries no affiliate links, no referral tags, no sponsored placements and no merchant
 relationships — permanently, as a binding commitment in our privacy policy. A tool that earns
@@ -173,7 +174,7 @@ Privacy policy URL: link to the hosted copy of `PRIVACY.md`.
    inspectable rather than a black box.
 4. **The honesty state** — a low-confidence result showing the "estimate, not proof" basis line.
    Differentiates from competitors who project false certainty.
-5. **The options page** — the "You pay us. Nobody else does." pledge.
+5. **The options page** — the "how we make money" pledge and the methodology notes.
 
 Do not fabricate these. Capture them from real product pages once the parser is verified against
 live Amazon.
