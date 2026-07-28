@@ -103,6 +103,51 @@ describe('colour contrast (WCAG 2.2 AA)', () => {
   });
 });
 
+// --- non-text contrast (WCAG 2.2 AA, 1.4.11) -------------------------------
+
+/**
+ * 1.4.11 requires 3:1 for visual information needed to identify a control or
+ * its state. COMPLIANCE.md carried this as "Partial — borders not yet computed"
+ * for the whole build; computing them found the toggle button's border sitting
+ * at 1.52:1 in light and 1.81:1 in dark.
+ *
+ * Deliberately *not* included below: the card's outer border and the footer
+ * divider. Those are decorative separators, not controls, and nothing about
+ * identifying or operating the panel depends on seeing them — the panel is
+ * identified by its heading and content. Holding decorative rules to 3:1 would
+ * mean drawing heavy lines through a component that sits inside someone else's
+ * page, which serves the checklist rather than the user. Stated here so the
+ * omission is a documented judgement rather than an oversight.
+ */
+const NON_TEXT_PAIRS: Array<[fg: string, bg: string, label: string]> = [
+  // Focus indicator, everywhere a focusable control can sit.
+  ['--focus', '--bg', 'focus ring on panel background'],
+  ['--focus', '--surface', 'focus ring on signal surface'],
+  ['--focus', '--foot-bg', 'focus ring on footer'],
+  // Control boundaries and fills that identify the control itself.
+  ['--btn-border', '--bg', 'breakdown toggle border'],
+  ['--deep-bg', '--bg', 'deep-analysis button fill'],
+];
+
+describe('non-text contrast (WCAG 2.2 AA 1.4.11)', () => {
+  const themes = { light: tokens(LIGHT_TOKENS), dark: tokens(DARK_TOKENS) };
+
+  for (const [name, theme] of Object.entries(themes)) {
+    it(`every ${name} control boundary and focus indicator meets 3:1`, () => {
+      const failures = NON_TEXT_PAIRS.map(([fg, bg, label]) => ({
+        label,
+        ratio: contrastRatio(theme[fg]!, theme[bg]!),
+        fgHex: theme[fg]!,
+        bgHex: theme[bg]!,
+      }))
+        .filter((r) => r.ratio < 3)
+        .map((r) => `${r.label}: ${r.fgHex} on ${r.bgHex} = ${r.ratio.toFixed(2)}:1`);
+
+      expect(failures).toEqual([]);
+    });
+  }
+});
+
 // --- structural accessibility ----------------------------------------------
 
 function analysis(overrides: Partial<Analysis> = {}): Analysis {

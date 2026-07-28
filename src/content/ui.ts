@@ -61,7 +61,7 @@ export const LIGHT_TOKENS = `
   --mixed-bg: #fdf3e3; --mixed-fg: #7a4e00;
   --bad-bg: #fdeaea;   --bad-fg: #8c1f19;
   --none-bg: #eef0f3;  --none-fg: #4a525e;
-  --btn-border: #ccd2db;
+  --btn-border: #858e9c;
   --btn-hover: #f2f5fa;
   --deep-bg: #12395f;
   --deep-hover: #0d2b49;
@@ -84,7 +84,7 @@ export const DARK_TOKENS = `
   --mixed-bg: #302408; --mixed-fg: #f2c76a;
   --bad-bg: #371411;   --bad-fg: #f79a94;
   --none-bg: #232730;  --none-fg: #a8b0ba;
-  --btn-border: #3d4450;
+  --btn-border: #6b7480;
   --btn-hover: #232730;
   --deep-bg: #2a6db5;
   --deep-hover: #3480d0;

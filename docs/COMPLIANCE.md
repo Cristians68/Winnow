@@ -20,7 +20,7 @@ WCAG 2.2 AA is the single target.
 | 1.3.1 Info and Relationships | Panel is a `role="region"` landmark labelled by its heading; signals are a real `<ul>`; headings are genuine `<h2>` | Met |
 | 1.4.1 Use of Color | Every status pill carries a text label (Clear / Caution / Flagged / No data). Colour is never the sole carrier of meaning | Met |
 | 1.4.3 Contrast (Minimum) | All foreground/surface pairs ≥4.5:1 in both themes | **Met** — `tests/a11y.test.ts` parses the panel stylesheet and computes every pair, so a colour change that breaks WCAG fails CI |
-| 1.4.11 Non-text Contrast | Focus indicator and control borders meet 3:1 | Partial — verified for filled controls, borders not yet computed |
+| 1.4.11 Non-text Contrast | Focus indicator and control boundaries meet 3:1 | **Met** — `tests/a11y.test.ts` computes the focus ring against all three surfaces it can appear on, plus the toggle border and the deep-analysis button fill. Computing these found the toggle border at 1.52:1 (light) and 1.81:1 (dark); it was darkened to 3.31:1 and 3.75:1. The card border and footer divider are deliberately excluded as decorative separators — see the note in the test |
 | 1.4.12 Text Spacing | No fixed heights on text containers; content reflows | Met |
 | 2.1.1 Keyboard | Every control is a native `<button>` or `<a>`; no custom key handling to trap focus | Met |
 | 2.4.3 Focus Order | DOM order matches visual order | Met |
@@ -33,7 +33,7 @@ WCAG 2.2 AA is the single target.
 | 4.1.3 Status Messages | Deep-analysis progress and results land in `role="status"` `aria-live="polite"` — announced without stealing focus | Met |
 | 2.3.3 Animation from Interactions | `prefers-reduced-motion` removes entry animation and transitions | Met (AAA, done anyway) |
 
-**Verified in CI:** 19 automated checks in `tests/a11y.test.ts` cover contrast, landmark structure,
+**Verified in CI:** 21 automated checks in `tests/a11y.test.ts` cover contrast, landmark structure,
 text alternatives, disclosure wiring, live regions, target size, reduced motion and safe external links.
 
 **Also verified in CI:** `tests/axe.test.ts` runs the axe-core rule set (WCAG 2.0/2.1/2.2 A and AA,
