@@ -16,7 +16,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { Corpus } from './db.ts';
-import { LIMITS, RejectedRequest, sanitiseRequest } from './privacy.ts';
+import { LIMITS, RejectedRequest, sanitiseRequest, SALT_IS_EPHEMERAL, saltFingerprint } from './privacy.ts';
 import { runDeepAnalysis } from './deep.ts';
 
 const RATE_LIMIT = { windowMs: 60_000, maxRequests: 60 } as const;
@@ -182,12 +182,43 @@ export function createApp(corpus: Corpus) {
   });
 }
 
+/**
+ * Report, at boot, anything about the reviewer-id salt that would quietly
+ * disable the reviewer-network signal.
+ *
+ * Both cases below leave a server that starts cleanly, answers requests, and
+ * reports that reviewers look unconnected — which is exactly what it would say
+ * about a genuinely clean product. Silence here would mean shipping a blind
+ * signal that looks like a working one.
+ */
+function warnAboutSalt(corpus: Corpus): void {
+  if (SALT_IS_EPHEMERAL) {
+    console.warn(
+      '[winnow] WINNOW_HASH_SALT is not set — using a random per-process salt. Reviewer hashes will ' +
+        'not match anything stored by a previous run, so the reviewer-network signal starts blind. ' +
+        'Fine for local development; set it from a secret manager in production.',
+    );
+  }
+
+  const drift = corpus.checkSaltFingerprint(saltFingerprint());
+  if (drift?.changed) {
+    console.error(
+      `[winnow] the reviewer-id salt has CHANGED since this corpus was last written. ` +
+        `${drift.orphanedReviewers.toLocaleString()} stored reviewer hashes can no longer be matched, ` +
+        'so cross-product reviewer overlap will not be detected for them. Restore the previous ' +
+        'WINNOW_HASH_SALT, or accept that the reviewer-network signal is rebuilding from zero.',
+    );
+  }
+}
+
 /** How often the retention sweep runs. Daily is ample for a 24-month policy. */
 const RETENTION_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export function startServer(port = Number(process.env.PORT ?? 8787)): ReturnType<typeof createApp> {
   const corpus = new Corpus();
   const server = createApp(corpus);
+
+  warnAboutSalt(corpus);
 
   // Enforce the retention promise in PRIVACY.md. Run once at boot so a restart
   // after downtime catches up, then daily.

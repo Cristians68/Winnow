@@ -21,7 +21,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Corpus } from '../src/db.ts';
-import { hashIdentifier } from '../src/privacy.ts';
+import { hashIdentifier, saltFingerprint, HASH_SALT } from '../src/privacy.ts';
 import { analyseText, contributeShingles, shingleHashes } from '../src/signals/aitext.ts';
 import { analyseNetwork, contributeReviewers } from '../src/signals/network.ts';
 import { analyseHistory } from '../src/signals/hijack.ts';
@@ -116,6 +116,49 @@ describe('reviewer network liveness', () => {
       review({ id: `t-r${i}`, reviewerId: `stranger-${i}`, text: `Unconnected review ${i} written by a stranger.` }),
     );
     expect(analyseNetwork('B00SOLO009', target, hashesFor(target), corpus).productFinding.status).not.toBe('fail');
+  });
+});
+
+// --- salt continuity -------------------------------------------------------
+
+/**
+ * The operational version of a dead signal.
+ *
+ * Reviewer hashes are only comparable to each other while the salt stays put.
+ * Lose WINNOW_HASH_SALT on a restart and every stored hash becomes unmatchable,
+ * so the reviewer-network signal reports "no unusual overlap" about a corpus it
+ * can no longer read. That reads identically to a clean product.
+ */
+describe('reviewer-id salt continuity', () => {
+  it('records the fingerprint on first use and stays quiet', () => {
+    expect(corpus.checkSaltFingerprint('fingerprint-a')).toBeNull();
+    expect(corpus.checkSaltFingerprint('fingerprint-a')).toBeNull();
+  });
+
+  it('reports a changed salt, and how many reviewers it orphaned', () => {
+    const reviews = Array.from({ length: 4 }, (_, i) =>
+      review({ id: `r${i}`, reviewerId: `person-${i}`, text: `A review with enough words in it, number ${i}.` }),
+    );
+    contributeReviewers('B00SALT001', reviews, hashesFor(reviews), corpus, reviewKeyFor);
+
+    expect(corpus.checkSaltFingerprint('fingerprint-a')).toBeNull();
+
+    const drift = corpus.checkSaltFingerprint('fingerprint-b');
+    expect(drift).toEqual({ changed: true, orphanedReviewers: 4 });
+  });
+
+  it('warns once per transition rather than on every boot', () => {
+    corpus.checkSaltFingerprint('fingerprint-a');
+    expect(corpus.checkSaltFingerprint('fingerprint-b')?.changed).toBe(true);
+    // Same salt as the previous boot now — nothing further to report.
+    expect(corpus.checkSaltFingerprint('fingerprint-b')).toBeNull();
+  });
+
+  it('derives a fingerprint that reveals nothing about the salt itself', () => {
+    const fingerprint = saltFingerprint();
+    expect(fingerprint).toMatch(/^[0-9a-f]{32}$/);
+    expect(fingerprint).not.toContain(HASH_SALT);
+    expect(HASH_SALT).not.toContain(fingerprint);
   });
 });
 

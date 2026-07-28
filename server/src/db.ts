@@ -108,6 +108,13 @@ CREATE TABLE IF NOT EXISTS cache (
   payload        TEXT NOT NULL,
   computed_at    TEXT NOT NULL
 );
+
+-- Small key/value store for facts about the corpus itself. Currently holds the
+-- salt fingerprint; see Corpus.checkSaltFingerprint().
+CREATE TABLE IF NOT EXISTS meta (
+  key            TEXT PRIMARY KEY,
+  value          TEXT NOT NULL
+);
 `;
 
 /**
@@ -361,6 +368,50 @@ export class Corpus {
     this.db.exec(`DELETE FROM shingle_days WHERE shingle_hash NOT IN (SELECT DISTINCT shingle_hash FROM shingles)`);
 
     return { reviews, observations, cache };
+  }
+
+  // --- salt continuity -------------------------------------------------------
+
+  /**
+   * Detect that the reviewer-id salt has changed under an existing corpus.
+   *
+   * Reviewer ids are HMAC-hashed with WINNOW_HASH_SALT, and when that variable
+   * is absent a random per-process salt is used instead — deliberately, so a dev
+   * server never falls back to a guessable default. The cost of that choice is a
+   * silent production failure mode: if a deploy restarts without the variable, or
+   * it is rotated, every reviewer hash computed afterwards stops matching the
+   * ones already stored. The reviewer-network signal then finds no overlaps and
+   * reports that reviewers look unconnected — indistinguishable, from the
+   * outside, from a clean product.
+   *
+   * That is the same failure this project has already been bitten by: a signal
+   * that cannot fire reads as a signal that found nothing. So the corpus records
+   * a fingerprint of the salt on first use and compares it on every boot.
+   *
+   * Returns what the caller should tell the operator, or null when all is well.
+   */
+  checkSaltFingerprint(fingerprint: string): { changed: boolean; orphanedReviewers: number } | null {
+    const stored = this.db.prepare(`SELECT value FROM meta WHERE key = 'salt_fingerprint'`).get() as unknown as
+      | { value: string }
+      | undefined;
+
+    if (!stored) {
+      this.db
+        .prepare(`INSERT OR REPLACE INTO meta (key, value) VALUES ('salt_fingerprint', ?)`)
+        .run(fingerprint);
+      return null;
+    }
+
+    if (stored.value === fingerprint) return null;
+
+    const { n } = this.db
+      .prepare(`SELECT COUNT(*) AS n FROM reviews WHERE reviewer_hash IS NOT NULL`)
+      .get() as unknown as { n: number };
+
+    // Record the new fingerprint so the warning describes one transition rather
+    // than repeating forever, but report the damage first.
+    this.db.prepare(`UPDATE meta SET value = ? WHERE key = 'salt_fingerprint'`).run(fingerprint);
+    return { changed: true, orphanedReviewers: n };
   }
 
   observationCount(asin: string): number {

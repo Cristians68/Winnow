@@ -56,8 +56,21 @@ export class RejectedRequest extends Error {
  */
 export const HASH_SALT: string = process.env.WINNOW_HASH_SALT ?? randomBytes(32).toString('hex');
 
+/** True when the salt is ephemeral, so the corpus will not survive a restart. */
+export const SALT_IS_EPHEMERAL: boolean = process.env.WINNOW_HASH_SALT === undefined;
+
 export function hashIdentifier(value: string): string {
   return createHmac('sha256', HASH_SALT).update(value).digest('hex').slice(0, 32);
+}
+
+/**
+ * A value derived from the salt that can be stored and compared, without the
+ * salt itself ever touching the database. Hashing a fixed string under the same
+ * HMAC means an identical salt yields an identical fingerprint and a changed
+ * salt yields a different one, which is all the boot check needs.
+ */
+export function saltFingerprint(): string {
+  return hashIdentifier('winnow:salt-continuity-probe');
 }
 
 function assert(condition: unknown, reason: string): asserts condition {

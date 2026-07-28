@@ -108,12 +108,15 @@ See [SECURITY.md](../SECURITY.md).
 
 ## Verification checklist before public launch
 
-- [ ] **Repository made public** — the panel, popup, options page and privacy policy all state the
+- [x] **Repository made public** — the panel, popup, options page and privacy policy all state the
       engine is open source "so you can check". While the repo is private that claim is false, and a
-      trust product cannot ship a false claim about its own verifiability
+      trust product cannot ship a false claim about its own verifiability.
+      Done: <https://github.com/Cristians68/Winnow>
 - [ ] Manual screen-reader pass (NVDA on Windows, VoiceOver on macOS)
 - [ ] Hosting region chosen and documented; EU representative appointed if required
-- [ ] `WINNOW_HASH_SALT` provisioned from a secret manager, never from source
+- [ ] `WINNOW_HASH_SALT` provisioned from a secret manager, never from source — and **kept stable
+      across deploys**. The server now warns at boot when it is unset and errors when it has changed
+      under an existing corpus, but nothing can recover reviewer hashes computed under a lost salt
 - [ ] `WINNOW_ALLOWED_ORIGINS` pinned to the published extension id
 - [ ] TLS termination configured; HSTS confirmed in production
 - [ ] Penetration test of the `/v1/analyse` endpoint

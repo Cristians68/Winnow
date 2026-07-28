@@ -58,9 +58,17 @@ What remains worth defending:
 
 ### Deployment requirements
 
-- `WINNOW_HASH_SALT` **must** be set from a secret manager. Without it a random per-process salt is
-  generated, which is safe but makes the corpus non-portable across restarts — deliberately chosen
-  over a guessable default.
+- `WINNOW_HASH_SALT` **must** be set from a secret manager, and must stay stable across deploys.
+  Without it a random per-process salt is generated, which is safe but makes the corpus non-portable
+  across restarts — deliberately chosen over a guessable default.
+
+  Losing or rotating it is a *silent* failure, which is why the server now refuses to be quiet about
+  it. Reviewer ids are only comparable to each other while the salt holds; change it and every
+  stored hash becomes unmatchable, so the reviewer-network signal reports "no unusual overlap" about
+  a corpus it can no longer read — indistinguishable from a genuinely clean product. The corpus
+  therefore stores a fingerprint of the salt (never the salt) and compares it at boot: an unset salt
+  warns, and a changed salt logs an error naming how many reviewer hashes were orphaned. Neither
+  condition can be repaired after the fact.
 - `WINNOW_ALLOWED_ORIGINS` should pin the published extension id once known.
 - `WINNOW_TRUST_PROXY=1` only behind a proxy that overwrites `X-Forwarded-For`. Otherwise the header
   is ignored and rate limiting cannot be trivially evaded by spoofing it.
