@@ -67,6 +67,8 @@ const PAIRS: Array<[fg: string, bg: string, label: string]> = [
   ['--link', '--foot-bg', 'footer link'],
   ['--muted', '--foot-bg', 'footer text'],
   ['--strike', '--bg', 'struck-through original rating'],
+  ['--text', '--surface', 'verdict headline'],
+  ['--muted-strong', '--surface', 'verdict body'],
 ];
 
 describe('colour contrast (WCAG 2.2 AA)', () => {
@@ -158,6 +160,7 @@ function analysis(overrides: Partial<Analysis> = {}): Analysis {
     adjustedRating: 3.9,
     displayedRating: 4.6,
     discountedCount: 5,
+    concerningSignals: 2,
     sampleSize: 13,
     confidence: 'moderate',
     basis: 'Based on the 13 reviews visible on this page. This is an estimate, not proof.',

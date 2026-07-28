@@ -34,6 +34,33 @@ export const REVIEW_SIGNALS: ReviewSignal[] = [
 /** Relative weight of the per-review evidence against product-level signals. */
 const REVIEW_COMPONENT_WEIGHT = 1.6;
 
+/**
+ * Suspicion at which a review counts as discounted.
+ *
+ * This is the only threshold that drives the headline count and the grade cap,
+ * so any signal meant to be able to condemn a review on its own must reach it.
+ */
+export const DISCOUNT_THRESHOLD = 0.4;
+
+/**
+ * Minimum evidence before Winnow will grade at all.
+ *
+ * The weighted score alone is not enough of a guard. The rating histogram
+ * carries weight 1.4, and its confidence stays above zero even on a handful of
+ * ratings, so a product with **no readable reviews and four ratings** cleared
+ * the old effective-weight floor and graded A at 100/100 — "Reviews look
+ * genuine", from no reviews at all. A single rating produced a confident C with
+ * an adjusted rating of 5.0.
+ *
+ * Both were found by live testing, and both are the failure this product exists
+ * to avoid: absence of evidence rendered as evidence of absence. A histogram is
+ * a summary of reviews, not a substitute for having seen any, so grading now
+ * also requires either a usable sample of reviews or enough ratings behind the
+ * histogram for it to mean something.
+ */
+export const MIN_REVIEWS_TO_GRADE = 3;
+export const MIN_RATINGS_FOR_HISTOGRAM_ONLY = 50;
+
 /** Assumed star value of a manipulated review when back-solving a clean rating. */
 const MANIPULATED_RATING_ASSUMPTION = 5;
 
@@ -81,7 +108,14 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
     effectiveWeight += w;
   }
 
-  const insufficientData = effectiveWeight < 0.15;
+  // Enough signal weight to compute a number, AND enough underlying evidence for
+  // that number to mean anything. The second half is not redundant: see the
+  // constants above for the live cases that cleared the first and should not have.
+  const thinEvidence =
+    sampleSize < MIN_REVIEWS_TO_GRADE &&
+    (snapshot.totalRatings ?? 0) < MIN_RATINGS_FOR_HISTOGRAM_ONLY;
+
+  const insufficientData = effectiveWeight < 0.15 || thinEvidence;
   const trustScore = insufficientData
     ? 50
     : Math.round(clamp(weightedSum / effectiveWeight) * 100);
@@ -91,7 +125,17 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
     ? null
     : estimateAdjustedRating(displayedRating, meanSuspicion, sampleConfidence);
 
-  const discountedCount = assessments.filter((a) => a.suspicion >= 0.4).length;
+  const discountedCount = assessments.filter((a) => a.suspicion >= DISCOUNT_THRESHOLD).length;
+
+  // Signals that reached warn or fail on their own, independent of whether any
+  // single review crossed the discount bar. The panel needs this because the two
+  // counts can legitimately disagree: several reviews can each be flagged by a
+  // check without any one of them accumulating enough suspicion to be discounted.
+  // Reporting only the second produced "Nothing flagged across 9 visible
+  // reviews" directly above a row reading FLAGGED.
+  const concerningSignals = signals.filter(
+    (s) => s.status === 'fail' || s.status === 'warn',
+  ).length;
 
   return {
     asin: snapshot.asin,
@@ -102,6 +146,7 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
     adjustedRating,
     displayedRating,
     discountedCount,
+    concerningSignals,
     sampleSize,
     confidence: confidenceLevel(sampleSize, snapshot, insufficientData),
     basis: describeBasis(sampleSize, snapshot, insufficientData),

@@ -30,6 +30,7 @@ function analysis(overrides: Partial<Analysis> = {}): Analysis {
     adjustedRating: 4.1,
     displayedRating: 4.6,
     discountedCount: 2,
+    concerningSignals: 2,
     sampleSize: 8,
     confidence: 'moderate',
     basis: 'Based on the 8 reviews visible on this page. This is an estimate, not proof.',

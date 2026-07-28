@@ -84,6 +84,13 @@ export interface Analysis {
   displayedRating: number | null;
   /** How many of the sampled reviews we substantially discounted. */
   discountedCount: number;
+  /**
+   * How many checks reached caution or flagged, independent of discountedCount.
+   * A review can be flagged by a check without accumulating enough suspicion to
+   * be discounted, so the panel must not report "nothing flagged" off the other
+   * number alone.
+   */
+  concerningSignals: number;
   sampleSize: number;
   confidence: ConfidenceLevel;
   /** Honest, user-facing statement of what this analysis is based on. */

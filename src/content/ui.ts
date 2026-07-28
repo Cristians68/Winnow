@@ -18,6 +18,7 @@
  */
 
 import type { Analysis, Grade, SignalResult } from '../core/types.js';
+import { buildVerdict } from '../core/verdict.js';
 
 const HOST_ID = 'winnow-root';
 
@@ -146,6 +147,21 @@ export const STYLES = `
 .stat .value.muted { color: var(--muted); font-weight: 600; font-size: 15px; }
 .stat .value del { color: var(--strike); font-weight: 500; font-size: 14px; margin-left: 7px; }
 
+.verdict {
+  margin: 12px 0 0; padding: 11px 13px;
+  background: var(--surface); border-radius: 9px;
+  border-left: 4px solid var(--none-fg);
+}
+.verdict.good { border-left-color: var(--good-fg); }
+.verdict.mixed { border-left-color: var(--mixed-fg); }
+.verdict.bad { border-left-color: var(--bad-fg); }
+.verdict-head {
+  margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text);
+}
+.verdict-body {
+  margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted-strong);
+}
+
 .basis {
   font-size: 12.5px; color: var(--muted-strong);
   background: var(--surface); border-radius: 9px;
@@ -240,15 +256,49 @@ function headlineFor(analysis: Analysis): { title: string; sub: string } {
     F: 'Reviews look heavily manipulated',
   };
 
-  const { discountedCount, sampleSize } = analysis;
+  const { discountedCount, concerningSignals, sampleSize } = analysis;
   const noun = sampleSize === 1 ? 'review' : 'reviews';
-  return {
-    title: titles[analysis.grade],
-    sub:
-      discountedCount === 0
-        ? `Nothing flagged across ${sampleSize} visible ${noun}.`
-        : `${discountedCount} of ${sampleSize} visible ${noun} discounted.`,
-  };
+
+  // Three cases, because two counts can disagree. A review can be flagged by a
+  // check without accumulating enough suspicion to be discounted, and saying
+  // "nothing flagged" in that situation put the summary in direct contradiction
+  // with a FLAGGED row a few pixels below it. If any check raised a concern, the
+  // summary says so even when no individual review was discounted.
+  const sub = (() => {
+    if (discountedCount > 0) {
+      return `${discountedCount} of ${sampleSize} visible ${noun} discounted.`;
+    }
+    if (concerningSignals > 0) {
+      return concerningSignals === 1
+        ? `No review was discounted, but 1 check raised a concern.`
+        : `No review was discounted, but ${concerningSignals} checks raised concerns.`;
+    }
+    return `Nothing flagged across ${sampleSize} visible ${noun}.`;
+  })();
+
+  return { title: titles[analysis.grade], sub };
+}
+
+/**
+ * The "so should I buy it?" block.
+ *
+ * Deliberately a `<section>` with its own heading rather than another styled
+ * paragraph: it answers a different question from everything around it, and a
+ * screen-reader user should be able to find it without reading the breakdown.
+ * The tone class only tints a border — the meaning is entirely in the words, so
+ * this still satisfies "colour is never the sole carrier of meaning".
+ */
+function renderVerdict(analysis: Analysis): HTMLElement {
+  const { headline, advice, tone } = buildVerdict(analysis);
+
+  const wrap = el('section', `verdict ${tone}`);
+  wrap.setAttribute('aria-labelledby', 'winnow-verdict-heading');
+
+  const heading = el('h3', 'verdict-head', headline);
+  heading.id = 'winnow-verdict-heading';
+
+  wrap.append(heading, el('p', 'verdict-body', advice));
+  return wrap;
 }
 
 function renderRatings(analysis: Analysis): HTMLElement {
@@ -356,6 +406,7 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   card.append(head);
 
   if (!analysis.insufficientData) card.append(renderRatings(analysis));
+  card.append(renderVerdict(analysis));
   card.append(el('p', 'basis', analysis.basis));
 
   // --- breakdown
