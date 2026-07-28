@@ -41,6 +41,11 @@ function stars(value: number): string {
   return `${value.toFixed(1)}★`;
 }
 
+/** Join sentences, skipping any that are empty so no double or leading space appears. */
+function join(...parts: string[]): string {
+  return parts.filter((p) => p.trim().length > 0).join(' ');
+}
+
 export function buildVerdict(analysis: Analysis): Verdict {
   const { grade, displayedRating, adjustedRating, insufficientData, sampleSize, discountedCount } = analysis;
 
@@ -69,9 +74,11 @@ export function buildVerdict(analysis: Analysis): Verdict {
   if (grade === 'D' || grade === 'F') {
     return {
       headline: materialGap ? `Don't rely on ${shown}` : `Treat ${shown} with caution`,
-      advice:
-        `${restated} Enough of the visible reviews look manipulated that the headline rating is not a safe guide. ` +
+      advice: join(
+        restated,
+        'Enough of the visible reviews look manipulated that the headline rating is not a safe guide.',
         'Read the 1- and 2-star reviews before deciding, and weigh them more heavily than the average.',
+      ),
       tone: 'bad',
     };
   }
@@ -79,9 +86,11 @@ export function buildVerdict(analysis: Analysis): Verdict {
   if (grade === 'C') {
     return {
       headline: `${shown} looks softer than it appears`,
-      advice:
-        `${restated} Some of what is visible does not hold up, so treat the rating as an optimistic figure rather than a wrong one. ` +
+      advice: join(
+        restated,
+        'Some of what is visible does not hold up, so treat the rating as an optimistic figure rather than a wrong one.',
         'Worth reading the critical reviews before you commit.',
+      ),
       tone: 'mixed',
     };
   }

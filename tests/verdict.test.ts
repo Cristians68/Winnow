@@ -187,6 +187,37 @@ describe('defects found on live Amazon listings', () => {
     expect(a.adjustedRating).toBeNull();
   });
 
+  // Live listing, 8 total ratings: 4 of 7 visible reviews unverified five-star,
+  // every other check clear. It graded D — "Many reviews look manipulated" — on
+  // one kind of evidence, at low confidence, about a brand-new product.
+  // Unverified is not manipulated.
+  it('will not call a listing manipulated on a single check', () => {
+    const reviews = Array.from({ length: 7 }, (_, i) => review(i, { verified: i >= 4 }));
+    const a = analyse(snapshot(reviews, { totalRatings: 8, displayedRating: 4.2 }));
+
+    const concerning = a.signals.filter((s) => s.status === 'fail' || s.status === 'warn');
+    expect(concerning.map((s) => s.id)).toEqual(['verified']);
+    expect(['A', 'B', 'C']).toContain(a.grade);
+  });
+
+  // But corroboration must still be able to reach D/F, or the cap is toothless.
+  it('still reaches a harsh grade when several checks agree', () => {
+    const reviews = Array.from({ length: 8 }, (_, i) =>
+      review(i, {
+        verified: false,
+        rating: 5,
+        text: 'Great!',              // depth fires
+        helpfulVotes: 0,             // helpfulness fires
+        date: daysAgo(400),
+      }),
+    );
+    const a = analyse(snapshot(reviews, { totalRatings: 3000 }));
+
+    const concerning = a.signals.filter((s) => s.status === 'fail' || s.status === 'warn');
+    expect(concerning.length).toBeGreaterThanOrEqual(2);
+    expect(['D', 'F']).toContain(a.grade);
+  });
+
   // A histogram with real volume behind it is still enough on its own.
   it('still grades when reviews are unreadable but the histogram has real volume', () => {
     const a = analyse(snapshot([], { totalRatings: 5000 }));

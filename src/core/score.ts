@@ -141,7 +141,7 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
     asin: snapshot.asin,
     grade: insufficientData
       ? 'C'
-      : capGradeByDiscountedShare(toGrade(trustScore), discountedCount, sampleSize),
+      : capGradeByDiscountedShare(toGrade(trustScore), discountedCount, sampleSize, concerningSignals),
     trustScore,
     adjustedRating,
     displayedRating,
@@ -359,13 +359,39 @@ const GRADE_ORDER: Grade[] = ['A', 'B', 'C', 'D', 'F'];
  * than a penalty: it can only lower a grade, never raise one, and it maps
  * directly onto the "N of M visible reviews discounted" line already shown, so
  * the user can see why.
+ *
+ * ## Why a single check cannot push past C
+ *
+ * "Many reviews look manipulated" is close to an accusation, and the engine
+ * should not make it on one kind of evidence. Live testing produced exactly that
+ * failure: a listing with eight total ratings, where four of seven visible
+ * reviews were unverified five-star and *every other check was clear*, graded D.
+ * Unverified is not manipulated — gifts and guest checkout produce that pattern
+ * on any new product — and the panel was calling a brand-new listing a fraud on
+ * a single indicator, at low confidence.
+ *
+ * So corroboration gates severity, the same way the phrasing detector already
+ * refuses to call text machine-generated without three of its four conditions.
+ * One check acting alone can say "some reviews look questionable" (C). Saying
+ * "many look manipulated" (D or F) requires at least two independent checks to
+ * agree. A missed fake costs less than a false accusation.
  */
-export function capGradeByDiscountedShare(grade: Grade, discounted: number, sampleSize: number): Grade {
+export function capGradeByDiscountedShare(
+  grade: Grade,
+  discounted: number,
+  sampleSize: number,
+  concerningSignals = Number.POSITIVE_INFINITY,
+): Grade {
   if (sampleSize === 0) return grade;
   const share = discounted / sampleSize;
 
-  const floor: Grade | null = share >= 0.5 ? 'D' : share >= 0.35 ? 'C' : share >= 0.15 ? 'B' : null;
+  let floor: Grade | null = share >= 0.5 ? 'D' : share >= 0.35 ? 'C' : share >= 0.15 ? 'B' : null;
   if (!floor) return grade;
+
+  // Only one check found anything, so the cap stops at "questionable".
+  if (concerningSignals < 2 && GRADE_ORDER.indexOf(floor) > GRADE_ORDER.indexOf('C')) {
+    floor = 'C';
+  }
 
   return GRADE_ORDER.indexOf(grade) >= GRADE_ORDER.indexOf(floor) ? grade : floor;
 }
