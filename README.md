@@ -109,12 +109,31 @@ A grade of "couldn't read this page" is not a verdict about the product.
 
 ```bash
 npm install
-npm test          # 51 tests covering the engine and the parser
+npm test          # 249 tests: engine, parser, panel, popup, options, worker, a11y
 npm run typecheck
 npm run build     # → dist/
 ```
 
 Load `dist/` via `chrome://extensions` → Developer mode → **Load unpacked**.
+
+The server is a separate package with its own suite:
+
+```bash
+cd server && npm install && npm test   # 55 tests covering the corpus signals
+```
+
+### End-to-end check of deep analysis
+
+The suites above stub the network. To exercise the real path — the extension's request builder, over
+HTTP, through the real sanitiser and corpus — run the server and point the smoke test at it:
+
+```bash
+cd server && WINNOW_DB=/tmp/smoke.db npm start   # in one terminal
+npm run smoke                                    # in another
+```
+
+Use a scratch database: the smoke test writes real observations. It asserts the privacy guarantees
+against the actual serialised payload, not against the code that builds it.
 
 ### Verifying the parser against live Amazon
 

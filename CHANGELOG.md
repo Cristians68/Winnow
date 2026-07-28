@@ -20,10 +20,37 @@ traced to the logic that produced it.
 - The retention sweep now drops phrase day-records alongside the phrases they corroborate, so a
   pruned phrase cannot return already-corroborated.
 
+- **The reviewer-id salt could be lost silently.** Reviewer ids are HMAC-hashed, and a missing
+  `WINNOW_HASH_SALT` falls back to a random per-process salt. If a deploy restarted without it, or
+  it was rotated, every stored reviewer hash became unmatchable and the reviewer-network signal
+  reported "no unusual overlap" about a corpus it could no longer read — indistinguishable from a
+  clean product. The corpus now stores a fingerprint of the salt (never the salt) and compares it at
+  boot: unset warns, changed errors and names how many reviewer hashes were orphaned.
+- **Non-text contrast had never been computed.** The breakdown toggle's border sat at 1.52:1 (light)
+  and 1.81:1 (dark) against a 3:1 requirement; darkened to 3.31:1 and 3.75:1. WCAG 1.4.11 moves from
+  Partial to Met.
+
 ### Added — verification
 - `tools/deep-smoke.mjs` — end-to-end smoke test running the real extension request builder over
   real HTTP through the real sanitiser and corpus. Covers the seam the unit suites stub out, and
   asserts the privacy guarantees against the actual serialised wire format. `npm run smoke`.
+- **Signal liveness suites** for all ten signals — each must flag a maximally adversarial input and
+  stay silent on an ordinary one. A signal that cannot fire is indistinguishable from a signal that
+  found nothing, which is the difference the whole product rests on. A new signal without a liveness
+  case fails the build.
+- **Service-worker tests.** The worker is the only code that touches a network and had none. Covers
+  that the developer endpoint cannot point anywhere but loopback, that no cookies or credentials or
+  referrer are sent, and that errors do not leak response bodies.
+- **Popup, options and content-script suites**, including the deep-analysis click driven end to end
+  through a real product page, real parser, real engine and real shadow-root panel.
+- **axe-core audit** across all 14 panel states (WCAG 2.0/2.1/2.2 A and AA plus best-practice), with
+  an explicit proof that axe crosses the shadow boundary before any clean result is trusted.
+- Non-text contrast is now computed in CI alongside text contrast.
+
+### Changed
+- Dev toolchain moved to Vitest 4 and esbuild 0.28, clearing five advisories (one critical) that
+  were failing CI's `npm audit` gate on both packages. Nothing shipped was ever affected —
+  `npm audit --omit=dev` was already clean.
 
 ### Added — deep-analysis server
 - `server/` — zero-dependency deep-analysis service on Node's built-in SQLite and HTTP server,
