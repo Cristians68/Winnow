@@ -477,7 +477,7 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
 
   // --- footer
   const foot = el('div', 'foot');
-  foot.append(el('span', 'pledge', 'No affiliate links. You pay us, nobody else does.'));
+  foot.append(el('span', 'pledge', 'No affiliate links. Free, and nobody pays us.'));
   const method = document.createElement('a');
   method.href = 'https://github.com/Cristians68/Winnow#methodology';
   method.target = '_blank';

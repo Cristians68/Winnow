@@ -84,6 +84,29 @@ describe('the boundary', () => {
     expect(advice).toMatch(/review integrity, not quality/i);
   });
 
+  // Found on a live listing: the summary said "No review was discounted, but 2
+  // checks raised concerns" and the verdict directly beneath it said "no real
+  // reason to doubt these reviews", above a row reading FLAGGED 6 of 13. The
+  // panel must not argue with itself.
+  it('never claims nothing was found while checks were flagged', () => {
+    for (const grade of ['A', 'B'] as const) {
+      for (const [concerning, discounted] of [[2, 0], [0, 2], [1, 1], [3, 4]] as const) {
+        const { advice, headline } = buildVerdict(
+          analysis({ grade, concerningSignals: concerning, discountedCount: discounted }),
+        );
+        const text = `${headline} ${advice}`;
+        expect(text, `grade ${grade}, ${concerning} concerns, ${discounted} discounted`).not.toMatch(
+          /no real reason to doubt|every check came back clear|nothing (was )?flagged/i,
+        );
+      }
+    }
+  });
+
+  it('only says every check was clear when every check really was', () => {
+    const { advice } = buildVerdict(analysis({ concerningSignals: 0, discountedCount: 0 }));
+    expect(advice).toMatch(/every check came back clear/i);
+  });
+
   it('restates the rating and says what to read when reviews look manipulated', () => {
     const { headline, advice } = buildVerdict(
       analysis({ grade: 'D', adjustedRating: 3.9, displayedRating: 4.8 }),
