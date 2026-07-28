@@ -55,18 +55,19 @@ function winnowMark(): SVGSVGElement {
   // Rounded badge, matching the icon's 0.22 corner radius.
   add('rect', { x: 0, y: 0, width: 100, height: 100, rx: 22, class: 'mark-bg' });
 
-  // Funnel bar, cone and stem — the large-size proportions from the generator.
-  add('rect', { x: 16, y: 30, width: 68, height: 7.5, rx: 3, class: 'mark-fg' });
-  add('path', { d: 'M16 36.3 H84 L56.5 60 H43.5 Z', class: 'mark-fg' });
-  add('rect', { x: 43.5, y: 59, width: 13, height: 15.5, rx: 2.5, class: 'mark-fg' });
+  // The generator's SMALL-size proportions, not the large ones: a fatter bar,
+  // a thicker stem, and the whole mark sitting higher. At the ~20px this renders
+  // at, the large-size bar is barely a pixel tall and turns the badge into a
+  // green blob. tools/make-icons.ps1 already switches geometry at 16px for this
+  // exact reason, and this is the same lesson at a different size.
+  add('rect', { x: 13, y: 24, width: 74, height: 11, rx: 3.5, class: 'mark-fg' });
+  add('path', { d: 'M13 33.8 H87 L59 62 H41 Z', class: 'mark-fg' });
+  add('rect', { x: 41, y: 61, width: 18, height: 19, rx: 3, class: 'mark-fg' });
 
-  // Grain through the funnel.
-  for (const cx of [34, 50, 66]) add('circle', { cx, cy: 88.5, r: 5.5, class: 'mark-fg' });
-
-  // Chaff thrown clear — two right, one left, so it reads as sorting.
-  add('circle', { cx: 84.5, cy: 18.5, r: 4.8, class: 'mark-fg' });
-  add('circle', { cx: 90, cy: 34.5, r: 3.8, class: 'mark-fg' });
-  add('circle', { cx: 15.5, cy: 18.5, r: 3.8, class: 'mark-fg' });
+  // The grain and chaff dots from the full icon are deliberately omitted. The
+  // generator only draws them at 32px and 48px respectively; at this size they
+  // land under a pixel each and read as noise around the funnel rather than as
+  // anything being sorted. A clean silhouette carries the metaphor better.
 
   return svg;
 }
@@ -195,7 +196,7 @@ export const STYLES = `
 /* Brand mark. Takes the grade-A pill colours, which are already contrast-checked
    in both themes, so it stays legible on light and dark without shipping two
    bitmaps or inverting into something that no longer looks like the icon. */
-.mark { flex: none; width: 19px; height: 19px; border-radius: 5px; }
+.mark { flex: none; width: 21px; height: 21px; border-radius: 5px; }
 .mark-bg { fill: var(--good-fg); }
 .mark-fg { fill: var(--good-bg); }
 .headline p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
