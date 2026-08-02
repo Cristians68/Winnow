@@ -139,9 +139,14 @@ function scoreSnapshot(
     : Math.round(clamp(weightedSum / effectiveWeight) * 100);
 
   const displayedRating = snapshot.displayedRating ?? null;
-  const adjustedRating = insufficientData
-    ? null
-    : estimateAdjustedRating(displayedRating, meanSuspicion, sampleConfidence);
+  // With no readable reviews there is nothing to down-weight, so the estimator
+  // returns the displayed rating unchanged — and printing Amazon's own number
+  // back under the heading "Adjusted rating" claims an adjustment that was
+  // never computed. The refusal is the honest output.
+  const adjustedRating =
+    insufficientData || sampleSize === 0
+      ? null
+      : estimateAdjustedRating(displayedRating, meanSuspicion, sampleConfidence);
 
   const discountedCount = assessments.filter((a) => a.suspicion >= DISCOUNT_THRESHOLD).length;
 
@@ -523,6 +528,26 @@ function confidenceLevel(
   return 'very-low';
 }
 
+/**
+ * The state where a grade rests on the rating breakdown alone.
+ *
+ * It is reachable and common: a product page renders its histogram long before
+ * the review module loads, and on a listing with tens of thousands of ratings
+ * the histogram carries enough weight and confidence to produce a grade with no
+ * reviews behind it at all. That grade is defensible — a distribution really is
+ * evidence — but the language built around it was not. The panel read "Reviews
+ * look genuine" and "Nothing flagged across 0 visible reviews", which reports
+ * having inspected nothing as a clean inspection, directly above six rows
+ * saying no reviews were readable.
+ *
+ * That is the failure this product exists to name, committed by the product.
+ * So the state is given a name here and every user-facing surface asks for it
+ * rather than assuming a sample it does not have.
+ */
+export function isRatingsOnly(analysis: Pick<Analysis, 'sampleSize' | 'insufficientData'>): boolean {
+  return !analysis.insufficientData && analysis.sampleSize === 0;
+}
+
 function describeBasis(
   sampleSize: number,
   snapshot: ProductSnapshot,
@@ -530,6 +555,15 @@ function describeBasis(
 ): string {
   if (insufficientData) {
     return "Winnow couldn't read enough of this page to judge it. That isn't a verdict about the product.";
+  }
+
+  if (sampleSize === 0) {
+    const total = snapshot.totalRatings;
+    return (
+      `Based only on the rating breakdown${total ? ` across all ${total.toLocaleString()} ratings` : ''}. ` +
+      'No individual reviews were readable on this page, so none of the review-level checks ran. ' +
+      'This is an estimate, not proof.'
+    );
   }
 
   const parts: string[] = [];

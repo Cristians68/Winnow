@@ -23,7 +23,24 @@
  * back: the rating is worth trusting, judge the product on its merits.
  */
 
-import type { Analysis } from './types.js';
+import type { Analysis, Grade } from './types.js';
+import { isRatingsOnly } from './score.js';
+
+/**
+ * Headlines for a grade built on the rating breakdown with no reviews behind
+ * it. They describe the distribution, which is what was actually measured, and
+ * say nothing about reviews, which were not read.
+ *
+ * Shared by the panel and the popup so the two cannot drift into telling the
+ * same user two different stories about the same page.
+ */
+export const RATINGS_ONLY_TITLES: Record<Grade, string> = {
+  A: 'Rating breakdown looks normal',
+  B: 'Rating breakdown looks broadly normal',
+  C: 'Rating breakdown looks slightly unusual',
+  D: 'Rating breakdown looks manipulated',
+  F: 'Rating breakdown looks heavily manipulated',
+};
 
 export interface Verdict {
   /** Short answer, safe to read on its own. */
@@ -57,6 +74,28 @@ export function buildVerdict(analysis: Analysis): Verdict {
       advice:
         "Winnow couldn't read enough of this page to say anything useful. That's a limit of what we could read, not a finding about the product — judge it the way you would with no tool at all.",
       tone: 'unknown',
+    };
+  }
+
+  // A grade from the rating breakdown alone must not borrow the language of one
+  // built on reviews. "Every check came back clear" was being said next to six
+  // checks that reported no data, and it is the kind of sentence a shopper
+  // reasonably reads as "somebody looked at the reviews".
+  if (isRatingsOnly(analysis)) {
+    const shape =
+      grade === 'A' || grade === 'B'
+        ? 'The spread of star ratings looks like a normal product rather than a padded one'
+        : grade === 'C'
+          ? 'The spread of star ratings is a little unusual, though not conclusive on its own'
+          : 'The spread of star ratings has the shape manipulation usually leaves';
+
+    return {
+      headline: 'Judged on the rating breakdown only',
+      advice: join(
+        `${shape}, but Winnow could not read a single individual review on this page, so none of the review-level checks ran.`,
+        'Treat this as a partial read: scroll to the reviews and reload if you want the full picture.',
+      ),
+      tone: grade === 'A' || grade === 'B' ? 'good' : grade === 'C' ? 'mixed' : 'bad',
     };
   }
 

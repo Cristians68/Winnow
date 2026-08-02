@@ -130,6 +130,14 @@ const states: Array<[string, () => HTMLElement]> = [
         }),
       ),
   ],
+  // A real state on every product page: the histogram renders before the review
+  // module does. It was added to this list at the same time as the state
+  // itself, because a UI branch that is not in the audit list is untested by
+  // construction — the same trap the feedback control fell into.
+  [
+    'rating breakdown only',
+    () => renderPanel(analysis({ sampleSize: 0, adjustedRating: null, discountedCount: 0, confidence: 'low' })),
+  ],
   ['deep analysis available', () => renderPanel(analysis(), { onDeepAnalysis: async () => {}, deepState: 'idle' })],
   ['deep analysis loading', () => renderPanel(analysis(), { onDeepAnalysis: async () => {}, deepState: 'loading' })],
   ['deep analysis done', () => renderPanel(analysis(), { onDeepAnalysis: async () => {}, deepState: 'done' })],

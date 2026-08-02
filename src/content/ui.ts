@@ -19,9 +19,50 @@
 
 import type { Analysis, Grade, SignalResult } from '../core/types.js';
 import type { DisagreementDirection } from '../shared/feedback.js';
-import { buildVerdict } from '../core/verdict.js';
+import { buildVerdict, RATINGS_ONLY_TITLES } from '../core/verdict.js';
+import { isRatingsOnly } from '../core/score.js';
 
-const HOST_ID = 'winnow-root';
+export const PANEL_HOST_ID = 'winnow-root';
+const HOST_ID = PANEL_HOST_ID;
+
+/**
+ * What survives a re-render.
+ *
+ * The panel is rebuilt whenever the page changes underneath it — Amazon loads
+ * reviews late and swaps them on variant selection — and rebuilding used to
+ * throw away everything the user had done to it. Open the breakdown, let one
+ * more review load, and it silently closed again. Say the grade was too harsh
+ * and the acknowledgement disappeared mid-sentence.
+ *
+ * The keyboard case is the serious one. A keyboard or screen-reader user with
+ * focus on the disclosure button lost that focus entirely when the node was
+ * replaced, which drops them back at the top of a very long Amazon page with no
+ * announcement — WCAG 2.2 3.2.x, and in practice the difference between usable
+ * and not. So interactive elements carry a stable key, and focus is put back
+ * where it was if it was inside the panel when the rebuild happened.
+ */
+interface PanelState {
+  expanded: boolean;
+  feedbackGiven: boolean;
+  focusKey: string | null;
+}
+
+const FOCUS_KEY_ATTRIBUTE = 'data-winnow-key';
+
+function readState(host: HTMLElement | null): Partial<PanelState> {
+  const shadow = host?.shadowRoot;
+  if (!shadow) return {};
+
+  const signals = shadow.getElementById('winnow-signals');
+  const feedbackButton = shadow.querySelector<HTMLButtonElement>('.feedback button');
+  const active = shadow.activeElement;
+
+  return {
+    expanded: signals ? !signals.hidden : undefined,
+    feedbackGiven: feedbackButton ? feedbackButton.disabled : undefined,
+    focusKey: active?.getAttribute(FOCUS_KEY_ATTRIBUTE) ?? null,
+  };
+}
 
 /**
  * The Winnow mark, inline.
@@ -330,6 +371,17 @@ function headlineFor(analysis: Analysis): { title: string; sub: string } {
     };
   }
 
+  // With no readable reviews the grade comes from the rating breakdown alone.
+  // Every title below is a claim about reviews, so none of them may be used —
+  // "Reviews look genuine" above "Nothing flagged across 0 visible reviews" is
+  // an inspection of nothing reported as a clean result.
+  if (isRatingsOnly(analysis)) {
+    return {
+      title: RATINGS_ONLY_TITLES[analysis.grade],
+      sub: 'No individual reviews were readable, so this rests on the rating breakdown alone.',
+    };
+  }
+
   const titles: Record<Grade, string> = {
     A: 'Reviews look genuine',
     B: 'Reviews look mostly genuine',
@@ -481,7 +533,13 @@ function renderContribution(signal: SignalResult): HTMLElement | null {
  * never transmitted — see src/shared/feedback.ts for why that constraint is not
  * negotiable here.
  */
-function renderFeedback(onFeedback: (direction: DisagreementDirection) => void): HTMLElement {
+const SAVED_MESSAGE =
+  'Saved on this device only. Export it from Winnow’s options if you want to send it in.';
+
+function renderFeedback(
+  onFeedback: (direction: DisagreementDirection) => void,
+  alreadyGiven = false,
+): HTMLElement {
   const wrap = el('section', 'feedback');
   wrap.setAttribute('aria-labelledby', 'winnow-feedback-heading');
 
@@ -493,6 +551,10 @@ function renderFeedback(onFeedback: (direction: DisagreementDirection) => void):
   const said = el('p', 'said');
   said.setAttribute('role', 'status');
   said.setAttribute('aria-live', 'polite');
+  // Restored rather than re-announced: the live region only speaks when its
+  // content changes, so carrying the text across a rebuild keeps the visual
+  // state without repeating the announcement to a screen-reader user.
+  if (alreadyGiven) said.textContent = SAVED_MESSAGE;
 
   const buttons: HTMLButtonElement[] = [];
   const choices: Array<[DisagreementDirection, string]> = [
@@ -503,10 +565,11 @@ function renderFeedback(onFeedback: (direction: DisagreementDirection) => void):
   for (const [direction, label] of choices) {
     const button = el('button', undefined, label) as HTMLButtonElement;
     button.type = 'button';
+    button.setAttribute(FOCUS_KEY_ATTRIBUTE, `feedback:${direction}`);
+    button.disabled = alreadyGiven;
     button.addEventListener('click', () => {
       for (const b of buttons) b.disabled = true;
-      said.textContent =
-        'Saved on this device only. Export it from Winnow’s options if you want to send it in.';
+      said.textContent = SAVED_MESSAGE;
       onFeedback(direction);
     });
     buttons.push(button);
@@ -530,6 +593,11 @@ export interface PanelOptions {
    * The handler is expected to store locally and nothing else.
    */
   onFeedback?: (direction: DisagreementDirection) => void;
+  /**
+   * Interaction state carried over from a panel being replaced. `mountPanel`
+   * fills this in automatically; callers rendering a fresh panel omit it.
+   */
+  restore?: Partial<PanelState>;
 }
 
 export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTMLElement {
@@ -577,7 +645,9 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   // --- breakdown
   const signals = el('ul', 'signals');
   signals.id = 'winnow-signals';
-  const startExpanded = options.expanded ?? false;
+  // A breakdown the user opened stays open across a re-render; only a genuinely
+  // new panel falls back to the setting.
+  const startExpanded = options.restore?.expanded ?? options.expanded ?? false;
   signals.hidden = !startExpanded;
   for (const signal of analysis.signals) signals.append(renderSignal(signal));
 
@@ -585,6 +655,7 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
 
   const toggle = el('button', 'toggle', startExpanded ? 'Hide the breakdown' : 'Show the breakdown') as HTMLButtonElement;
   toggle.type = 'button';
+  toggle.setAttribute(FOCUS_KEY_ATTRIBUTE, 'toggle');
   toggle.setAttribute('aria-expanded', String(startExpanded));
   toggle.setAttribute('aria-controls', 'winnow-signals');
   toggle.addEventListener('click', () => {
@@ -603,6 +674,7 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   if (options.onDeepAnalysis && !analysis.insufficientData) {
     const deep = el('button', 'deep') as HTMLButtonElement;
     deep.type = 'button';
+    deep.setAttribute(FOCUS_KEY_ATTRIBUTE, 'deep');
 
     const setLabel = (label: string, busy: boolean) => {
       deep.textContent = '';
@@ -643,7 +715,7 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   // Only meaningful where there is a grade to disagree with. On a refusal there
   // is nothing to be right or wrong about.
   if (options.onFeedback && !analysis.insufficientData) {
-    card.append(renderFeedback(options.onFeedback));
+    card.append(renderFeedback(options.onFeedback, options.restore?.feedbackGiven ?? false));
   }
 
   // --- footer
@@ -661,17 +733,46 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   return host;
 }
 
-/** Insert the panel above the reviews section, or at the top of the column as a fallback. */
+/**
+ * Insert the panel above the reviews section, or at the top of the column as a
+ * fallback.
+ *
+ * Whatever the user had done to the panel it is replacing is read off the old
+ * node first and handed to the new one — see `PanelState` for why that is not
+ * cosmetic.
+ */
 export function mountPanel(analysis: Analysis, options: PanelOptions = {}): void {
-  document.getElementById(HOST_ID)?.remove();
-  const panel = renderPanel(analysis, options);
+  const previous = document.getElementById(HOST_ID);
+  const restore = { ...readState(previous), ...options.restore };
+  previous?.remove();
+
+  const panel = renderPanel(analysis, { ...options, restore });
 
   for (const selector of ['#reviewsMedley', '#customerReviews', '#cm-cr-dp-review-list', '#averageCustomerReviews', '#centerCol']) {
     const target = document.querySelector(selector);
     if (target?.parentElement) {
       target.parentElement.insertBefore(panel, target);
+      restoreFocus(panel, restore.focusKey);
       return;
     }
   }
   document.body.prepend(panel);
+  restoreFocus(panel, restore.focusKey);
+}
+
+/**
+ * Put keyboard focus back on the control it was on before the rebuild.
+ *
+ * Only ever called with a key read from the panel that was just replaced, so
+ * this can never steal focus from the page: if the user was not inside the
+ * panel, `focusKey` is null and nothing happens.
+ */
+function restoreFocus(panel: HTMLElement, focusKey: string | null | undefined): void {
+  if (!focusKey) return;
+  const target = panel.shadowRoot?.querySelector<HTMLElement>(
+    `[${FOCUS_KEY_ATTRIBUTE}="${CSS.escape(focusKey)}"]`,
+  );
+  // A disabled control cannot take focus; the panel is still the right place to
+  // be, so nothing is forced elsewhere.
+  if (target && !(target as HTMLButtonElement).disabled) target.focus();
 }

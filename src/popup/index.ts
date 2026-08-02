@@ -1,5 +1,7 @@
 import type { Analysis, Grade } from '../core/types.js';
 import { getSettings, setSettings } from '../shared/settings.js';
+import { isRatingsOnly } from '../core/score.js';
+import { RATINGS_ONLY_TITLES } from '../core/verdict.js';
 
 const GRADE_TONE: Record<Grade, string> = {
   A: 'good',
@@ -79,15 +81,20 @@ async function loadAnalysis(): Promise<void> {
     return;
   }
 
-  const adjusted =
-    analysis.adjustedRating === null
+  // The panel makes the same distinction, for the same reason: a grade with no
+  // readable reviews behind it must not be announced as a verdict on reviews.
+  const ratingsOnly = isRatingsOnly(analysis);
+
+  const adjusted = ratingsOnly
+    ? `Rating breakdown only · trust ${analysis.trustScore}/100`
+    : analysis.adjustedRating === null
       ? 'Too little trustworthy data to estimate a rating.'
       : `Adjusted rating ${analysis.adjustedRating.toFixed(1)}★ · trust ${analysis.trustScore}/100`;
 
   show({
     grade: analysis.grade,
     tone: GRADE_TONE[analysis.grade],
-    headline: HEADLINES[analysis.grade],
+    headline: ratingsOnly ? RATINGS_ONLY_TITLES[analysis.grade] : HEADLINES[analysis.grade],
     sub: adjusted,
     basis: analysis.basis,
   });

@@ -71,8 +71,18 @@ async function wireFeedback(): Promise<void> {
     const link = document.createElement('a');
     link.href = url;
     link.download = `winnow-feedback-${new Date().toISOString().slice(0, 10)}.json`;
+    // In the document, because a detached anchor's click is ignored in some
+    // Chrome configurations and the export would appear to do nothing.
+    link.style.display = 'none';
+    document.body.append(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+
+    // Revoking the object URL in the same task can cancel the download that was
+    // just started — the browser has not necessarily finished reading the blob
+    // when click() returns. Deferring it releases the memory without racing the
+    // thing it was created for.
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
 
     status!.textContent = 'Downloaded. The copy on this device is unchanged.';
   });
