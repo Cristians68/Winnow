@@ -57,6 +57,28 @@ about a listing**. That is the exact mistake the product exists to name, and it 
 - Exporting the feedback log revoked its object URL in the same task that started the download, which
   can cancel it.
 
+Found by running the packaged build against a live listing (a camera lens, 234 ratings, 76% five-star
+with a healthy 4% one-star tail — graded A at 96/100, correctly):
+
+- **The summary reported the flattering count and not the other one.** It read *"1 of 13 visible
+  reviews discounted."* and stopped, while three separate checks had flagged reviews between them.
+  Nothing said was false, and a shopper who opened the breakdown found several times more than the
+  headline had prepared them for. This is the 0.2.0 *"nothing flagged"* defect mirrored — understating
+  is not the safe direction just because it is the flattering one. Both counts are now always
+  reported, in the panel and in the verdict.
+- **"1 of the 13 visible reviews *were* discounted."** The verb now agrees with the count.
+- **Missing helpful votes no longer flag a low-traffic listing.** The check needed only 200 ratings
+  before it would treat "nobody voted on this" as odd. On a 234-rating listing almost nothing gets
+  voted on, so the absence of votes carried no information and the panel showed a caution badge
+  anyway. The floor is now 1,000. The check's premise — that Amazon features reviews partly by
+  helpfulness — only holds where voting actually happens, and crying wolf on ordinary listings is the
+  failure that destroys trust in a tool like this fastest.
+- **The breakdown said "Removing this check on its own would not change the grade" seven times.**
+  Seven identical copies of the same non-answer is noise wearing the costume of transparency. The line
+  is now shown only where a check actually flagged something, or where the answer is yes.
+- **The panel no longer runs text the full width of a wide monitor.** Amazon's review section spans
+  the whole column, which stretched the verdict paragraph past 200 characters a line.
+
 ### Changed
 - `optional_host_permissions` now covers `https://localhost` and `https://127.0.0.1`, which the dev
   endpoint validator already accepted. Still loopback-only, still optional, still absent from a

@@ -204,6 +204,14 @@ export const STYLES = `
    permanently visible and made the disclosure button appear to do nothing. */
 [hidden] { display: none !important; }
 
+/* Amazon's review section spans the full column, and on a wide monitor that
+   ran the verdict paragraph out to well over 200 characters a line — roughly
+   three times a comfortable measure, and the panel's longest, most important
+   prose. The card keeps its own width so it still sits naturally in the page,
+   and the running text is held to a readable measure inside it. */
+.card { max-width: 1100px; }
+.verdict-body, .basis, .signal .detail, .signal .evidence, .headline p { max-width: 78ch; }
+
 .card {
   font-family: "Amazon Ember", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
@@ -363,7 +371,7 @@ function el(tag: string, className?: string, text?: string): HTMLElement {
   return node;
 }
 
-function headlineFor(analysis: Analysis): { title: string; sub: string } {
+export function headlineFor(analysis: Analysis): { title: string; sub: string } {
   if (analysis.insufficientData) {
     return {
       title: "Couldn't read this page",
@@ -393,19 +401,33 @@ function headlineFor(analysis: Analysis): { title: string; sub: string } {
   const { discountedCount, concerningSignals, sampleSize } = analysis;
   const noun = sampleSize === 1 ? 'review' : 'reviews';
 
-  // Three cases, because two counts can disagree. A review can be flagged by a
-  // check without accumulating enough suspicion to be discounted, and saying
-  // "nothing flagged" in that situation put the summary in direct contradiction
-  // with a FLAGGED row a few pixels below it. If any check raised a concern, the
-  // summary says so even when no individual review was discounted.
+  // Both counts, always, because they disagree constantly and each one alone
+  // tells a misleading story. A review can be flagged by a check without
+  // accumulating enough suspicion to be discounted, so:
+  //
+  //  · Reporting only the signal count said "nothing flagged" directly above a
+  //    row reading FLAGGED. Fixed in 0.2.0.
+  //  · Reporting only the discounted count is the same error mirrored. Seen on
+  //    a live listing: "1 of 13 visible reviews discounted" as the whole summary
+  //    while three separate checks had flagged eight of the thirteen between
+  //    them. Nothing said was false, and a shopper who opened the breakdown
+  //    found four times as much as the headline had prepared them for.
+  //
+  // Understating is not the safe direction just because it is the flattering
+  // one. The summary now carries whichever of the two is non-zero, and both
+  // when both are.
+  const checks =
+    concerningSignals === 1 ? '1 check raised a concern' : `${concerningSignals} checks raised concerns`;
+
   const sub = (() => {
+    if (discountedCount > 0 && concerningSignals > 0) {
+      return `${discountedCount} of ${sampleSize} visible ${noun} discounted; ${checks}.`;
+    }
     if (discountedCount > 0) {
       return `${discountedCount} of ${sampleSize} visible ${noun} discounted.`;
     }
     if (concerningSignals > 0) {
-      return concerningSignals === 1
-        ? `No review was discounted, but 1 check raised a concern.`
-        : `No review was discounted, but ${concerningSignals} checks raised concerns.`;
+      return `No review was discounted, but ${checks}.`;
     }
     return `Nothing flagged across ${sampleSize} visible ${noun}.`;
   })();
@@ -511,6 +533,13 @@ function renderContribution(signal: SignalResult): HTMLElement | null {
   if (!contribution) return null;
 
   const { decisive, gradeWithout } = contribution;
+
+  // "Removing this check would not change the grade" printed under all seven
+  // rows is seven copies of the same non-answer, and on a clean listing that is
+  // exactly what happened — the line appeared identically everywhere and
+  // stopped meaning anything. The question is only live where a check actually
+  // found something, or where the answer is yes.
+  if (!decisive && signal.status !== 'warn' && signal.status !== 'fail') return null;
   const line = el('p', `contribution${decisive ? ' decisive' : ''}`);
 
   const dot = el('span', 'dot');

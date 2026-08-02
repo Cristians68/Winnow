@@ -24,7 +24,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { analyse } from '../src/core/score.js';
-import { mountPanel, PANEL_HOST_ID } from '../src/content/ui.js';
+import { headlineFor, mountPanel, PANEL_HOST_ID, renderPanel } from '../src/content/ui.js';
 import type { ProductSnapshot, Review } from '../src/core/types.js';
 
 type HappyWindow = Window & { happyDOM?: { setURL?: (url: string) => void } };
@@ -56,10 +56,24 @@ const BODIES = [
   'Pairing with an older laptop took two attempts but has been stable since.',
   'The carry pouch is thin, though the headphones themselves feel solid.',
   'Noticeably better than the pair I returned last month for rattling.',
+  // Beyond the six used for the late-loading markup. Every body has to be
+  // genuinely distinct: reviews sharing text trip the duplicate-text check, and
+  // a fixture meant to represent a clean listing that quietly discounts most of
+  // itself measures the opposite of what it claims to.
+  'Charging case lid feels loose after a couple of months of daily opening.',
+  'Call quality outdoors is the weak point; wind gets picked up badly.',
+  'Went through three brands before this and it is the first that stayed put.',
+  'Firmware update in June fixed the stutter I had on the left side.',
+  'Bass is heavier than I expected, which suits podcasts less than music.',
+  'Case scuffs easily in a bag but the finish on the buds themselves holds up.',
+  'Range is fine across one room, drops out if I leave my phone upstairs.',
 ];
 
+/** Only the first six appear in the late-loading markup, so that count is stable. */
+const LATE_BODIES = BODIES.slice(0, 6);
+
 function lateReviewMarkup(): string {
-  return BODIES.map(
+  return LATE_BODIES.map(
     (body, i) => `
     <div id="customer_review-R${i}">
       <i class="a-star-5"><span class="a-icon-alt">5.0 out of 5 stars</span></i>
@@ -311,5 +325,95 @@ describe('what survives the panel being rebuilt', () => {
     expect(after.disabled, 'the buttons must not re-arm themselves').toBe(true);
     expect(panelText()).toMatch(/Saved on this device only/);
     expect(recorded, 'nothing may be recorded twice by a re-render').toEqual(['too-harsh']);
+  });
+});
+
+/**
+ * Wording and density defects seen on a live listing, 2026-08-01.
+ *
+ * A camera lens with 234 ratings, 76% five-star and a healthy 4% one-star tail.
+ * Grade A, 96/100 — the engine read it correctly. What the panel *said* about
+ * it did not hold up.
+ */
+describe('the camera-lens listing', () => {
+  const listing = () => {
+    const base = snapshot(13);
+    return analyse({
+      ...base,
+      totalRatings: 234,
+      reviews: base.reviews.map((r, i) => ({
+        ...r,
+        verified: i !== 0,
+        ...(i >= 1 && i <= 3 ? { text: 'Works great, very happy with it.' } : {}),
+      })),
+    });
+  };
+
+  /**
+   * The summary read "1 of 13 visible reviews discounted." and stopped there,
+   * while three separate checks had flagged reviews between them. Nothing said
+   * was false; a shopper who opened the breakdown found several times more than
+   * the headline had prepared them for. That is the 0.2.0 "nothing flagged"
+   * defect mirrored, and understating is not the safe direction just because it
+   * is the flattering one.
+   */
+  it('summarises both counts, not just the flattering one', () => {
+    const analysis = listing();
+    expect(analysis.discountedCount).toBeGreaterThan(0);
+    expect(analysis.concerningSignals).toBeGreaterThan(0);
+
+    const { sub } = headlineFor(analysis);
+    expect(sub).toMatch(/discounted/);
+    expect(sub).toMatch(/check(s)? raised concern/);
+  });
+
+  it('says nothing was flagged only when nothing was', () => {
+    // Ratings are deliberately not 5 or 1. The review-substance check only looks
+    // at extreme ratings, and several of the fixture bodies are under fifteen
+    // words, so a five-star version of this listing is legitimately flagged and
+    // would have had this assertion testing the wrong sentence. Padding the
+    // bodies to fix that instead gave every review an identical tail and tripped
+    // the duplicate-text check — which was also correct, and is the fixture
+    // hazard this repo keeps rediscovering.
+    const base = snapshot(10);
+    const clean = analyse({
+      ...base,
+      reviews: base.reviews.map((r, i) => ({ ...r, rating: (i % 2 === 0 ? 4 : 3) as Review['rating'] })),
+    });
+
+    expect(clean.discountedCount).toBe(0);
+    expect(clean.concerningSignals).toBe(0);
+    expect(headlineFor(clean).sub).toMatch(/Nothing flagged across 10 visible reviews/);
+  });
+});
+
+/**
+ * Every check on a clean listing reported "Removing this check on its own would
+ * not change the grade" — seven identical copies of the same non-answer, which
+ * is noise wearing the costume of transparency. The question is only live where
+ * a check found something, or where the answer is yes.
+ */
+describe('the per-signal contribution line', () => {
+  const linesIn = (analysis: ReturnType<typeof analyse>) =>
+    renderPanel(analysis, { expanded: true }).shadowRoot!.querySelectorAll('.contribution').length;
+
+  it('is dropped for a clear check that changed nothing', () => {
+    const clean = analyse(snapshot(10));
+    const inert = clean.signals.filter((s) => s.status === 'pass' && !s.contribution?.decisive);
+
+    expect(inert.length, 'fixture must contain clear, non-decisive checks').toBeGreaterThan(2);
+    expect(linesIn(clean)).toBe(clean.signals.length - inert.length);
+  });
+
+  it('is kept wherever a check actually flagged something', () => {
+    const base = snapshot(10);
+    const mixed = analyse({
+      ...base,
+      reviews: base.reviews.map((r, i) => ({ ...r, verified: i > 6 })),
+    });
+
+    const flagged = mixed.signals.filter((s) => s.status === 'warn' || s.status === 'fail');
+    expect(flagged.length).toBeGreaterThan(0);
+    expect(linesIn(mixed)).toBeGreaterThanOrEqual(flagged.length);
   });
 });

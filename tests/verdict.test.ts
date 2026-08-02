@@ -242,3 +242,81 @@ describe('defects found on live Amazon listings', () => {
     }
   });
 });
+
+/**
+ * The camera-lens listing, 2026-08-01.
+ *
+ * A live run of the shipped 0.3.0 build: grade A, 96/100, 234 ratings, 76%
+ * five-star with a healthy 4% one-star tail. Nothing about it looked
+ * manipulated and the grade agreed. The panel's *words* were the problem.
+ */
+describe('the camera-lens listing', () => {
+  // 13 reviews: one unverified five-star (the only discounted review), three
+  // thin five-stars, and the rest ordinary.
+  const listing = () =>
+    snapshot(
+      Array.from({ length: 13 }, (_, i) =>
+        review(i, {
+          verified: i !== 0,
+          ...(i >= 1 && i <= 3 ? { text: 'Works great, very happy with it.' } : {}),
+        }),
+      ),
+      { totalRatings: 234, displayedRating: 4.5, histogram: { 5: 76, 4: 14, 3: 4, 2: 2, 1: 4 } },
+    );
+
+  /**
+   * The headline read "1 of 13 visible reviews discounted." and stopped there,
+   * while three separate checks had flagged reviews between them. Nothing said
+   * was false; a shopper who opened the breakdown found several times more than
+   * the summary had prepared them for. Understating is not the safe direction
+   * merely because it is the flattering one — it is the same defect as the
+   * 0.2.0 "nothing flagged" bug, mirrored.
+   */
+  it('reports the checks that fired, not only the reviews that were discounted', () => {
+    const a = analyse(listing());
+    expect(a.discountedCount).toBeGreaterThan(0);
+    expect(a.concerningSignals).toBeGreaterThan(0);
+
+    const { advice } = buildVerdict(a);
+    expect(advice).toMatch(/was discounted/);
+    expect(advice).toMatch(/flagged something/);
+  });
+
+  it('makes the verb agree with the count', () => {
+    const a = analyse(listing());
+    const { advice } = buildVerdict(a);
+    if (a.discountedCount === 1) {
+      expect(advice).toMatch(/1 of the 13 visible reviews was discounted/);
+      expect(advice).not.toMatch(/1 of the 13 visible reviews were discounted/);
+    }
+  });
+
+  /**
+   * Community response flagged four of thirteen reviews for having no helpful
+   * votes on a listing with 234 ratings — where almost nothing gets voted on,
+   * so the absence of votes carries no information at all. A caution badge
+   * reads as an accusation, and crying wolf on ordinary listings is what
+   * destroys trust in a tool like this fastest.
+   */
+  it('does not flag missing helpful votes on a low-traffic listing', () => {
+    const quiet = analyse(
+      snapshot(
+        Array.from({ length: 13 }, (_, i) => review(i, { helpfulVotes: 0, date: daysAgo(400) })),
+        { totalRatings: 234 },
+      ),
+    );
+    const helpfulness = quiet.signals.find((s) => s.id === 'helpfulness')!;
+    expect(helpfulness.status).toBe('pass');
+  });
+
+  it('still flags it where votes genuinely do accrue', () => {
+    const busy = analyse(
+      snapshot(
+        Array.from({ length: 13 }, (_, i) => review(i, { helpfulVotes: 0, date: daysAgo(400) })),
+        { totalRatings: 50_000 },
+      ),
+    );
+    const helpfulness = busy.signals.find((s) => s.id === 'helpfulness')!;
+    expect(helpfulness.status).not.toBe('pass');
+  });
+});

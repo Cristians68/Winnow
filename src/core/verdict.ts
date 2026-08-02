@@ -147,10 +147,22 @@ export function buildVerdict(analysis: Analysis): Verdict {
     'Whether the product suits you is a separate question, and one Winnow does not try to answer — it reads review integrity, not quality.';
 
   if (concerningSignals > 0 || discountedCount > 0) {
+    // Both counts, for the reason set out in `headlineFor`: reporting only the
+    // discounted one understated a live listing by a factor of four. Note the
+    // verb agrees with the count — "1 of the 13 visible reviews were discounted"
+    // was shipping.
+    const discounted =
+      discountedCount === 1
+        ? `1 of the ${sampleSize} visible reviews was discounted`
+        : `${discountedCount} of the ${sampleSize} visible reviews were discounted`;
+    const flagged = `${concerningSignals} ${concerningSignals === 1 ? 'check' : 'checks'} flagged something`;
+
     const noted =
-      discountedCount > 0
-        ? `${discountedCount} of the ${sampleSize} visible reviews were discounted`
-        : `${concerningSignals} ${concerningSignals === 1 ? 'check' : 'checks'} flagged something`;
+      discountedCount > 0 && concerningSignals > 0
+        ? `${discounted} and ${flagged}`
+        : discountedCount > 0
+          ? discounted
+          : flagged;
 
     return {
       headline: `${shown} is broadly believable`,
