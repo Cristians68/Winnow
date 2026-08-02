@@ -43,6 +43,7 @@ const HOST_ID = PANEL_HOST_ID;
  */
 interface PanelState {
   expanded: boolean;
+  selfCheckOpen: boolean;
   feedbackGiven: boolean;
   focusKey: string | null;
 }
@@ -54,11 +55,13 @@ function readState(host: HTMLElement | null): Partial<PanelState> {
   if (!shadow) return {};
 
   const signals = shadow.getElementById('winnow-signals');
+  const selfCheck = shadow.getElementById('winnow-selfcheck');
   const feedbackButton = shadow.querySelector<HTMLButtonElement>('.feedback button');
   const active = shadow.activeElement;
 
   return {
     expanded: signals ? !signals.hidden : undefined,
+    selfCheckOpen: selfCheck ? !selfCheck.hidden : undefined,
     feedbackGiven: feedbackButton ? feedbackButton.disabled : undefined,
     focusKey: active?.getAttribute(FOCUS_KEY_ATTRIBUTE) ?? null,
   };
@@ -256,6 +259,22 @@ export const STYLES = `
 .stat .value { font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
 .stat .value.muted { color: var(--muted); font-weight: 600; font-size: 15px; }
 .stat .value del { color: var(--strike); font-weight: 500; font-size: 14px; margin-left: 7px; }
+/* Plain-English gloss under each number. "Adjusted rating" and "Trust score"
+   are obvious to whoever built them and opaque to a first-time buyer, who is
+   the person with the most to lose on a bad listing. */
+.stat { max-width: 23ch; }
+.stat .hint { font-size: 11px; line-height: 1.35; color: var(--muted); margin: 2px 0 4px; }
+
+.selfcheck { margin: 13px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--surface); }
+.selfcheck-head { margin: 0 0 5px; font-size: 13.5px; font-weight: 700; color: var(--text); }
+.selfcheck-intro { margin: 0 0 8px; font-size: 12.5px; line-height: 1.5; color: var(--muted-strong); max-width: 78ch; }
+.selfcheck-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.selfcheck-list li { font-size: 12.5px; line-height: 1.5; color: var(--muted-strong); max-width: 76ch; }
+.selfcheck-note {
+  margin: 9px 0 0; padding: 8px 10px; border-radius: 8px;
+  background: var(--bg); border-left: 3px solid var(--none-fg);
+  font-size: 12.5px; line-height: 1.5; color: var(--muted-strong); max-width: 76ch;
+}
 
 .verdict {
   margin: 12px 0 0; padding: 11px 13px;
@@ -419,15 +438,20 @@ export function headlineFor(analysis: Analysis): { title: string; sub: string } 
   const checks =
     concerningSignals === 1 ? '1 check raised a concern' : `${concerningSignals} checks raised concerns`;
 
+  // "Discounted" is the engine's word for a review it stopped counting. On a
+  // shopping site it is also the word for money off, which is the first meaning
+  // a shopper reaches for — the panel was using retail vocabulary to mean
+  // something else entirely, six inches from a real price. "Set aside" says the
+  // same thing and cannot be misread.
   const sub = (() => {
     if (discountedCount > 0 && concerningSignals > 0) {
-      return `${discountedCount} of ${sampleSize} visible ${noun} discounted; ${checks}.`;
+      return `${discountedCount} of ${sampleSize} visible ${noun} set aside; ${checks}.`;
     }
     if (discountedCount > 0) {
-      return `${discountedCount} of ${sampleSize} visible ${noun} discounted.`;
+      return `${discountedCount} of ${sampleSize} visible ${noun} set aside.`;
     }
     if (concerningSignals > 0) {
-      return `No review was discounted, but ${checks}.`;
+      return `No review was set aside, but ${checks}.`;
     }
     return `Nothing flagged across ${sampleSize} visible ${noun}.`;
   })();
@@ -462,6 +486,7 @@ function renderRatings(analysis: Analysis): HTMLElement {
 
   const adjusted = el('div', 'stat');
   adjusted.append(el('div', 'label', 'Adjusted rating'));
+  adjusted.append(el('div', 'hint', 'The stars with the doubtful reviews set aside.'));
   if (analysis.adjustedRating === null) {
     adjusted.append(el('div', 'value muted', 'Not enough to estimate'));
   } else {
@@ -486,11 +511,13 @@ function renderRatings(analysis: Analysis): HTMLElement {
 
   const trust = el('div', 'stat');
   trust.append(el('div', 'label', 'Trust score'));
+  trust.append(el('div', 'hint', 'How much of what we could read held up.'));
   trust.append(el('div', 'value', `${analysis.trustScore}/100`));
   wrap.append(trust);
 
   const confidence = el('div', 'stat');
   confidence.append(el('div', 'label', 'Confidence'));
+  confidence.append(el('div', 'hint', 'How much evidence this is based on.'));
   confidence.append(el('div', 'value muted', CONFIDENCE_LABEL[analysis.confidence]));
   wrap.append(confidence);
 
@@ -609,6 +636,107 @@ function renderFeedback(
   return wrap;
 }
 
+/**
+ * "What you can check yourself."
+ *
+ * ## Why this is here at all
+ *
+ * Winnow reads the reviews on one page. It cannot see the seller, the price,
+ * the product photos, where the item is shipped from, or whether the thing is
+ * any good — and the people most exposed to a bad listing are exactly the
+ * people least likely to know that. Somebody buying their first thing online
+ * reads "Reviews look genuine" as "this is safe to buy", which is not what it
+ * says and not what it can mean.
+ *
+ * The fix is not to widen the claim. It is to say plainly where the claim stops
+ * and hand over the checks that cover the rest. Every item below is something a
+ * shopper can do in under a minute on the page they are already looking at,
+ * phrased as a thing to go and look at rather than a conclusion to accept.
+ *
+ * ## On dropshipping specifically
+ *
+ * Winnow is repeatedly asked to flag dropshipped and rebadged listings, and it
+ * cannot. Nothing in review text reliably distinguishes a generic product
+ * resold under a new brand from an ordinary one, and a detector built on a
+ * guess would put an accusation on the screen with nothing behind it — the
+ * failure this whole project is a complaint about.
+ *
+ * What is honest is telling someone what the pattern actually looks like from
+ * the outside, so they can recognise it themselves: the same photos under
+ * several unfamiliar brands, a listing whose reviews describe a different
+ * product, a new listing that already has hundreds of five-star ratings. Two of
+ * those are things the engine has real signals for, and this section is where
+ * the third one lives.
+ */
+const SELF_CHECKS: string[] = [
+  'Read the 1- and 2-star reviews first. They are the hardest to fake, and they tell you what actually goes wrong with it.',
+  'Watch for reviews describing a different product — a phone case on a listing for a lamp. That means the listing was reused, and the rating came along with it.',
+  'Check who you are buying from, just under the Buy box. "Ships from and sold by Amazon" is a different proposition from a seller name you have never seen, and returns work differently.',
+  'Trust reviews with customer photos more. Photos are far more work to fake than a paragraph of text.',
+  'Try a reverse image search on the product photos. The same item under several unfamiliar brand names usually means a generic product being resold rather than one somebody designed.',
+  'Be wary of a listing that is new but already has hundreds of five-star ratings. Genuine reviews accumulate at roughly the speed of sales.',
+];
+
+/** Extra advice that only makes sense in some states. */
+function situationalCheck(analysis: Analysis): string | null {
+  // Both the states where Winnow has little or nothing to offer. The checklist
+  // is worth the most exactly here, so this says so rather than leaving the
+  // shopper with a shrug.
+  if (analysis.insufficientData || isRatingsOnly(analysis)) {
+    return 'Winnow could not read the individual reviews on this page, so everything above matters more than usual here. Scrolling down to the reviews and reloading may give it more to work with.';
+  }
+  if (analysis.grade === 'D' || analysis.grade === 'F') {
+    return 'Winnow thinks this rating is inflated. That is not the same as the product being bad — it means the number at the top of the page is not a reliable guide, so lean on the critical reviews instead of the average.';
+  }
+  return null;
+}
+
+/**
+ * Rendered as a real disclosure rather than always-on text: it is reference
+ * material, most people will not need it twice, and the panel is a guest on
+ * somebody else's page.
+ */
+function renderSelfCheck(analysis: Analysis): { section: HTMLElement; toggle: HTMLButtonElement } {
+  const section = el('section', 'selfcheck');
+  section.id = 'winnow-selfcheck';
+  section.hidden = true;
+  section.setAttribute('aria-labelledby', 'winnow-selfcheck-heading');
+
+  const heading = el('h3', 'selfcheck-head', 'What you can check yourself');
+  heading.id = 'winnow-selfcheck-heading';
+
+  const intro = el(
+    'p',
+    'selfcheck-intro',
+    "Winnow only reads the reviews on this page. It cannot see who is selling this, what it costs, where it ships from, or whether the product is any good. These are the checks that cover the rest — they take about a minute.",
+  );
+
+  const list = el('ul', 'selfcheck-list');
+  for (const check of SELF_CHECKS) list.append(el('li', undefined, check));
+
+  const situational = situationalCheck(analysis);
+  if (situational) {
+    const extra = el('p', 'selfcheck-note', situational);
+    section.append(heading, intro, list, extra);
+  } else {
+    section.append(heading, intro, list);
+  }
+
+  const toggle = el('button', 'toggle', 'What can I check myself?') as HTMLButtonElement;
+  toggle.type = 'button';
+  toggle.setAttribute(FOCUS_KEY_ATTRIBUTE, 'selfcheck');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', 'winnow-selfcheck');
+  toggle.addEventListener('click', () => {
+    const open = section.hidden;
+    section.hidden = !open;
+    toggle.textContent = open ? 'Hide the checklist' : 'What can I check myself?';
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+
+  return { section, toggle };
+}
+
 export interface PanelOptions {
   expanded?: boolean;
   /** 'system' follows the OS; 'light' and 'dark' override it. */
@@ -695,6 +823,17 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   });
   actions.append(toggle);
 
+  // The checklist matters most exactly where Winnow has least to say, so it is
+  // offered in every state including the refusal one.
+  const selfCheck = renderSelfCheck(analysis);
+  const selfCheckOpen = options.restore?.selfCheckOpen ?? false;
+  if (selfCheckOpen) {
+    selfCheck.section.hidden = false;
+    selfCheck.toggle.textContent = 'Hide the checklist';
+    selfCheck.toggle.setAttribute('aria-expanded', 'true');
+  }
+  actions.append(selfCheck.toggle);
+
   // --- deep analysis (explicitly user-initiated; see PRIVACY.md)
   const liveRegion = el('p', 'note');
   liveRegion.setAttribute('role', 'status');
@@ -739,7 +878,7 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
     actions.append(deep);
   }
 
-  card.append(actions, liveRegion, signals);
+  card.append(actions, liveRegion, signals, selfCheck.section);
 
   // Only meaningful where there is a grade to disagree with. On a refusal there
   // is nothing to be right or wrong about.

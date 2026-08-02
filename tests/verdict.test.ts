@@ -278,7 +278,7 @@ describe('the camera-lens listing', () => {
     expect(a.concerningSignals).toBeGreaterThan(0);
 
     const { advice } = buildVerdict(a);
-    expect(advice).toMatch(/was discounted/);
+    expect(advice).toMatch(/was set aside/);
     expect(advice).toMatch(/flagged something/);
   });
 
@@ -286,8 +286,8 @@ describe('the camera-lens listing', () => {
     const a = analyse(listing());
     const { advice } = buildVerdict(a);
     if (a.discountedCount === 1) {
-      expect(advice).toMatch(/1 of the 13 visible reviews was discounted/);
-      expect(advice).not.toMatch(/1 of the 13 visible reviews were discounted/);
+      expect(advice).toMatch(/1 of the 13 visible reviews was set aside/);
+      expect(advice).not.toMatch(/1 of the 13 visible reviews were set aside/);
     }
   });
 

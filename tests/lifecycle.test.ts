@@ -363,7 +363,7 @@ describe('the camera-lens listing', () => {
     expect(analysis.concerningSignals).toBeGreaterThan(0);
 
     const { sub } = headlineFor(analysis);
-    expect(sub).toMatch(/discounted/);
+    expect(sub).toMatch(/set aside/);
     expect(sub).toMatch(/check(s)? raised concern/);
   });
 
@@ -415,5 +415,140 @@ describe('the per-signal contribution line', () => {
     const flagged = mixed.signals.filter((s) => s.status === 'warn' || s.status === 'fail');
     expect(flagged.length).toBeGreaterThan(0);
     expect(linesIn(mixed)).toBeGreaterThanOrEqual(flagged.length);
+  });
+});
+
+/**
+ * The checklist, and the promise it exists to keep.
+ *
+ * Winnow reads the reviews on one page. It cannot see the seller, the price,
+ * where the item ships from, or whether the product is any good — and the
+ * person most exposed to a bad listing is the one least likely to know that.
+ * Somebody buying their first thing online reads "Reviews look genuine" as
+ * "this is safe to buy", which is neither what it says nor what it can mean.
+ *
+ * The answer is not a wider claim. It is saying plainly where the claim stops
+ * and handing over the checks that cover the rest.
+ */
+describe('what you can check yourself', () => {
+  const open = (analysis: ReturnType<typeof analyse>) => {
+    const panel = renderPanel(analysis, {});
+    const shadow = panel.shadowRoot!;
+    const toggle = shadow.querySelector<HTMLButtonElement>('[data-winnow-key="selfcheck"]')!;
+    toggle.click();
+    return { shadow, toggle, section: shadow.getElementById('winnow-selfcheck')! };
+  };
+
+  it('is collapsed by default and does not lengthen the resting panel', () => {
+    const shadow = renderPanel(analyse(snapshot(8)), {}).shadowRoot!;
+    expect(shadow.getElementById('winnow-selfcheck')!.hidden).toBe(true);
+  });
+
+  it('opens and closes as a proper disclosure', () => {
+    const { toggle, section } = open(analyse(snapshot(8)));
+    expect(section.hidden).toBe(false);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-controls')).toBe('winnow-selfcheck');
+
+    toggle.click();
+    expect(section.hidden).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('states plainly what Winnow cannot see', () => {
+    const { section } = open(analyse(snapshot(8)));
+    const text = section.textContent ?? '';
+    expect(text).toMatch(/cannot see who is selling this/i);
+    expect(text).toMatch(/whether the product is any good/i);
+  });
+
+  /**
+   * Winnow is repeatedly asked to flag dropshipped and rebadged listings and it
+   * cannot: nothing in review text reliably separates a generic product resold
+   * under a new brand from an ordinary one. What is honest is describing what
+   * the pattern looks like from outside so a shopper can recognise it. These
+   * assertions pin that the checklist teaches the pattern and never asserts it.
+   */
+  it('teaches the resold-listing pattern without ever claiming to detect it', () => {
+    const { section } = open(analyse(snapshot(8)));
+    const text = section.textContent ?? '';
+
+    expect(text).toMatch(/reverse image search/i);
+    expect(text).toMatch(/unfamiliar brand names/i);
+    expect(text).toMatch(/reviews describing a different product/i);
+
+    // Never a verdict of its own.
+    expect(text).not.toMatch(/this (product|listing|seller) is/i);
+    expect(text).not.toMatch(/dropship/i);
+  });
+
+  it('adds the right situational advice on a bad grade', () => {
+    const base = snapshot(10);
+    const bad = analyse({
+      ...base,
+      totalRatings: 5_000,
+      histogram: { 5: 96, 4: 2, 3: 1, 2: 0, 1: 1 },
+      reviews: base.reviews.map((r) => ({ ...r, verified: false, rating: 5 as Review['rating'] })),
+    });
+    expect(['D', 'F']).toContain(bad.grade);
+
+    const text = open(bad).section.textContent ?? '';
+    // The distinction the whole product rests on, said out loud where it is
+    // most likely to be misread.
+    expect(text).toMatch(/not the same as the product being bad/i);
+  });
+
+  it('is offered, and says more, when Winnow could not read the reviews', () => {
+    // Both of the states where the engine has little or nothing to give: a
+    // refusal, and a grade resting on the histogram alone.
+    const base = snapshot(0);
+    const refused = analyse({ ...base, totalRatings: 4, histogram: undefined });
+    const ratingsOnly = analyse({ ...base, totalRatings: 12_345 });
+
+    expect(refused.insufficientData).toBe(true);
+    expect(ratingsOnly.insufficientData).toBe(false);
+
+    for (const analysis of [refused, ratingsOnly]) {
+      const { section } = open(analysis);
+      expect(section.hidden).toBe(false);
+      expect(section.textContent).toMatch(/matters more than usual/i);
+    }
+  });
+
+  it('stays open across a re-render', () => {
+    document.body.innerHTML = '<div id="centerCol"></div>';
+    mountPanel(analyse(snapshot(6)), {});
+    panel()!.querySelector<HTMLButtonElement>('[data-winnow-key="selfcheck"]')!.click();
+    expect(panel()!.getElementById('winnow-selfcheck')!.hidden).toBe(false);
+
+    mountPanel(analyse(snapshot(7)), {});
+    expect(panel()!.getElementById('winnow-selfcheck')!.hidden).toBe(false);
+  });
+});
+
+describe('plain language', () => {
+  /**
+   * "Discounted" is the engine's word for a review it stopped counting. On a
+   * shopping site it is also the word for money off — the panel was using retail
+   * vocabulary to mean something else entirely, a few inches from a real price.
+   */
+  it('never uses "discounted" for a review, since the page uses it for a price', () => {
+    const base = snapshot(10);
+    const mixed = analyse({
+      ...base,
+      reviews: base.reviews.map((r, i) => ({ ...r, verified: i > 6, rating: 5 as Review['rating'] })),
+    });
+    expect(mixed.discountedCount).toBeGreaterThan(0);
+
+    const text = renderPanel(mixed, { expanded: true }).shadowRoot!.textContent ?? '';
+    expect(text).toMatch(/set aside/);
+    expect(text).not.toMatch(/discounted/i);
+  });
+
+  it('glosses each number in words a first-time buyer already knows', () => {
+    const text = renderPanel(analyse(snapshot(8)), {}).shadowRoot!.textContent ?? '';
+    expect(text).toMatch(/The stars with the doubtful reviews set aside/);
+    expect(text).toMatch(/How much of what we could read held up/);
+    expect(text).toMatch(/How much evidence this is based on/);
   });
 });

@@ -79,7 +79,32 @@ with a healthy 4% one-star tail — graded A at 96/100, correctly):
 - **The panel no longer runs text the full width of a wide monitor.** Amazon's review section spans
   the whole column, which stretched the verdict paragraph past 200 characters a line.
 
+### Added
+- **"What you can check yourself"** — a collapsed checklist in the panel, offered in every state
+  including the ones where Winnow has nothing to say. It opens by stating plainly what Winnow cannot
+  see (the seller, the price, where it ships from, whether the product is any good) and then hands
+  over six checks that cover the rest, each doable in under a minute on the page already open.
+
+  This exists because the person most exposed to a bad listing is the one least likely to know what
+  the panel means. A first-time buyer reads *"Reviews look genuine"* as *"this is safe to buy"*,
+  which is neither what it says nor what it can mean. The answer is not a wider claim — it is saying
+  where the claim stops.
+
+  **On dropshipped and rebadged listings specifically:** Winnow does not detect them and this release
+  does not pretend to. Nothing in review text reliably separates a generic product resold under a new
+  brand from an ordinary one, and a detector built on that guess would put an accusation on screen
+  with nothing behind it. What is honest is describing the pattern from the outside so a shopper can
+  recognise it — the same photos under several unfamiliar brands, reviews describing a different
+  product, a new listing that already has hundreds of five-star ratings. The middle one the engine
+  already has a real signal for; the checklist covers the others.
+- **Plain-English glosses under each number.** "Adjusted rating", "Trust score" and "Confidence" are
+  obvious to whoever built them and opaque to a first-time buyer, so each now carries a one-line
+  explanation in words that need no translation.
+
 ### Changed
+- **The panel no longer calls a review "discounted".** That is the engine's word for a review it
+  stopped counting — and on a shopping site it is also the word for money off, a few inches from a
+  real price. It now says "set aside", which cannot be misread.
 - `optional_host_permissions` now covers `https://localhost` and `https://127.0.0.1`, which the dev
   endpoint validator already accepted. Still loopback-only, still optional, still absent from a
   normal install.

@@ -112,6 +112,12 @@ function describeViolations(results: axe.AxeResults): string {
 }
 
 /** Every state a user can actually put the panel into. */
+/** Open the self-check disclosure the way a user would, then audit the result. */
+function openSelfCheck(panel: HTMLElement): HTMLElement {
+  panel.shadowRoot!.querySelector<HTMLButtonElement>('[data-winnow-key="selfcheck"]')!.click();
+  return panel;
+}
+
 const states: Array<[string, () => HTMLElement]> = [
   ['default (collapsed)', () => renderPanel(analysis())],
   ['expanded breakdown', () => renderPanel(analysis(), { expanded: true })],
@@ -137,6 +143,15 @@ const states: Array<[string, () => HTMLElement]> = [
   [
     'rating breakdown only',
     () => renderPanel(analysis({ sampleSize: 0, adjustedRating: null, discountedCount: 0, confidence: 'low' })),
+  ],
+  // The self-check list, in both themes and in the low-information state where
+  // it carries the most weight. A UI branch that is not audited is untested by
+  // construction — the trap the feedback control already fell into once.
+  ['self-check list open', () => openSelfCheck(renderPanel(analysis()))],
+  ['self-check list open, dark', () => openSelfCheck(renderPanel(analysis(), { theme: 'dark' }))],
+  [
+    'self-check list open, nothing readable',
+    () => openSelfCheck(renderPanel(analysis({ insufficientData: true, adjustedRating: null }))),
   ],
   ['deep analysis available', () => renderPanel(analysis(), { onDeepAnalysis: async () => {}, deepState: 'idle' })],
   ['deep analysis loading', () => renderPanel(analysis(), { onDeepAnalysis: async () => {}, deepState: 'loading' })],

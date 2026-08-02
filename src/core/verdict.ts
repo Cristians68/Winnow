@@ -153,8 +153,8 @@ export function buildVerdict(analysis: Analysis): Verdict {
     // was shipping.
     const discounted =
       discountedCount === 1
-        ? `1 of the ${sampleSize} visible reviews was discounted`
-        : `${discountedCount} of the ${sampleSize} visible reviews were discounted`;
+        ? `1 of the ${sampleSize} visible reviews was set aside`
+        : `${discountedCount} of the ${sampleSize} visible reviews were set aside`;
     const flagged = `${concerningSignals} ${concerningSignals === 1 ? 'check' : 'checks'} flagged something`;
 
     const noted =

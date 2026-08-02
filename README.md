@@ -175,6 +175,20 @@ and how confident it is, and a low-confidence result is labelled as such rather 
 
 A grade of "couldn't read this page" is not a verdict about the product.
 
+**Winnow cannot tell you whether a listing is dropshipped or rebadged**, and it does not try.
+Nothing in review text reliably separates a generic product resold under a new brand from an ordinary
+one, and a detector built on that guess would put an accusation on the screen with nothing behind it.
+What the panel does instead is describe the pattern from the outside, in its "What you can check
+yourself" list, so a shopper can recognise it: the same product photos under several unfamiliar brand
+names, reviews describing a different product than the one listed, a new listing that somehow already
+has hundreds of five-star ratings. The middle one the engine does have a real signal for — a
+polarised rating split with an empty middle is what a reused listing usually leaves behind.
+
+That list is also where Winnow states what it cannot see at all: the seller, the price, the shipping
+origin, and whether the product is any good. A first-time buyer reads "Reviews look genuine" as "this
+is safe to buy", which is neither what it says nor what it can mean, and the honest fix for that is to
+mark where the claim stops rather than to widen it.
+
 Winnow also distinguishes a grade built on reviews from one built on the rating breakdown alone. A
 product page renders its histogram before the review module loads, and on a high-volume listing that
 histogram alone can support a grade — but a grade reached that way is announced as *"Rating breakdown
