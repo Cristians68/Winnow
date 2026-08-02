@@ -16,6 +16,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, type Settings } from '../src/shared/settings.js';
+import { DISAGREEMENTS_KEY } from '../src/shared/feedback.js';
 
 const DOM = `
   <input type="checkbox" id="enabled" />
@@ -28,14 +29,20 @@ const DOM = `
   <span class="saved" id="saved">Saved</span>
   <input type="text" id="devApiEndpoint" />
   <p class="help" id="devStatus"></p>
+  <p class="help" id="feedbackCount"></p>
+  <button type="button" id="feedbackExport">Export as JSON</button>
+  <button type="button" id="feedbackClear">Delete all of it</button>
+  <p class="help" id="feedbackStatus"></p>
 `;
 
 let setStored: ReturnType<typeof vi.fn>;
 let requestPermission: ReturnType<typeof vi.fn>;
+let storageArea: Record<string, unknown>;
+let removed: string[];
 
 async function loadOptions(
   settings: Partial<Settings> = {},
-  { permissionGranted = true, permissionThrows = false } = {},
+  { permissionGranted = true, permissionThrows = false, disagreements = undefined as unknown[] | undefined } = {},
 ): Promise<void> {
   document.body.innerHTML = DOM;
 
@@ -45,11 +52,21 @@ async function loadOptions(
     return permissionGranted;
   });
 
+  storageArea = {
+    [SETTINGS_KEY]: { ...DEFAULT_SETTINGS, ...settings },
+    [DISAGREEMENTS_KEY]: disagreements,
+  };
+  removed = [];
+
   (globalThis as unknown as { chrome: unknown }).chrome = {
     storage: {
       local: {
-        get: vi.fn(async (key: string) => ({ [key]: { ...DEFAULT_SETTINGS, ...settings } })),
+        get: vi.fn(async (key: string) => ({ [key]: storageArea[key] })),
         set: setStored,
+        remove: vi.fn(async (key: string) => {
+          removed.push(key);
+          delete storageArea[key];
+        }),
       },
     },
     permissions: { request: requestPermission },
@@ -192,5 +209,68 @@ describe('ordinary settings', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(setStored).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The feedback log controls.
+ *
+ * The load-bearing assertion is the absence of a send button. Everything else
+ * here is convenience; that one is the privacy promise expressed as a test.
+ */
+describe('grade feedback controls', () => {
+  const record = (asinHash: string) => ({
+    asinHash,
+    direction: 'too-harsh',
+    grade: 'D',
+    trustScore: 41,
+    sampleSize: 9,
+    sampleSource: 'featured',
+    discountedCount: 4,
+    signals: [{ id: 'verified', status: 'fail', decisive: true, trustScoreDelta: -18 }],
+    engineVersion: '0.1.0',
+    recordedOn: '2026-07-28',
+  });
+
+  it('says so plainly when nothing has been recorded', async () => {
+    await loadOptions();
+    expect(document.getElementById('feedbackCount')!.textContent).toMatch(/Nothing recorded/);
+  });
+
+  it('disables both controls when there is nothing to act on', async () => {
+    await loadOptions();
+    expect((document.getElementById('feedbackExport') as HTMLButtonElement).disabled).toBe(true);
+    expect((document.getElementById('feedbackClear') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('counts stored records, with the singular right', async () => {
+    await loadOptions({}, { disagreements: [record('aaa')] });
+    expect(document.getElementById('feedbackCount')!.textContent).toBe(
+      '1 grade recorded on this device.',
+    );
+
+    await loadOptions({}, { disagreements: [record('aaa'), record('bbb')] });
+    expect(document.getElementById('feedbackCount')!.textContent).toBe(
+      '2 grades recorded on this device.',
+    );
+  });
+
+  it('deletes the log and updates the count', async () => {
+    await loadOptions({}, { disagreements: [record('aaa')] });
+    (document.getElementById('feedbackClear') as HTMLButtonElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(removed).toContain(DISAGREEMENTS_KEY);
+    expect(document.getElementById('feedbackCount')!.textContent).toMatch(/Nothing recorded/);
+    expect(document.getElementById('feedbackStatus')!.textContent).toBe('Deleted.');
+  });
+
+  it('offers no way to transmit the log', async () => {
+    await loadOptions({}, { disagreements: [record('aaa')] });
+
+    const labels = [...document.querySelectorAll('button')].map((b) => b.textContent ?? '');
+    for (const label of labels) {
+      expect(label).not.toMatch(/send|submit|upload|share|report/i);
+    }
   });
 });

@@ -37,8 +37,24 @@ and nothing to log.
 
 ### What Winnow stores locally
 
-Exactly two settings — whether the panel is enabled, and whether the breakdown starts expanded. They
-live in your browser's extension storage and never leave your device. This is the only reason
+**Your settings.** Whether the panel is enabled, whether the breakdown starts expanded, the theme,
+and the developer endpoint if you set one.
+
+**Grades you marked as wrong.** If you click "Too harsh" or "Too lenient" on the panel, Winnow saves
+that answer so its scoring can be corrected later. Each entry holds the grade, the trust score, how
+many reviews were visible, and which checks were driving the result — the last part being the only
+thing that makes a wrong grade fixable rather than merely noted.
+
+It does **not** hold the product's name, its URL, or its ASIN. The listing is identified by a
+one-way hash, which is enough to tell two listings apart without writing your browsing history to
+disk, and the entry is stamped with a date rather than a time for the same reason. The log is capped
+at 200 entries, and you can export or delete all of it from Winnow's options page at any time.
+
+**None of this is ever uploaded.** There is no "send feedback" button, and no code path that
+transmits the log — deliberately, so this promise rests on the code rather than on our restraint.
+If you want to send it in, you export the file and do it yourself.
+
+Both live in your browser's extension storage and never leave your device. This is the only reason
 Winnow requests the `storage` permission.
 
 ---

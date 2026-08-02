@@ -18,6 +18,7 @@
  */
 
 import type { Analysis, Grade, SignalResult } from '../core/types.js';
+import type { DisagreementDirection } from '../shared/feedback.js';
 import { buildVerdict } from '../core/verdict.js';
 
 const HOST_ID = 'winnow-root';
@@ -269,6 +270,27 @@ button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .signal .detail { font-size: 12.5px; color: var(--muted-strong); margin: 1px 0 0; }
 .signal .evidence { margin: 5px 0 0; padding-left: 17px; font-size: 12px; color: var(--muted); }
 .signal .evidence li { margin: 2px 0; }
+.signal .contribution {
+  margin: 5px 0 0; font-size: 11.5px; color: var(--muted);
+  display: flex; align-items: baseline; gap: 5px;
+}
+.signal .contribution.decisive { color: var(--muted-strong); font-weight: 600; }
+.signal .contribution .dot {
+  width: 5px; height: 5px; border-radius: 50%; flex: none;
+  background: currentColor; opacity: .55; transform: translateY(-1px);
+}
+
+.feedback { margin: 11px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--surface); }
+.feedback p { margin: 0 0 7px; font-size: 12px; color: var(--muted-strong); }
+.feedback .row { display: flex; gap: 7px; flex-wrap: wrap; }
+.feedback button {
+  font: inherit; font-size: 12px; font-weight: 600;
+  padding: 5px 11px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--btn-border); background: var(--bg); color: var(--text);
+}
+.feedback button:hover:not(:disabled) { background: var(--btn-hover); }
+.feedback button:disabled { cursor: default; opacity: .6; }
+.feedback .said { margin: 7px 0 0; font-size: 12px; color: var(--muted); }
 
 .foot {
   margin: 15px -20px -18px; padding: 11px 20px;
@@ -417,8 +439,82 @@ function renderSignal(signal: SignalResult): HTMLElement {
     body.append(list);
   }
 
+  const contribution = renderContribution(signal);
+  if (contribution) body.append(contribution);
+
   item.append(body);
   return item;
+}
+
+/**
+ * "Would the answer change without this check?"
+ *
+ * Phrased as a counterfactual grade rather than a weight or a percentage,
+ * because that is what was actually measured — see `SignalContribution`. The
+ * marker dot is decorative and the wording carries the meaning on its own, so
+ * this stays readable with colour and shapes ignored entirely.
+ */
+function renderContribution(signal: SignalResult): HTMLElement | null {
+  const contribution = signal.contribution;
+  if (!contribution) return null;
+
+  const { decisive, gradeWithout } = contribution;
+  const line = el('p', `contribution${decisive ? ' decisive' : ''}`);
+
+  const dot = el('span', 'dot');
+  dot.setAttribute('aria-hidden', 'true');
+
+  const text = decisive
+    ? `Decisive on its own — without this check the grade would be ${gradeWithout}.`
+    : 'Removing this check on its own would not change the grade.';
+
+  line.append(dot, el('span', undefined, text));
+  return line;
+}
+
+/**
+ * The "this grade looks wrong" control.
+ *
+ * Two directions rather than a single thumbs-down, because "too harsh" and "too
+ * lenient" are opposite calibration errors and averaging them into one count
+ * would destroy the only information the click carries. Recorded locally and
+ * never transmitted — see src/shared/feedback.ts for why that constraint is not
+ * negotiable here.
+ */
+function renderFeedback(onFeedback: (direction: DisagreementDirection) => void): HTMLElement {
+  const wrap = el('section', 'feedback');
+  wrap.setAttribute('aria-labelledby', 'winnow-feedback-heading');
+
+  const prompt = el('p', undefined, 'Does this grade look wrong to you?');
+  prompt.id = 'winnow-feedback-heading';
+  wrap.append(prompt);
+
+  const row = el('div', 'row');
+  const said = el('p', 'said');
+  said.setAttribute('role', 'status');
+  said.setAttribute('aria-live', 'polite');
+
+  const buttons: HTMLButtonElement[] = [];
+  const choices: Array<[DisagreementDirection, string]> = [
+    ['too-harsh', 'Too harsh'],
+    ['too-lenient', 'Too lenient'],
+  ];
+
+  for (const [direction, label] of choices) {
+    const button = el('button', undefined, label) as HTMLButtonElement;
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      for (const b of buttons) b.disabled = true;
+      said.textContent =
+        'Saved on this device only. Export it from Winnow’s options if you want to send it in.';
+      onFeedback(direction);
+    });
+    buttons.push(button);
+    row.append(button);
+  }
+
+  wrap.append(row, said);
+  return wrap;
 }
 
 export interface PanelOptions {
@@ -429,6 +525,11 @@ export interface PanelOptions {
   onDeepAnalysis?: () => Promise<void>;
   deepState?: 'idle' | 'loading' | 'done' | 'error';
   deepError?: string;
+  /**
+   * Invoked when the user says the grade is wrong. Omit to hide the control.
+   * The handler is expected to store locally and nothing else.
+   */
+  onFeedback?: (direction: DisagreementDirection) => void;
 }
 
 export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTMLElement {
@@ -538,6 +639,12 @@ export function renderPanel(analysis: Analysis, options: PanelOptions = {}): HTM
   }
 
   card.append(actions, liveRegion, signals);
+
+  // Only meaningful where there is a grade to disagree with. On a refusal there
+  // is nothing to be right or wrong about.
+  if (options.onFeedback && !analysis.insufficientData) {
+    card.append(renderFeedback(options.onFeedback));
+  }
 
   // --- footer
   const foot = el('div', 'foot');

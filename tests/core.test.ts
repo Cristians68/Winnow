@@ -5,6 +5,7 @@ import {
   assessReviews,
   estimateAdjustedRating,
   sampleConfidenceFrom,
+  FEATURED_SAMPLE_CEILING,
   toGrade,
   textExtractionFailed,
   capGradeByDiscountedShare,
@@ -229,10 +230,34 @@ describe('adjusted rating estimation', () => {
 });
 
 describe('sample confidence', () => {
-  it('is zero with no reviews and saturates at scale', () => {
+  it('is zero with no reviews and rises with sample size', () => {
     expect(sampleConfidenceFrom(0)).toBe(0);
-    expect(sampleConfidenceFrom(25)).toBeCloseTo(1, 5);
     expect(sampleConfidenceFrom(10)).toBeGreaterThan(sampleConfidenceFrom(5));
+  });
+
+  it('saturates at 1 for a listing-page sample', () => {
+    expect(sampleConfidenceFrom(25, 'listing')).toBeCloseTo(1, 5);
+  });
+
+  /**
+   * The bias in a featured sample does not shrink as the sample grows, so no
+   * number of hand-picked reviews may reach full confidence. This is the guard
+   * that keeps estimateAdjustedRating from shrinking its estimate almost all the
+   * way onto a sample Amazon chose.
+   */
+  it('never reaches full confidence on featured reviews, however many there are', () => {
+    expect(sampleConfidenceFrom(25)).toBe(FEATURED_SAMPLE_CEILING);
+    expect(sampleConfidenceFrom(500)).toBe(FEATURED_SAMPLE_CEILING);
+    expect(sampleConfidenceFrom(500)).toBeLessThan(sampleConfidenceFrom(500, 'listing'));
+  });
+
+  it('defaults to the conservative source when none is stated', () => {
+    expect(sampleConfidenceFrom(40)).toBe(sampleConfidenceFrom(40, 'featured'));
+  });
+
+  /** Below the ceiling the curve is untouched, so small samples are unaffected. */
+  it('leaves samples below the ceiling identical across sources', () => {
+    expect(sampleConfidenceFrom(10)).toBeCloseTo(sampleConfidenceFrom(10, 'listing'), 10);
   });
 });
 
@@ -452,5 +477,94 @@ describe('analyse', () => {
     const [assessment] = assessReviews(snapshot({ reviews: [r], totalRatings: 5000 }));
     expect(assessment!.suspicion).toBeLessThanOrEqual(1);
     expect(assessment!.suspicion).toBeGreaterThan(0.5);
+  });
+});
+
+// --- per-signal contribution ------------------------------------------------
+
+/**
+ * Leave-one-out attribution.
+ *
+ * These tests care about one thing above correctness of any particular number:
+ * that the mechanism can actually come back non-zero. An attribution that always
+ * reports "this check changed nothing" would pass a naive smoke test, render a
+ * plausible-looking breakdown, and be worthless — so the decisive case is pinned
+ * explicitly rather than left to whatever the fixtures happen to produce.
+ */
+describe('signal contributions', () => {
+  const CLEAN = snapshot({
+    displayedRating: 4.4,
+    totalRatings: 5_000,
+    histogram: NATURAL_HISTOGRAM,
+    sampleSource: 'listing',
+    reviews: [
+      review({ text: 'Battery gives me about six hours rather than the ten advertised, but it charges quickly enough.', rating: 4, date: '2024-01-04' }),
+      review({ text: 'Replaced a cheaper unit that died after two months. This one is heavier and the hinge feels solid.', rating: 5, date: '2024-02-19' }),
+      review({ text: 'Works, but the mounting instructions were useless and took me twenty minutes to work out.', rating: 3, date: '2024-03-27' }),
+      review({ text: 'Third one I have owned in four years. Still the best option under fifty dollars as far as I can tell.', rating: 5, date: '2024-05-02' }),
+      review({ text: 'Arrived with a cracked housing. Support sent a replacement in five days and it has been fine since.', rating: 4, date: '2024-06-11' }),
+    ],
+  });
+
+  it('attaches a contribution to every signal on a graded analysis', () => {
+    const analysis = analyse(CLEAN);
+    expect(analysis.signals.length).toBeGreaterThan(0);
+    for (const signal of analysis.signals) {
+      expect(signal.contribution).toBeDefined();
+      expect(['A', 'B', 'C', 'D', 'F']).toContain(signal.contribution!.gradeWithout);
+    }
+  });
+
+  it('omits contributions when the analysis was refused for thin evidence', () => {
+    const analysis = analyse(snapshot({ reviews: [review()], totalRatings: 2 }));
+    expect(analysis.insufficientData).toBe(true);
+    for (const signal of analysis.signals) expect(signal.contribution).toBeUndefined();
+  });
+
+  it('reports no movement for a check that found nothing', () => {
+    const analysis = analyse(CLEAN);
+    const verified = analysis.signals.find((s) => s.id === 'verified');
+    expect(verified?.status).toBe('pass');
+    expect(verified?.contribution?.decisive).toBe(false);
+    expect(verified?.contribution?.trustScoreDelta).toBe(0);
+  });
+
+  /**
+   * The load-bearing test. A listing whose grade rests on one check must report
+   * that check as decisive — if this can't go true, the whole feature is
+   * decoration.
+   */
+  it('marks a check decisive when removing it alone changes the grade', () => {
+    const padded = snapshot({
+      displayedRating: 4.9,
+      totalRatings: 4_000,
+      histogram: NATURAL_HISTOGRAM,
+      sampleSource: 'listing',
+      reviews: [
+        review({ verified: false, rating: 5, text: 'Great product, exactly as described, would buy again. Very happy with this purchase.', date: '2024-04-01' }),
+        review({ verified: false, rating: 5, text: 'Excellent quality and fast shipping. Highly recommend to anyone considering it.', date: '2024-04-02' }),
+        review({ verified: false, rating: 5, text: 'Love it. Works perfectly and looks good too. Five stars from me without question.', date: '2024-04-02' }),
+        review({ verified: false, rating: 5, text: 'Amazing value for the money. Very pleased and will be ordering another one soon.', date: '2024-04-03' }),
+        review({ text: 'Runs about four degrees warmer than my old one under sustained load, which I did not expect.', rating: 3, date: '2024-01-15' }),
+        review({ text: 'The bracket does not fit a standard sixteen inch stud spacing despite what the listing claims.', rating: 2, date: '2024-02-20' }),
+      ],
+    });
+
+    const analysis = analyse(padded);
+    const decisive = analysis.signals.filter((s) => s.contribution?.decisive);
+
+    expect(decisive.length).toBeGreaterThan(0);
+    // And the grade genuinely improves when the check carrying it is removed.
+    for (const signal of decisive) {
+      expect(signal.contribution!.gradeWithout).not.toBe(analysis.grade);
+    }
+  });
+
+  it('does not let the counterfactual mutate the real analysis', () => {
+    const first = analyse(CLEAN);
+    const second = analyse(CLEAN);
+    expect(second.grade).toBe(first.grade);
+    expect(second.trustScore).toBe(first.trustScore);
+    expect(second.discountedCount).toBe(first.discountedCount);
   });
 });

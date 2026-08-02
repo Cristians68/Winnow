@@ -302,3 +302,108 @@ describe('panel structure', () => {
     expect(Number(minHeight)).toBeGreaterThanOrEqual(24);
   });
 });
+
+// --- feedback control -------------------------------------------------------
+
+describe('grade feedback control', () => {
+  it('is absent unless a handler is supplied', () => {
+    expect(shadowOf(analysis()).querySelector('.feedback')).toBeNull();
+  });
+
+  it('is absent when there is no grade to disagree with', () => {
+    const shadow = shadowOf(analysis({ insufficientData: true }), { onFeedback: () => {} });
+    expect(shadow.querySelector('.feedback')).toBeNull();
+  });
+
+  it('offers both directions, since they are opposite calibration errors', () => {
+    const shadow = shadowOf(analysis(), { onFeedback: () => {} });
+    const labels = [...shadow.querySelectorAll('.feedback button')].map((b) => b.textContent);
+    expect(labels).toEqual(['Too harsh', 'Too lenient']);
+  });
+
+  it('reports the direction that was clicked', () => {
+    const seen: string[] = [];
+    const shadow = shadowOf(analysis(), { onFeedback: (d: string) => seen.push(d) });
+    (shadow.querySelectorAll('.feedback button')[1] as HTMLButtonElement).click();
+    expect(seen).toEqual(['too-lenient']);
+  });
+
+  it('accepts one answer and then locks, so a single listing cannot be spammed', () => {
+    let calls = 0;
+    const shadow = shadowOf(analysis(), { onFeedback: () => calls++ });
+    const buttons = [...shadow.querySelectorAll('.feedback button')] as HTMLButtonElement[];
+
+    buttons[0]!.click();
+    buttons[0]!.click();
+    buttons[1]!.click();
+
+    expect(calls).toBe(1);
+    expect(buttons.every((b) => b.disabled)).toBe(true);
+  });
+
+  /**
+   * The confirmation has to say where the data went. A tool that promises no
+   * telemetry and then silently records something the user cannot see would be
+   * making the same move it exists to complain about.
+   */
+  it('confirms in a live region that the answer stayed on the device', () => {
+    const shadow = shadowOf(analysis(), { onFeedback: () => {} });
+    const said = shadow.querySelector('.feedback .said')!;
+    expect(said.getAttribute('aria-live')).toBe('polite');
+    expect(said.textContent).toBe('');
+
+    (shadow.querySelector('.feedback button') as HTMLButtonElement).click();
+    expect(said.textContent).toContain('this device only');
+  });
+});
+
+// --- per-signal contribution ------------------------------------------------
+
+describe('signal contribution line', () => {
+  function withContribution(decisive: boolean): Analysis {
+    const base = analysis();
+    return {
+      ...base,
+      signals: [
+        {
+          ...base.signals[0]!,
+          contribution: {
+            gradeWithout: 'A',
+            trustScoreWithout: 90,
+            trustScoreDelta: -16,
+            decisive,
+          },
+        },
+      ],
+    };
+  }
+
+  it('is omitted when the engine did not attribute the signal', () => {
+    const shadow = shadowOf(analysis(), { expanded: true });
+    expect(shadow.querySelector('.contribution')).toBeNull();
+  });
+
+  it('names the counterfactual grade when a check is decisive', () => {
+    const shadow = shadowOf(withContribution(true), { expanded: true });
+    const line = shadow.querySelector('.contribution')!;
+    expect(line.textContent).toContain('without this check the grade would be A');
+    expect(line.classList.contains('decisive')).toBe(true);
+  });
+
+  it('says so plainly when a check changes nothing', () => {
+    const shadow = shadowOf(withContribution(false), { expanded: true });
+    const line = shadow.querySelector('.contribution')!;
+    expect(line.textContent).toContain('would not change the grade');
+    expect(line.classList.contains('decisive')).toBe(false);
+  });
+
+  /** Colour and weight are reinforcement; the sentence carries the meaning. */
+  it('keeps its meaning with the marker dot ignored', () => {
+    const shadow = shadowOf(withContribution(true), { expanded: true });
+    const dot = shadow.querySelector('.contribution .dot')!;
+    expect(dot.getAttribute('aria-hidden')).toBe('true');
+
+    const spoken = shadow.querySelector('.contribution')!.textContent!.trim();
+    expect(spoken.length).toBeGreaterThan(20);
+  });
+});

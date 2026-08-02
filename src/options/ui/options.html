@@ -110,6 +110,39 @@
         </div>
       </section>
 
+      <h2>Grade feedback</h2>
+      <section>
+        <div class="setting" style="display: block">
+          <div>
+            <label class="label" for="feedbackExport">Grades you marked as wrong</label>
+            <div class="help" style="margin-bottom: 10px">
+              When you tell Winnow a grade is too harsh or too lenient, it saves the grade and which
+              check was carrying it — on this device only. Nothing is uploaded, and nothing here is
+              read by anyone unless you choose to send it. Exporting is how calibration gets fixed;
+              it stays your decision.
+            </div>
+            <p class="help" id="feedbackCount" style="margin: 0 0 10px"></p>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <button
+                type="button"
+                id="feedbackExport"
+                style="font: inherit; padding: 7px 12px; border-radius: 7px; border: 1px solid #ccd2db; background: #fff; cursor: pointer"
+              >
+                Export as JSON
+              </button>
+              <button
+                type="button"
+                id="feedbackClear"
+                style="font: inherit; padding: 7px 12px; border-radius: 7px; border: 1px solid #ccd2db; background: #fff; cursor: pointer"
+              >
+                Delete all of it
+              </button>
+            </div>
+            <p class="help" id="feedbackStatus" role="status" aria-live="polite" style="margin: 8px 0 0"></p>
+          </div>
+        </div>
+      </section>
+
       <h2>Developer</h2>
       <section>
         <div class="setting" style="display: block">

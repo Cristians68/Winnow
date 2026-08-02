@@ -105,6 +105,51 @@ would be exactly the false precision Winnow exists to call out.
 When almost nothing in the sample looks trustworthy, Winnow **declines to state an adjusted
 rating** rather than inventing one.
 
+### How much a sample is trusted
+
+Two different things limit confidence, and only one of them improves with more reviews.
+
+**Size.** Confidence rises with the number of reviews read, saturating around 25.
+
+**Representativeness.** Featured reviews are *chosen by Amazon*, and that bias does not shrink as
+the count grows — 25 hand-picked reviews are still 25 hand-picked reviews, and Amazon can change
+which ones it features without anything in this code changing. So a featured sample is capped at
+0.75 confidence no matter how large it gets. Only a `/product-reviews/` listing page, which is not
+hand-picked per product, is allowed the full range.
+
+Treating a large featured sample as a full-confidence read on the whole review base was a real bug
+here, and it made the adjusted rating far more assertive than the evidence supported.
+
+### Per-signal contributions
+
+Every check reports what the grade would have been **without it**, measured by re-running the engine
+with that check switched off.
+
+This is deliberately not a weight or a percentage. The grade is not a linear function of the
+weighted mean — the discounted-share cap can override the score outright, and its corroboration gate
+makes each check's effect depend on which *other* checks fired. A tidy "this signal is 30% of the
+score" bar would confidently misdescribe all of that. Leave-one-out is the honest measurement, and
+it answers the question people actually have: *would the answer change without this?*
+
+### Calibration and how it gets corrected
+
+The scoring is fully public — every threshold is in `src/core/`, and that is on purpose. Winnow
+computes grades locally rather than behind an API precisely so the reasoning can be audited, which
+necessarily means sellers can read it too. The defence was never obscurity; it is that the
+expensive-to-fake signals (real verified purchases, dates genuinely spread over months, distinct
+specific text) are the ones allowed to carry a severe grade, and that calling reviews "manipulated"
+requires at least two independent checks to agree.
+
+Two mechanisms keep the calibration honest over time:
+
+- **A frozen corpus** (`tests/corpus/`) runs whole captured pages through the parser and engine and
+  compares against a recorded result, so any change of threshold, selector or signal shows up as a
+  concrete diff rather than a vibe. It pins *our* drift — it is structurally incapable of noticing
+  Amazon changing its markup, which is what the runtime text-coverage check is for.
+- **A local feedback log.** If you think a grade is wrong, the panel records it — with the per-signal
+  contributions, so the wrong grade is diagnosable rather than merely noted. It is stored on your
+  device, never transmitted, and exported only if you choose to. See [PRIVACY.md](PRIVACY.md).
+
 ### What Winnow does not claim
 
 This is an estimate, not proof. Winnow cannot know that any individual review is fake — it can only

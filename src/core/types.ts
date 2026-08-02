@@ -39,8 +39,24 @@ export interface ProductSnapshot {
   histogram?: Partial<Record<Star, number>>;
   /** The reviews actually visible on the page. Typically 8-13.   */
   reviews: Review[];
+  /**
+   * Where the visible reviews came from, which decides how far they can be
+   * trusted to represent the whole review base.
+   *
+   * `featured` is the handful Amazon chose to surface on a `/dp/` page. Amazon
+   * decides that selection and can change it without our code changing, so it
+   * is a biased sample no matter how many of them there are. `listing` is a
+   * `/product-reviews/` page, where the sample is at least drawn in a stated
+   * order rather than hand-picked for the product page.
+   *
+   * Defaults to `featured` wherever it is missing, because that is both the
+   * common case and the conservative one.
+   */
+  sampleSource?: SampleSource;
   capturedAt: string;
 }
+
+export type SampleSource = 'featured' | 'listing';
 
 export type SignalStatus = 'pass' | 'warn' | 'fail' | 'insufficient-data';
 
@@ -69,6 +85,39 @@ export interface SignalResult {
   /** Plain-English explanation shown directly to the user. */
   detail: string;
   evidence?: string[];
+  /**
+   * What the grade would have been with this check switched off.
+   *
+   * Absent when the analysis was refused for thin evidence, since there is no
+   * grade to attribute. See `SignalContribution` for why this is a leave-one-out
+   * re-run rather than a share of the weighted total.
+   */
+  contribution?: SignalContribution;
+}
+
+/**
+ * A check's marginal effect on the grade, measured by removing it and re-scoring.
+ *
+ * It would be cheaper to show each check's weight as a percentage of the total,
+ * and it would be wrong. The grade is not a linear function of the weighted
+ * mean: `capGradeByDiscountedShare` can override the score outright, and its
+ * corroboration gate makes a check's effect depend on which *other* checks
+ * fired. A weight bar would confidently misdescribe all of that.
+ *
+ * Leave-one-out is the honest measurement, and it is the number a user actually
+ * wants — not "how much does this count" but "would the answer change without
+ * it". It is also what makes a rejected grade diagnosable: when someone says the
+ * grade is wrong, the recorded contributions say which check to go and look at.
+ */
+export interface SignalContribution {
+  /** Grade produced when this check is excluded from the engine. */
+  gradeWithout: Grade;
+  /** Trust score produced when this check is excluded. */
+  trustScoreWithout: number;
+  /** Signed points this check moved the trust score, positive = pushed the grade down. */
+  trustScoreDelta: number;
+  /** True when removing this check on its own changes the letter grade. */
+  decisive: boolean;
 }
 
 export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';

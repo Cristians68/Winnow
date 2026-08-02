@@ -14,7 +14,7 @@
  *     no background requests against the user's session. See the design spec.
  */
 
-import type { ProductSnapshot, Review, Star } from '../core/types.js';
+import type { ProductSnapshot, Review, SampleSource, Star } from '../core/types.js';
 
 /** Try selectors in order, return the first element that matches. */
 function pick(root: ParentNode, selectors: string[]): Element | null {
@@ -85,6 +85,19 @@ export function extractAsin(url: string = location.href, doc: Document = documen
 
 export function isProductPage(url: string = location.href): boolean {
   return /\/(dp|gp\/product|product-reviews)\//i.test(url);
+}
+
+/**
+ * Which kind of review sample this page is showing.
+ *
+ * A `/product-reviews/` page lists reviews in a stated order; a product page
+ * shows the handful Amazon chose to feature. The scoring engine caps how far it
+ * will trust the second kind, so getting this wrong in the optimistic direction
+ * would let a biased sample carry full confidence. Anything we don't recognise
+ * is therefore treated as featured.
+ */
+export function detectSampleSource(url: string = location.href): SampleSource {
+  return /\/product-reviews\//i.test(url) ? 'listing' : 'featured';
 }
 
 /**
@@ -415,6 +428,7 @@ export function buildSnapshot(doc: Document = document, url: string = location.h
     totalRatings: extractTotalRatings(doc),
     histogram: extractHistogram(doc),
     reviews: extractReviews(doc),
+    sampleSource: detectSampleSource(url),
     capturedAt: new Date().toISOString(),
   };
 }

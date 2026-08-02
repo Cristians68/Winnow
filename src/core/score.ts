@@ -6,6 +6,8 @@ import type {
   ProductSnapshot,
   ReviewAssessment,
   ReviewSignal,
+  SampleSource,
+  SignalContribution,
   SignalResult,
 } from './types.js';
 import { clamp } from './text.js';
@@ -18,7 +20,7 @@ import { burstSignal } from './signals/burst.js';
 import { depthSignal } from './signals/depth.js';
 import { helpfulnessSignal } from './signals/helpfulness.js';
 
-export const ENGINE_VERSION = '0.1.0';
+export const ENGINE_VERSION = '0.2.0';
 
 export const PRODUCT_SIGNALS: ProductSignal[] = [distributionSignal];
 
@@ -77,11 +79,27 @@ export interface DeepAugmentation {
   signals: SignalResult[];
 }
 
-export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Analysis {
-  const assessments = assessReviews(snapshot, deep);
-  const reviewSignalResults = summariseReviewSignals(snapshot, assessments);
-  const productSignalResults = PRODUCT_SIGNALS.map((s) => s.evaluate(snapshot));
-  const signals = [...productSignalResults, ...reviewSignalResults, ...(deep?.signals ?? [])];
+/**
+ * Score a snapshot, optionally with one check switched off.
+ *
+ * `exclude` exists so the engine can answer "what would the grade be without
+ * this check?" by actually re-running itself, rather than by inferring an answer
+ * from the weights. See `SignalContribution` for why the inferred version would
+ * be wrong. Excluding a review-level check also removes its suspicion deltas, so
+ * the counterfactual moves the adjusted rating too — which is the point.
+ */
+function scoreSnapshot(
+  snapshot: ProductSnapshot,
+  deep: DeepAugmentation | undefined,
+  exclude: string | null,
+): Analysis {
+  const assessments = assessReviews(snapshot, deep, exclude);
+  const reviewSignalResults = summariseReviewSignals(snapshot, assessments, exclude);
+  const productSignalResults = PRODUCT_SIGNALS.filter((s) => s.id !== exclude).map((s) =>
+    s.evaluate(snapshot),
+  );
+  const deepSignals = (deep?.signals ?? []).filter((s) => s.id !== exclude);
+  const signals = [...productSignalResults, ...reviewSignalResults, ...deepSignals];
 
   const sampleSize = snapshot.reviews.length;
   const meanSuspicion =
@@ -89,7 +107,7 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
       ? 0
       : assessments.reduce((sum, a) => sum + a.suspicion, 0) / sampleSize;
 
-  const sampleConfidence = sampleConfidenceFrom(sampleSize);
+  const sampleConfidence = sampleConfidenceFrom(sampleSize, snapshot.sampleSource);
 
   // --- Weighted trust score -------------------------------------------------
   let weightedSum = 0;
@@ -101,7 +119,7 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
     effectiveWeight += w;
   }
 
-  for (const signal of [...productSignalResults, ...(deep?.signals ?? [])]) {
+  for (const signal of [...productSignalResults, ...deepSignals]) {
     if (signal.status === 'insufficient-data') continue;
     const w = signal.weight * signal.confidence;
     weightedSum += signal.score * w;
@@ -158,6 +176,51 @@ export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Ana
   };
 }
 
+export function analyse(snapshot: ProductSnapshot, deep?: DeepAugmentation): Analysis {
+  const base = scoreSnapshot(snapshot, deep, null);
+
+  // No grade means nothing to attribute, and re-running eight times to produce
+  // eight identical refusals would be pure waste.
+  if (base.insufficientData) return base;
+
+  return {
+    ...base,
+    signals: base.signals.map((signal) => ({
+      ...signal,
+      contribution: contributionOf(snapshot, deep, base, signal.id),
+    })),
+  };
+}
+
+/** Re-score without one check and diff it against the real result. */
+function contributionOf(
+  snapshot: ProductSnapshot,
+  deep: DeepAugmentation | undefined,
+  base: Analysis,
+  signalId: string,
+): SignalContribution {
+  const without = scoreSnapshot(snapshot, deep, signalId);
+
+  // A counterfactual that collapses into "not enough evidence" tells the user
+  // nothing about this check, so report it as having moved nothing rather than
+  // inventing a grade out of the refusal branch's placeholder score.
+  if (without.insufficientData) {
+    return {
+      gradeWithout: base.grade,
+      trustScoreWithout: base.trustScore,
+      trustScoreDelta: 0,
+      decisive: false,
+    };
+  }
+
+  return {
+    gradeWithout: without.grade,
+    trustScoreWithout: without.trustScore,
+    trustScoreDelta: without.trustScore - base.trustScore,
+    decisive: without.grade !== base.grade,
+  };
+}
+
 /** Signals that are meaningless if we failed to read the review text. */
 const TEXT_DEPENDENT_SIGNALS = new Set(['phrasing', 'duplication', 'depth']);
 
@@ -187,13 +250,18 @@ export function textExtractionFailed(snapshot: ProductSnapshot): boolean {
 }
 
 /** Run every review signal and accumulate per-review suspicion. */
-export function assessReviews(snapshot: ProductSnapshot, deep?: DeepAugmentation): ReviewAssessment[] {
+export function assessReviews(
+  snapshot: ProductSnapshot,
+  deep?: DeepAugmentation,
+  exclude: string | null = null,
+): ReviewAssessment[] {
   const textBroken = textExtractionFailed(snapshot);
   const byReview = new Map<string, ReviewAssessment>(
     snapshot.reviews.map((r) => [r.id, { reviewId: r.id, suspicion: 0, reasons: [] }]),
   );
 
   for (const signal of REVIEW_SIGNALS) {
+    if (signal.id === exclude) continue;
     if (textBroken && TEXT_DEPENDENT_SIGNALS.has(signal.id)) continue;
     for (const [reviewId, { delta, reason }] of signal.evaluate(snapshot)) {
       const assessment = byReview.get(reviewId);
@@ -256,13 +324,14 @@ export function estimateAdjustedRating(
 function summariseReviewSignals(
   snapshot: ProductSnapshot,
   assessments: ReviewAssessment[],
+  exclude: string | null = null,
 ): SignalResult[] {
   const sampleSize = snapshot.reviews.length;
-  const confidence = sampleConfidenceFrom(sampleSize);
+  const confidence = sampleConfidenceFrom(sampleSize, snapshot.sampleSource);
 
   const textBroken = textExtractionFailed(snapshot);
 
-  return REVIEW_SIGNALS.map((signal) => {
+  return REVIEW_SIGNALS.filter((signal) => signal.id !== exclude).map((signal) => {
     const base = { id: signal.id, label: signal.label, weight: 1, confidence };
 
     if (sampleSize === 0) {
@@ -328,10 +397,38 @@ function passDetail(signalId: string): string {
   }
 }
 
-/** Confidence contributed by sample size alone. Saturates around 25 reviews. */
-export function sampleConfidenceFrom(sampleSize: number): number {
+/**
+ * Ceiling on confidence when the sample is Amazon's featured reviews.
+ *
+ * The size curve below answers "how many reviews did we see", and the code used
+ * to treat that as the whole answer — saturating at 1.0 from 25 reviews, which
+ * asserts that a large enough featured sample is a full-confidence read on the
+ * review base. It isn't. Featured reviews are *chosen by Amazon*, and that bias
+ * does not shrink as the count grows: 25 hand-picked reviews are 25 hand-picked
+ * reviews. Amazon can also change the selection at any time without our code
+ * changing, so the same listing can be sampled differently on two consecutive
+ * loads.
+ *
+ * Size and representativeness are two different things, and only one of them
+ * improves with n. So featured samples are capped here regardless of count,
+ * which keeps `estimateAdjustedRating` from shrinking an estimate almost all the
+ * way onto a biased draw. A `/product-reviews/` listing page is not hand-picked
+ * per product, so it is allowed the full range.
+ */
+export const FEATURED_SAMPLE_CEILING = 0.75;
+
+/**
+ * Confidence contributed by the sample. Size saturates around 25 reviews, then
+ * the source caps it — see FEATURED_SAMPLE_CEILING for why the cap is not
+ * redundant with the curve.
+ */
+export function sampleConfidenceFrom(
+  sampleSize: number,
+  source: SampleSource = 'featured',
+): number {
   if (sampleSize === 0) return 0;
-  return clamp(Math.log10(sampleSize + 1) / Math.log10(26));
+  const bySize = clamp(Math.log10(sampleSize + 1) / Math.log10(26));
+  return source === 'listing' ? bySize : Math.min(bySize, FEATURED_SAMPLE_CEILING);
 }
 
 export function toGrade(trustScore: number): Grade {

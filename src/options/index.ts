@@ -1,4 +1,5 @@
 import { getSettings, setSettings, isDevEndpoint, isTheme, type Settings } from '../shared/settings.js';
+import { clearDisagreements, exportDisagreements, listDisagreements } from '../shared/feedback.js';
 
 function checkbox(id: string): HTMLInputElement {
   const el = document.getElementById(id);
@@ -33,6 +34,56 @@ async function init(): Promise<void> {
 
   wireTheme(settings);
   await wireDevEndpoint(settings);
+  await wireFeedback();
+}
+
+/**
+ * The feedback log's controls.
+ *
+ * Export and delete, and nothing else. There is deliberately no "send to us"
+ * button: the moment this page could transmit, the no-telemetry promise would
+ * depend on a click rather than on the code, and PRIVACY.md would be describing
+ * an intention instead of a fact.
+ */
+async function wireFeedback(): Promise<void> {
+  const count = document.getElementById('feedbackCount');
+  const status = document.getElementById('feedbackStatus');
+  const exportButton = document.getElementById('feedbackExport');
+  const clearButton = document.getElementById('feedbackClear');
+  if (!count || !status || !exportButton || !clearButton) return;
+
+  async function refresh(): Promise<void> {
+    const records = await listDisagreements();
+    count!.textContent =
+      records.length === 0
+        ? 'Nothing recorded yet.'
+        : `${records.length} ${records.length === 1 ? 'grade' : 'grades'} recorded on this device.`;
+
+    const empty = records.length === 0;
+    (exportButton as HTMLButtonElement).disabled = empty;
+    (clearButton as HTMLButtonElement).disabled = empty;
+  }
+
+  exportButton.addEventListener('click', async () => {
+    const json = await exportDisagreements();
+    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `winnow-feedback-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    status!.textContent = 'Downloaded. The copy on this device is unchanged.';
+  });
+
+  clearButton.addEventListener('click', async () => {
+    await clearDisagreements();
+    await refresh();
+    status!.textContent = 'Deleted.';
+  });
+
+  await refresh();
 }
 
 function wireTheme(settings: Settings): void {

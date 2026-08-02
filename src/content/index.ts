@@ -16,6 +16,7 @@ import type { Analysis, ProductSnapshot } from '../core/types.js';
 import type { DeepAugmentation } from '../core/score.js';
 import { DEFAULT_SETTINGS, getSettings, isDevEndpoint, SETTINGS_KEY, type Settings } from '../shared/settings.js';
 import { API_ENDPOINT, buildRequest, toAugmentation, type DeepAnalysisResponse } from '../shared/deep.js';
+import { recordDisagreement, type DisagreementDirection } from '../shared/feedback.js';
 
 let currentAnalysis: Analysis | null = null;
 let settings: Settings = DEFAULT_SETTINGS;
@@ -44,6 +45,19 @@ function deepAnalysisAvailable(): boolean {
   return API_ENDPOINT !== null || isDevEndpoint(settings.devApiEndpoint);
 }
 
+/**
+ * Store a rejected grade locally. Deliberately fire-and-forget: the panel must
+ * not wait on storage, and a failed write is not worth interrupting anyone over.
+ */
+function handleFeedback(direction: DisagreementDirection): void {
+  if (!currentAnalysis) return;
+  void recordDisagreement(
+    currentAnalysis,
+    direction,
+    currentSnapshot?.sampleSource ?? 'featured',
+  );
+}
+
 function render(): void {
   if (!currentAnalysis || !settings.enabled) return;
   mountPanel(currentAnalysis, {
@@ -52,6 +66,7 @@ function render(): void {
     ...(deepAnalysisAvailable() ? { onDeepAnalysis: runDeepAnalysis } : {}),
     deepState,
     deepError,
+    onFeedback: handleFeedback,
   });
 }
 

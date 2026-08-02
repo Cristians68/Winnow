@@ -51,6 +51,7 @@ function analysis(overrides: Partial<Analysis> = {}): Analysis {
         confidence: 0.8,
         detail: '92% of ratings are 5-star but only 1% are 1-star.',
         evidence: ['92% of ratings are 5-star but only 1% are 1-star.'],
+        contribution: { gradeWithout: 'A', trustScoreWithout: 88, trustScoreDelta: -14, decisive: true },
       },
       {
         id: 'verified',
@@ -61,6 +62,7 @@ function analysis(overrides: Partial<Analysis> = {}): Analysis {
         confidence: 0.7,
         detail: '3 of 8 visible reviews flagged.',
         evidence: ['Unverified purchase giving a 5-star rating'],
+        contribution: { gradeWithout: 'B', trustScoreWithout: 76, trustScoreDelta: -2, decisive: false },
       },
       {
         id: 'burst',
@@ -139,6 +141,15 @@ const states: Array<[string, () => HTMLElement]> = [
         deepState: 'error',
         deepError: 'Could not reach the deep-analysis service.',
       }),
+  ],
+  ['feedback control', () => renderPanel(analysis(), { onFeedback: () => {} })],
+  [
+    'feedback control with breakdown open',
+    () => renderPanel(analysis(), { onFeedback: () => {}, expanded: true }),
+  ],
+  [
+    'feedback control, dark theme',
+    () => renderPanel(analysis(), { onFeedback: () => {}, theme: 'dark', expanded: true }),
   ],
   ...(['A', 'B', 'C', 'D', 'F'] as Grade[]).map(
     (grade): [string, () => HTMLElement] => [`grade ${grade}`, () => renderPanel(analysis({ grade }))],

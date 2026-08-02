@@ -4,7 +4,44 @@ All notable changes to Winnow are recorded here. The scoring engine carries its 
 (`ENGINE_VERSION` in `src/core/score.ts`), shown in the on-page panel, so a grade can always be
 traced to the logic that produced it.
 
-## [Unreleased]
+## [0.2.0]
+
+Engine version moves to `0.2.0` alongside the extension. The panel prints the engine version so a
+grade can be traced to the logic that produced it, and this release changes how a grade is reached —
+leaving it at `0.1.0` would make results from the old and new scoring indistinguishable.
+
+### Added
+- **Per-signal contributions.** Every check now reports what the grade would have been without it,
+  computed by re-running the engine with that check switched off, and the panel shows it in the
+  breakdown. Deliberately not a weight or a percentage: the discounted-share cap can override the
+  weighted score outright, and its corroboration gate makes each check's effect depend on which
+  other checks fired, so a share-of-total bar would confidently misdescribe how the grade was
+  actually reached. Leave-one-out is the only honest measurement here, and it is also what makes a
+  rejected grade diagnosable rather than merely noted.
+- **A frozen page corpus** (`tests/corpus/`, `npm run corpus:freeze`). Whole pages run through the
+  parser *and* the engine, compared against a recorded result. The existing calibration suite builds
+  snapshots by hand and so never exercises a selector — a change that broke parsing entirely could
+  leave it green. Ships with two synthetic fixtures and a DevTools capture tool
+  (`tools/capture-corpus.js`) that rebuilds a page from only the parser-relevant elements rather
+  than filtering a copy, so account markup and session tokens cannot survive by being overlooked.
+  The suite pins the clock to each capture's timestamp, since `helpfulness` measures review age
+  against `Date.now()` and the fixtures would otherwise change grade as they aged.
+  **This catches our drift and cannot catch Amazon's** — that remains the runtime coverage check's job.
+- **A local feedback log.** "Too harsh" / "Too lenient" on the panel records the grade and the
+  per-signal contributions to `chrome.storage.local`, capped at 200 entries, identified by a hash of
+  the ASIN and stamped with a date rather than a time. Never transmitted, and there is no code path
+  that could: exporting is a manual download from the options page. A server-side version would have
+  been more useful and would have broken the no-telemetry promise this product is sold on.
+
+### Changed
+- **A featured-review sample can no longer reach full confidence.** Sample confidence saturated at
+  1.0 around 25 reviews, which asserts that a large enough sample of *Amazon's chosen* reviews is a
+  complete read on the review base. Size and representativeness are different things and only the
+  first improves with count — the featured-selection bias does not shrink at n=25, and Amazon can
+  change that selection without this code changing. Featured samples are now capped at 0.75;
+  `/product-reviews/` listing pages, which are not hand-picked per product, keep the full range.
+  In practice this makes the adjusted rating meaningfully less assertive on large product-page
+  samples. Snapshots now carry `sampleSource` to record which kind of page they came from.
 
 ### Fixed
 - **Cross-product template reuse could not fire in normal use.** Phrase corroboration was tracked

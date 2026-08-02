@@ -1,0 +1,173 @@
+{
+  "snapshot": {
+    "asin": "B00HONEST1",
+    "title": "Desk Lamp with Adjustable Arm",
+    "displayedRating": 4.4,
+    "totalRatings": 8412,
+    "histogram": {
+      "1": 8,
+      "2": 4,
+      "3": 8,
+      "4": 18,
+      "5": 62
+    },
+    "sampleSource": "featured",
+    "reviewCount": 8,
+    "reviews": [
+      {
+        "id": "RHON0001",
+        "rating": 4,
+        "date": "2026-01-14",
+        "verified": true,
+        "helpfulVotes": 14,
+        "textLength": 208
+      },
+      {
+        "id": "RHON0002",
+        "rating": 5,
+        "date": "2026-02-03",
+        "verified": true,
+        "helpfulVotes": 31,
+        "textLength": 172
+      },
+      {
+        "id": "RHON0003",
+        "rating": 3,
+        "date": "2026-02-27",
+        "verified": true,
+        "helpfulVotes": 8,
+        "textLength": 174
+      },
+      {
+        "id": "RHON0004",
+        "rating": 5,
+        "date": "2026-03-19",
+        "verified": true,
+        "helpfulVotes": 22,
+        "textLength": 182
+      },
+      {
+        "id": "RHON0005",
+        "rating": 2,
+        "date": "2026-04-08",
+        "verified": true,
+        "helpfulVotes": 40,
+        "textLength": 170
+      },
+      {
+        "id": "RHON0006",
+        "rating": 4,
+        "date": "2026-04-30",
+        "verified": true,
+        "helpfulVotes": 6,
+        "textLength": 160
+      },
+      {
+        "id": "RHON0007",
+        "rating": 5,
+        "date": "2026-05-12",
+        "verified": true,
+        "helpfulVotes": 11,
+        "textLength": 182
+      },
+      {
+        "id": "RHON0008",
+        "rating": 4,
+        "date": "2026-05-26",
+        "verified": true,
+        "helpfulVotes": 3,
+        "textLength": 149
+      }
+    ]
+  },
+  "analysis": {
+    "grade": "A",
+    "trustScore": 100,
+    "adjustedRating": 4.4,
+    "displayedRating": 4.4,
+    "discountedCount": 0,
+    "concerningSignals": 0,
+    "sampleSize": 8,
+    "confidence": "moderate",
+    "insufficientData": false,
+    "signals": [
+      {
+        "id": "distribution",
+        "status": "pass",
+        "score": 1,
+        "detail": "The spread across star ratings looks consistent with organic reviews (62% 5-star, 8% 1-star).",
+        "contribution": {
+          "gradeWithout": "A",
+          "trustScoreWithout": 100,
+          "decisive": false
+        }
+      },
+      {
+        "id": "verified",
+        "status": "pass",
+        "score": 1,
+        "detail": "Every visible review is from a verified purchase.",
+        "contribution": {
+          "gradeWithout": "A",
+          "trustScoreWithout": 100,
+          "decisive": false
+        }
+      },
+      {
+        "id": "phrasing",
+        "status": "pass",
+        "score": 1,
+        "detail": "No incentive disclosures, boilerplate or generated-text patterns found.",
+        "contribution": {
+          "gradeWithout": "A",
+          "trustScoreWithout": 100,
+          "decisive": false
+        }
+      },
+      {
+        "id": "duplication",
+        "status": "pass",
+        "score": 1,
+        "detail": "No reviews share substantially similar text.",
+        "contribution": {
+          "gradeWithout": "A",
+          "trustScoreWithout": 100,
+          "decisive": false
+        }
+      },
+      {
+        "id": "burst",
+        "status": "pass",
+        "score": 1,
+        "detail": "Review dates are spread out rather than clustered.",
+        "contribution": {
+          "gradeWithout": "A",
+          "trustScoreWithout": 100,
+          "decisive": false
+        }
+      },
+      {
+        "id": "depth",
+        "status": "pass",
+        "score": 1,
+        "detail": "Extreme ratings come with enough detail to be credible.",
+        "contribution": {
+          "gradeWithout": "A",
+          "trustScoreWithout": 100,
+          "decisive": false
+        }
+      },
+      {
+        "id": "helpfulness",
+        "status": "pass",
+        "score": 1,
+        "detail": "Community voting on these reviews looks normal.",
+        "contribution": {
+          "gradeWithout": "A",
+          "trustScoreWithout": 100,
+          "decisive": false
+        }
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "winnow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "What the reviews actually say. Review-integrity analysis for Amazon, computed locally in your browser.",
   "private": true,
   "type": "module",
@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node tools/deep-smoke.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "corpus:freeze": "node tools/freeze-corpus.mjs"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",
