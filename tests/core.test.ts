@@ -37,6 +37,9 @@ function snapshot(partial: Partial<ProductSnapshot> = {}): ProductSnapshot {
   return {
     asin: 'B000TEST01',
     reviews: [],
+    // These fixtures are English prose, and the engine now requires a page to
+    // say what language it is in before the wording checks will run at all.
+    language: 'en',
     capturedAt: new Date().toISOString(),
     ...partial,
   };

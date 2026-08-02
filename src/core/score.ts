@@ -263,6 +263,9 @@ export function assessReviews(
   for (const signal of REVIEW_SIGNALS) {
     if (signal.id === exclude) continue;
     if (textBroken && TEXT_DEPENDENT_SIGNALS.has(signal.id)) continue;
+    // A check that cannot run must not contribute suspicion. Its absence is
+    // reported to the user by summariseReviewSignals rather than hidden.
+    if (signal.unavailable?.(snapshot)) continue;
     for (const [reviewId, { delta, reason }] of signal.evaluate(snapshot)) {
       const assessment = byReview.get(reviewId);
       if (!assessment) continue;
@@ -353,6 +356,20 @@ function summariseReviewSignals(
         score: 0.5,
         confidence: 0,
         detail: "Winnow couldn't read the review text on this page, so this check was skipped.",
+      };
+    }
+
+    // The same principle generalised: a check that has no way to detect its
+    // target on this page says so, instead of reporting the clean result it
+    // gets for free by looking for nothing.
+    const unavailable = signal.unavailable?.(snapshot);
+    if (unavailable) {
+      return {
+        ...base,
+        status: 'insufficient-data' as const,
+        score: 0.5,
+        confidence: 0,
+        detail: unavailable,
       };
     }
 

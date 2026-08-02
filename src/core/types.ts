@@ -53,6 +53,17 @@ export interface ProductSnapshot {
    * common case and the conservative one.
    */
   sampleSource?: SampleSource;
+  /**
+   * Language of the storefront page, as a BCP-47 tag from `<html lang>`.
+   *
+   * The manifest matches fourteen Amazon domains and eleven of them are not
+   * English, so "what language is this" is load-bearing rather than cosmetic:
+   * it decides which phrase lists the language check may use, and whether that
+   * check is allowed to run at all. Undefined means we could not tell, which is
+   * treated the same as unsupported — guessing English is precisely how the
+   * engine came to assert that Japanese reviews had no text in them.
+   */
+  language?: string;
   capturedAt: string;
 }
 
@@ -164,6 +175,16 @@ export interface ProductSignal {
 export interface ReviewSignal {
   id: string;
   label: string;
+  /**
+   * Why this check cannot run on this snapshot, or null when it can.
+   *
+   * A check that has no way to detect its target must say so. Returning an
+   * empty result set instead renders in the panel as a clean pass, and a clean
+   * pass the engine did not earn is worse than no answer — it is the one output
+   * a user cannot tell apart from a real finding of nothing. The reason string
+   * is shown to the user verbatim, so it should say what was missing.
+   */
+  unavailable?(snapshot: ProductSnapshot): string | null;
   /**
    * Returns a map of reviewId -> { delta, reason }. Deltas are additive
    * contributions to that review's suspicion, clamped later.

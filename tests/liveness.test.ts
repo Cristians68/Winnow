@@ -49,6 +49,7 @@ function snapshot(reviews: Review[], extra: Partial<ProductSnapshot> = {}): Prod
     displayedRating: 4.7,
     totalRatings: 5000,
     histogram: { 5: 60, 4: 15, 3: 10, 2: 8, 1: 7 },
+    language: 'en',
     capturedAt: new Date().toISOString(),
     reviews,
     ...extra,

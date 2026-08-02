@@ -15,6 +15,7 @@
  */
 
 import type { ProductSnapshot, Review, SampleSource, Star } from '../core/types.js';
+import { findStarCount, parseLocalisedDate, parseStarLabel } from '../core/language.js';
 
 /** Try selectors in order, return the first element that matches. */
 function pick(root: ParentNode, selectors: string[]): Element | null {
@@ -111,10 +112,50 @@ export function detectSampleSource(url: string = location.href): SampleSource {
 export function isInterstitial(doc: Document = document): boolean {
   if (doc.querySelector('form[action*="validateCaptcha"], form[action*="/errors/"]')) return true;
 
+  // The form check above is language-neutral and does most of the work. These
+  // phrases are the backstop for layouts that render the challenge without a
+  // recognisable form action, and they are listed per storefront because the
+  // English-only version mounted a "couldn't read this page" panel on top of
+  // every non-English captcha wall.
   const text = doc.body?.innerText ?? '';
-  return /click the button below to continue shopping|enter the characters you see below|we just need to make sure you'?re not a robot|type the characters you see in this image/i.test(
+  return /click the button below to continue shopping|enter the characters you see below|we just need to make sure you'?re not a robot|type the characters you see in this image|geben sie die zeichen ein|saisissez les caract|introduzca los caracteres|inserisci i caratteri|voer de tekens in|ange tecknen|wpisz znaki|以下に表示されている文字を入力/i.test(
     text,
   );
+}
+
+/**
+ * The storefront's language, from the document.
+ *
+ * `<html lang>` is present on every Amazon storefront and is the page's own
+ * statement about itself, so it beats guessing from the domain — amazon.ca
+ * serves both English and French, and any user can switch language on any
+ * storefront. The domain is only a fallback for the case where the attribute is
+ * missing, and an unrecognised domain yields undefined rather than "en",
+ * because a wrong language is worse here than an unknown one: it lets the
+ * wording check run against a dictionary that cannot match.
+ */
+const DOMAIN_LANGUAGE: Array<[RegExp, string]> = [
+  [/amazon\.de$/i, 'de'],
+  [/amazon\.fr$/i, 'fr'],
+  [/amazon\.es$/i, 'es'],
+  [/amazon\.it$/i, 'it'],
+  [/amazon\.nl$/i, 'nl'],
+  [/amazon\.se$/i, 'sv'],
+  [/amazon\.pl$/i, 'pl'],
+  [/amazon\.co\.jp$/i, 'ja'],
+  [/amazon\.(com|co\.uk|ca|com\.au|in)$/i, 'en'],
+];
+
+export function detectLanguage(doc: Document = document, url: string = location.href): string | undefined {
+  const declared = doc.documentElement?.getAttribute('lang')?.trim();
+  if (declared) return declared;
+
+  try {
+    const { hostname } = new URL(url);
+    return DOMAIN_LANGUAGE.find(([pattern]) => pattern.test(hostname))?.[1];
+  } catch {
+    return undefined;
+  }
 }
 
 // --- Product-level fields --------------------------------------------------
@@ -176,9 +217,12 @@ function pairHistogramColumns(container: ParentNode): Partial<Record<Star, numbe
 
   for (const leaf of leaves) {
     const text = textOf(leaf);
-    const star = text.match(/^([1-5])\s*stars?$/i);
-    if (star) {
-      stars.push(Number(star[1]) as Star);
+    // Star nouns differ per storefront ("5 Sterne", "5 étoiles", "星5つ"), and
+    // requiring the English word left the histogram unreadable on eleven of the
+    // fourteen domains the manifest matches.
+    const star = parseStarLabel(text);
+    if (star !== null) {
+      stars.push(star as Star);
       continue;
     }
     const percentage = text.match(/^(\d{1,3})\s*%$/);
@@ -230,10 +274,10 @@ export function extractHistogram(doc: Document): Partial<Record<Star, number>> |
   ]);
   for (const el of labelled) {
     const label = el.getAttribute('aria-label') ?? el.getAttribute('title') ?? '';
-    const starMatch = label.match(/([1-5])\s*star/i);
+    const star = findStarCount(label);
     const pctMatch = label.match(/(\d{1,3})\s*%/);
-    if (starMatch && pctMatch) {
-      histogram[Number(starMatch[1]) as Star] = Number(pctMatch[1]);
+    if (star !== null && pctMatch) {
+      histogram[star as Star] = Number(pctMatch[1]);
     }
   }
   if (isPlausibleHistogram(histogram)) return histogram;
@@ -253,10 +297,10 @@ export function extractHistogram(doc: Document): Partial<Record<Star, number>> |
   ]);
   rows.forEach((row) => {
     const rowText = textOf(row);
-    const starMatch = rowText.match(/([1-5])\s*star/i);
+    const star = findStarCount(rowText);
     const pctMatch = rowText.match(/(\d{1,3})\s*%/);
-    if (starMatch && pctMatch) {
-      histogram[Number(starMatch[1]) as Star] = Number(pctMatch[1]);
+    if (star !== null && pctMatch) {
+      histogram[star as Star] = Number(pctMatch[1]);
     }
   });
 
@@ -267,13 +311,18 @@ export function extractHistogram(doc: Document): Partial<Record<Star, number>> |
 
 // --- Reviews ---------------------------------------------------------------
 
+/**
+ * "Reviewed in the United States on June 3, 2026", "Rezension aus Deutschland
+ * vom 3. Juni 2026", "2026年6月3日に日本でレビュー済み".
+ *
+ * Delegated to the language module, which knows the month names for every
+ * storefront the manifest matches. The English-only version here returned
+ * undefined for French and Japanese dates, which switched off the review-timing
+ * and community-response checks entirely on those storefronts — silently, since
+ * an undated review is simply skipped.
+ */
 function parseReviewDate(raw: string): string | undefined {
-  // "Reviewed in the United States on June 3, 2026" / "on 3 June 2026"
-  const match = raw.match(/on\s+(.+)$/i);
-  const candidate = (match?.[1] ?? raw).trim();
-  const parsed = Date.parse(candidate);
-  if (!Number.isFinite(parsed)) return undefined;
-  return new Date(parsed).toISOString().slice(0, 10);
+  return parseLocalisedDate(raw);
 }
 
 function parseRating(el: Element | null): Star | undefined {
@@ -429,6 +478,7 @@ export function buildSnapshot(doc: Document = document, url: string = location.h
     histogram: extractHistogram(doc),
     reviews: extractReviews(doc),
     sampleSource: detectSampleSource(url),
+    language: detectLanguage(doc, url),
     capturedAt: new Date().toISOString(),
   };
 }

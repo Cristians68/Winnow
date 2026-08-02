@@ -1,0 +1,173 @@
+{
+  "snapshot": {
+    "asin": "B00PADDED2",
+    "title": "LED-Schreibtischlampe mit verstellbarem Arm",
+    "displayedRating": 4.8,
+    "totalRatings": 1284,
+    "histogram": {
+      "1": 1,
+      "2": 0,
+      "3": 1,
+      "4": 4,
+      "5": 94
+    },
+    "sampleSource": "featured",
+    "reviewCount": 8,
+    "reviews": [
+      {
+        "id": "RDE0001",
+        "rating": 5,
+        "date": "2026-01-14",
+        "verified": false,
+        "helpfulVotes": 0,
+        "textLength": 188
+      },
+      {
+        "id": "RDE0002",
+        "rating": 5,
+        "date": "2026-01-19",
+        "verified": false,
+        "helpfulVotes": 0,
+        "textLength": 184
+      },
+      {
+        "id": "RDE0003",
+        "rating": 5,
+        "date": "2026-01-22",
+        "verified": false,
+        "helpfulVotes": 0,
+        "textLength": 5
+      },
+      {
+        "id": "RDE0004",
+        "rating": 5,
+        "date": "2026-02-03",
+        "verified": false,
+        "helpfulVotes": 0,
+        "textLength": 160
+      },
+      {
+        "id": "RDE0005",
+        "rating": 4,
+        "date": "2026-02-28",
+        "verified": true,
+        "helpfulVotes": 17,
+        "textLength": 187
+      },
+      {
+        "id": "RDE0006",
+        "rating": 2,
+        "date": "2026-03-11",
+        "verified": true,
+        "helpfulVotes": 42,
+        "textLength": 174
+      },
+      {
+        "id": "RDE0007",
+        "rating": 5,
+        "date": "2026-04-02",
+        "verified": false,
+        "helpfulVotes": 0,
+        "textLength": 141
+      },
+      {
+        "id": "RDE0008",
+        "rating": 5,
+        "date": "2026-04-21",
+        "verified": false,
+        "helpfulVotes": 0,
+        "textLength": 13
+      }
+    ]
+  },
+  "analysis": {
+    "grade": "D",
+    "trustScore": 50,
+    "adjustedRating": 4.6,
+    "displayedRating": 4.8,
+    "discountedCount": 6,
+    "concerningSignals": 5,
+    "sampleSize": 8,
+    "confidence": "moderate",
+    "insufficientData": false,
+    "signals": [
+      {
+        "id": "distribution",
+        "status": "warn",
+        "score": 0.6121,
+        "detail": "94% of ratings are 5-star but only 1% are 1-star — genuine products of this size almost always retain a larger negative tail.",
+        "contribution": {
+          "gradeWithout": "F",
+          "trustScoreWithout": 37,
+          "decisive": true
+        }
+      },
+      {
+        "id": "verified",
+        "status": "fail",
+        "score": 0.25,
+        "detail": "6 of 8 visible reviews flagged.",
+        "contribution": {
+          "gradeWithout": "C",
+          "trustScoreWithout": 58,
+          "decisive": true
+        }
+      },
+      {
+        "id": "phrasing",
+        "status": "fail",
+        "score": 0.5,
+        "detail": "4 of 8 visible reviews flagged.",
+        "contribution": {
+          "gradeWithout": "D",
+          "trustScoreWithout": 60,
+          "decisive": false
+        }
+      },
+      {
+        "id": "duplication",
+        "status": "pass",
+        "score": 1,
+        "detail": "No reviews share substantially similar text.",
+        "contribution": {
+          "gradeWithout": "D",
+          "trustScoreWithout": 50,
+          "decisive": false
+        }
+      },
+      {
+        "id": "burst",
+        "status": "pass",
+        "score": 1,
+        "detail": "Review dates are spread out rather than clustered.",
+        "contribution": {
+          "gradeWithout": "D",
+          "trustScoreWithout": 50,
+          "decisive": false
+        }
+      },
+      {
+        "id": "depth",
+        "status": "warn",
+        "score": 0.75,
+        "detail": "2 of 8 visible reviews flagged.",
+        "contribution": {
+          "gradeWithout": "D",
+          "trustScoreWithout": 53,
+          "decisive": false
+        }
+      },
+      {
+        "id": "helpfulness",
+        "status": "fail",
+        "score": 0.5,
+        "detail": "4 of 8 visible reviews flagged.",
+        "contribution": {
+          "gradeWithout": "D",
+          "trustScoreWithout": 51,
+          "decisive": false
+        }
+      }
+    ]
+  }
+}

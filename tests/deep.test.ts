@@ -25,6 +25,7 @@ function snapshot(partial: Partial<ProductSnapshot> = {}): ProductSnapshot {
         reviewerName: 'Jane D.',
       },
     ],
+    language: 'en',
     capturedAt: new Date().toISOString(),
     ...partial,
   };

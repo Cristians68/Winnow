@@ -27,6 +27,7 @@ function product(partial: Partial<ProductSnapshot>): ProductSnapshot {
   return {
     asin: 'B000000000',
     title: 'Test product',
+    language: 'en',
     capturedAt: new Date().toISOString(),
     reviews: [],
     ...partial,

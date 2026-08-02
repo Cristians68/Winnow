@@ -1,0 +1,127 @@
+<!--
+  SYNTHETIC. Hand-written to exercise the real selectors on a non-English
+  storefront; not captured from Amazon. See README.md.
+
+  This fixture exists because every other case in the corpus is English, and the
+  engine used to be English by accident rather than by decision: the tokenizer
+  matched [a-z0-9']+, the histogram required the literal word "star", and dates
+  were read by looking for the English word "on". None of that failed loudly. It
+  produced confident wrong answers on eleven of the fourteen storefronts the
+  manifest matches.
+
+  So this case is deliberately laid out the way amazon.de actually is:
+
+   · No <html lang> attribute, so the language has to come from the capture URL.
+   · A COLUMN-layout histogram labelled "5 Sterne" … "62 %", which is both the
+     layout and the vocabulary that used to be unreadable.
+   · German review dates ("Rezension aus Deutschland vom 14. Januar 2026").
+   · German incentive disclosures, so the wording check has to actually fire in
+     a language other than English rather than merely decline to crash.
+   · Accented and compound German prose, which the old tokenizer shattered into
+     fragments — "für die Qualität" became f, r, die, qualit, t.
+
+  Expected to grade badly: unverified five-star reviews, disclosed incentives,
+  near-identical template text and a histogram with almost no negative tail.
+-->
+<meta name="winnow-capture-url" content="https://www.amazon.de/dp/B00PADDED2">
+<meta name="winnow-capture-at" content="2026-06-01T12:00:00.000Z">
+
+<span id="productTitle">LED-Schreibtischlampe mit verstellbarem Arm</span>
+
+<div id="averageCustomerReviews">
+  <span id="acrPopover" title="4,8 von 5 Sternen">
+    <span class="a-icon-alt">4,8 von 5 Sternen</span>
+  </span>
+  <span id="acrCustomerReviewText">1.284 Sternebewertungen</span>
+</div>
+
+<ul id="histogramTable">
+  <li><span>5 Sterne</span></li>
+  <li><span>4 Sterne</span></li>
+  <li><span>3 Sterne</span></li>
+  <li><span>2 Sterne</span></li>
+  <li><span>1 Stern</span></li>
+  <li><span>94 %</span></li>
+  <li><span>4 %</span></li>
+  <li><span>1 %</span></li>
+  <li><span>0 %</span></li>
+  <li><span>1 %</span></li>
+</ul>
+
+<div id="cm-cr-dp-review-list">
+
+  <div data-hook="review" id="RDE0001">
+    <a class="a-profile" href="/gp/profile/amzn1.account.DE001"><span class="a-profile-name">Martin K.</span></a>
+    <i data-hook="review-star-rating" class="a-star-5"><span class="a-icon-alt">5,0 von 5 Sternen</span></i>
+    <a data-hook="review-title"><span>Kann ich nur weiterempfehlen</span></a>
+    <span data-hook="review-date">Rezension aus Deutschland vom 14. Januar 2026</span>
+    <div data-hook="review-body"><span>Ich habe dieses Produkt im Austausch für eine ehrliche Bewertung erhalten. Die Lampe hat meine Erwartungen übertroffen und funktioniert wie erwartet. Sehr gutes Preis Leistungs Verhältnis.</span></div>
+    <span data-hook="helpful-vote-statement">0 Personen fanden diese Informationen hilfreich</span>
+  </div>
+
+  <div data-hook="review" id="RDE0002">
+    <a class="a-profile" href="/gp/profile/amzn1.account.DE002"><span class="a-profile-name">Sabine W.</span></a>
+    <i data-hook="review-star-rating" class="a-star-5"><span class="a-icon-alt">5,0 von 5 Sternen</span></i>
+    <a data-hook="review-title"><span>Sehr zufrieden</span></a>
+    <span data-hook="review-date">Rezension aus Deutschland vom 19. Januar 2026</span>
+    <div data-hook="review-body"><span>Das Produkt wurde mir kostenlos zur Verfügung gestellt. Es hat meine Erwartungen übertroffen und funktioniert wie erwartet. Gute Qualität zu einem guten Preis, würde ich wieder kaufen.</span></div>
+    <span data-hook="helpful-vote-statement">0 Personen fanden diese Informationen hilfreich</span>
+  </div>
+
+  <div data-hook="review" id="RDE0003">
+    <a class="a-profile" href="/gp/profile/amzn1.account.DE003"><span class="a-profile-name">Thomas B.</span></a>
+    <i data-hook="review-star-rating" class="a-star-5"><span class="a-icon-alt">5,0 von 5 Sternen</span></i>
+    <a data-hook="review-title"><span>Top</span></a>
+    <span data-hook="review-date">Rezension aus Deutschland vom 22. Januar 2026</span>
+    <div data-hook="review-body"><span>Super</span></div>
+    <span data-hook="helpful-vote-statement">0 Personen fanden diese Informationen hilfreich</span>
+  </div>
+
+  <div data-hook="review" id="RDE0004">
+    <a class="a-profile" href="/gp/profile/amzn1.account.DE004"><span class="a-profile-name">Andrea L.</span></a>
+    <i data-hook="review-star-rating" class="a-star-5"><span class="a-icon-alt">5,0 von 5 Sternen</span></i>
+    <a data-hook="review-title"><span>Einwandfrei</span></a>
+    <span data-hook="review-date">Rezension aus Deutschland vom 3. Februar 2026</span>
+    <div data-hook="review-body"><span>Ich habe das Produkt vergünstigt erhalten. Genau wie beschrieben, schnelle Lieferung und alles bestens. Kann ich nur weiterempfehlen, funktioniert wie erwartet.</span></div>
+    <span data-hook="helpful-vote-statement">0 Personen fanden diese Informationen hilfreich</span>
+  </div>
+
+  <div data-hook="review" id="RDE0005">
+    <a class="a-profile" href="/gp/profile/amzn1.account.DE005"><span class="a-profile-name">Jürgen H.</span></a>
+    <i data-hook="review-star-rating" class="a-star-4"><span class="a-icon-alt">4,0 von 5 Sternen</span></i>
+    <a data-hook="review-title"><span>Nach 3 Wochen im Dauereinsatz</span></a>
+    <span data-hook="review-date">Rezension aus Deutschland vom 28. Februar 2026</span>
+    <span data-hook="avp-badge">Verifizierter Kauf</span>
+    <div data-hook="review-body"><span>Die Klemme greift an meinem Schreibtisch mit 4 cm Plattenstärke gerade noch. Nach 3 Wochen täglicher Nutzung wackelt der Arm etwas, die Helligkeit ist aber für den Preis überraschend gut.</span></div>
+    <span data-hook="helpful-vote-statement">17 Personen fanden diese Informationen hilfreich</span>
+  </div>
+
+  <div data-hook="review" id="RDE0006">
+    <a class="a-profile" href="/gp/profile/amzn1.account.DE006"><span class="a-profile-name">Katrin S.</span></a>
+    <i data-hook="review-star-rating" class="a-star-2"><span class="a-icon-alt">2,0 von 5 Sternen</span></i>
+    <a data-hook="review-title"><span>Netzteil nach 6 Monaten defekt</span></a>
+    <span data-hook="review-date">Rezension aus Deutschland vom 11. März 2026</span>
+    <span data-hook="avp-badge">Verifizierter Kauf</span>
+    <div data-hook="review-body"><span>Nach 6 Monaten hat das Netzteil den Dienst quittiert, Ersatz kostet 19,99 € und ist nur beim Hersteller erhältlich. Bis dahin war die Qualität des Lichts wirklich in Ordnung.</span></div>
+    <span data-hook="helpful-vote-statement">42 Personen fanden diese Informationen hilfreich</span>
+  </div>
+
+  <div data-hook="review" id="RDE0007">
+    <a class="a-profile" href="/gp/profile/amzn1.account.DE007"><span class="a-profile-name">Peter M.</span></a>
+    <i data-hook="review-star-rating" class="a-star-5"><span class="a-icon-alt">5,0 von 5 Sternen</span></i>
+    <a data-hook="review-title"><span>Perfekt</span></a>
+    <span data-hook="review-date">Rezension aus Deutschland vom 2. April 2026</span>
+    <div data-hook="review-body"><span>Gute Qualität zu einem guten Preis, schnelle Lieferung und genau wie beschrieben. Hat meine Erwartungen übertroffen, würde ich wieder kaufen.</span></div>
+    <span data-hook="helpful-vote-statement">0 Personen fanden diese Informationen hilfreich</span>
+  </div>
+
+  <div data-hook="review" id="RDE0008">
+    <a class="a-profile" href="/gp/profile/amzn1.account.DE008"><span class="a-profile-name">Nadine F.</span></a>
+    <i data-hook="review-star-rating" class="a-star-5"><span class="a-icon-alt">5,0 von 5 Sternen</span></i>
+    <a data-hook="review-title"><span>Sehr gut</span></a>
+    <span data-hook="review-date">Rezension aus Deutschland vom 21. April 2026</span>
+    <div data-hook="review-body"><span>Alles bestens</span></div>
+    <span data-hook="helpful-vote-statement">0 Personen fanden diese Informationen hilfreich</span>
+  </div>
+
+</div>

@@ -145,6 +145,7 @@ const review = (i: number, p: Partial<Review> = {}): Review => ({
 const snapshot = (reviews: Review[], extra: Partial<ProductSnapshot> = {}): ProductSnapshot => ({
   asin: 'B000000001', title: 'T', displayedRating: 4.5, totalRatings: 1000,
   histogram: { 5: 75, 4: 12, 3: 6, 2: 3, 1: 4 },
+  language: 'en',
   capturedAt: new Date().toISOString(), reviews, ...extra,
 });
 

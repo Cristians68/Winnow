@@ -1,9 +1,48 @@
 /** Pure text utilities used by the linguistic signals. No dependencies. */
 
-const WORD_RE = /[a-z0-9']+/g;
+import {
+  CJK_UNIT_PATTERN,
+  CURRENCY_PATTERN,
+  UNIT_WORDS,
+  UNSEGMENTED_SCRIPT,
+  fold,
+  type LanguageCode,
+} from './language.js';
 
+/**
+ * A word: letters or digits in any script, with internal apostrophes kept so
+ * "don't" and "l'appareil" stay single tokens.
+ *
+ * This used to be `/[a-z0-9']+/g`, which silently defined "word" as "English
+ * word". Accented Latin text shattered into fragments — "für die Qualität"
+ * tokenised to f, r, die, qualit, t — and non-Latin scripts produced nothing at
+ * all. Both outcomes feed the review-substance check, which reads a low word
+ * count as an empty review, so the tokenizer was manufacturing findings out of
+ * its own blind spots. See src/core/language.ts for the full account.
+ */
+const WORD_RE = /[\p{L}\p{N}]+(?:['][\p{L}\p{N}]+)*/gu;
+
+/**
+ * Split text into words, segmenting scripts that do not use spaces.
+ *
+ * Japanese, Chinese and Thai write without word delimiters, so a regex
+ * tokenizer returns one enormous token for a whole sentence — no better than
+ * the zero it used to return. `Intl.Segmenter` does the real work when the
+ * runtime has it (Chrome 87+, which is well below anything running MV3), and
+ * the regex remains the fallback so this file keeps working anywhere.
+ */
 export function tokenize(text: string): string[] {
-  return text.toLowerCase().match(WORD_RE) ?? [];
+  const normalised = fold(text);
+  if (!normalised) return [];
+
+  if (UNSEGMENTED_SCRIPT.test(normalised) && typeof Intl?.Segmenter === 'function') {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
+    return [...segmenter.segment(normalised)]
+      .filter((segment) => segment.isWordLike)
+      .map((segment) => segment.segment);
+  }
+
+  return normalised.match(WORD_RE) ?? [];
 }
 
 export function wordCount(text: string): number {
@@ -15,7 +54,9 @@ export function wordCount(text: string): number {
  * shingles beat word-level here because review farms lightly paraphrase.
  */
 export function trigrams(text: string): Set<string> {
-  const normalized = text.toLowerCase().replace(/\s+/g, ' ').trim();
+  // Folded, so two reviews that differ only in accents or in straight versus
+  // curly apostrophes still register as the near-duplicates they are.
+  const normalized = fold(text);
   const grams = new Set<string>();
   for (let i = 0; i + 3 <= normalized.length; i++) {
     grams.add(normalized.slice(i, i + 3));
@@ -47,9 +88,17 @@ export function lexicalDiversity(text: string): number {
   return Math.min(1, guiraud / 7);
 }
 
+/**
+ * Sentence split. CJK terminators are included because the rhythm heuristic
+ * that consumes this treats "fewer than three sentences" as "cannot judge", and
+ * a Japanese paragraph has none of `.!?` in it — so every such review looked
+ * like a single sentence and the check quietly never ran.
+ */
 export function sentences(text: string): string[] {
   return text
-    .split(/[.!?]+(?:\s|$)/)
+    // Latin terminators need a following space so "3.5 inches" stays one
+    // sentence; CJK terminators are never followed by one, so they split alone.
+    .split(/[.!?]+(?:\s|$)|[。！？]+/u)
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 }
@@ -68,20 +117,48 @@ export function sentenceLengthVariation(text: string): number {
   return Math.sqrt(variance) / mean;
 }
 
-/** Concrete detail markers: numbers, measurements, dates, model numbers. */
+/**
+ * Concrete detail markers: measurements, durations, prices, model numbers.
+ *
+ * This is what stops the review-substance check from condemning a short but
+ * real review — "died after 3 weeks" is six words of genuine information. The
+ * unit list therefore has to cover every storefront language, or a specific
+ * German review reads as contentless for the sole reason that it says "Wochen".
+ */
+const UNIT_PATTERN = new RegExp(
+  String.raw`\b\d+([.,]\d+)?\s?(${UNIT_WORDS.join('|')})\b`,
+  'gi',
+);
+
 export function specificityMarkers(text: string): number {
-  const patterns = [
-    /\b\d+(\.\d+)?\s?(inch|inches|cm|mm|ft|lb|lbs|kg|g|oz|ml|l|hours?|days?|weeks?|months?|years?)\b/gi,
-    /\b\d+(\.\d+)?%/g,
-    /\$\d+(\.\d{2})?/g,
-    /\b[A-Z]{2,}[-\s]?\d{2,}\b/g,
+  const folded = fold(text);
+  const patterns: Array<[string, RegExp]> = [
+    ['units', UNIT_PATTERN],
+    ['cjk-units', CJK_UNIT_PATTERN],
+    ['percent', /\d+([.,]\d+)?\s?%/g],
+    ['currency', CURRENCY_PATTERN],
+    // Model numbers: "WH-1000XM4", "AA 3000". Case is meaningful here, so this
+    // one runs against the original text rather than the folded copy.
+    ['model', /\b\p{Lu}{2,}[-\s]?\d{2,}\b/gu],
   ];
-  return patterns.reduce((count, re) => count + (text.match(re)?.length ?? 0), 0);
+
+  return patterns.reduce((count, [kind, pattern]) => {
+    const subject = kind === 'model' ? text : folded;
+    return count + (subject.match(pattern)?.length ?? 0);
+  }, 0);
 }
 
 /**
  * Phrases that disclose an incentivised review, or that are template-farm
- * boilerplate. Matched case-insensitively against normalised whitespace.
+ * boilerplate.
+ *
+ * Matched against folded text — lowercase, no Latin accents, straight
+ * apostrophes — so "en échange d'un avis honnête" matches whether the page
+ * used a typographic apostrophe or not. The lists below are therefore written
+ * unaccented on purpose; adding an accent would make the entry unmatchable.
+ *
+ * These exports remain the English lists so existing callers and tests are
+ * unaffected; `incentivePhrasesFor` / `templatePhrasesFor` select by language.
  */
 export const INCENTIVE_PHRASES = [
   'in exchange for my honest review',
@@ -112,8 +189,106 @@ export const TEMPLATE_PHRASES = [
   'great product great price',
 ];
 
+/**
+ * Per-language phrase lists.
+ *
+ * Only the five languages in `LANGUAGES_WITH_PHRASE_LISTS` appear here, and
+ * that is the honest boundary rather than a to-do: running an empty list
+ * against a Japanese review returns no matches, and reporting no matches as
+ * "No incentive disclosures found" is a false all-clear indistinguishable from
+ * a true one. The signal reports that it could not run instead — see
+ * `phrasingSignal.unavailable`.
+ */
+const INCENTIVE_BY_LANGUAGE: Partial<Record<LanguageCode, string[]>> = {
+  en: INCENTIVE_PHRASES,
+  de: [
+    'im austausch fur eine ehrliche bewertung',
+    'im austausch fur eine ehrliche rezension',
+    'gegen eine ehrliche bewertung',
+    'kostenlos zur verfugung gestellt',
+    'kostenlos erhalten',
+    'zu testzwecken erhalten',
+    'vergunstigt erhalten',
+    'als testmuster erhalten',
+  ],
+  fr: [
+    "en echange d'un avis honnete",
+    "en echange d'un commentaire honnete",
+    'recu ce produit gratuitement',
+    'produit offert en echange',
+    'a prix reduit en echange',
+    'a titre gracieux en echange',
+    'recu gratuitement pour tester',
+  ],
+  es: [
+    'a cambio de una opinion honesta',
+    'a cambio de una resena honesta',
+    'recibi este producto gratis',
+    'producto gratuito a cambio',
+    'con descuento a cambio de',
+    'me lo enviaron gratis',
+  ],
+  it: [
+    'in cambio di una recensione onesta',
+    'in cambio di un parere onesto',
+    'ricevuto questo prodotto gratuitamente',
+    'prodotto omaggio in cambio',
+    'a prezzo scontato in cambio',
+    'ricevuto gratis per provarlo',
+  ],
+};
+
+const TEMPLATE_BY_LANGUAGE: Partial<Record<LanguageCode, string[]>> = {
+  en: TEMPLATE_PHRASES,
+  de: [
+    'kann ich nur weiterempfehlen',
+    'hat meine erwartungen ubertroffen',
+    'genau wie beschrieben',
+    'sehr gutes preis leistungs verhaltnis',
+    'funktioniert wie erwartet',
+    'gute qualitat zu einem guten preis',
+    'wurde ich wieder kaufen',
+    'schnelle lieferung und',
+  ],
+  fr: [
+    'je recommande vivement ce produit',
+    'a depasse mes attentes',
+    'conforme a la description',
+    'tres bon rapport qualite prix',
+    'fonctionne comme prevu',
+    'je le racheterais sans hesiter',
+    'livraison rapide et',
+  ],
+  es: [
+    'lo recomiendo totalmente',
+    'supero mis expectativas',
+    'tal y como se describe',
+    'muy buena relacion calidad precio',
+    'funciona como se esperaba',
+    'lo volveria a comprar',
+    'entrega rapida y',
+  ],
+  it: [
+    'lo consiglio vivamente',
+    'ha superato le mie aspettative',
+    'esattamente come descritto',
+    'ottimo rapporto qualita prezzo',
+    'funziona come previsto',
+    'lo ricomprerei sicuramente',
+    'consegna rapida e',
+  ],
+};
+
+export function incentivePhrasesFor(language: LanguageCode | null): string[] {
+  return (language && INCENTIVE_BY_LANGUAGE[language]) ?? [];
+}
+
+export function templatePhrasesFor(language: LanguageCode | null): string[] {
+  return (language && TEMPLATE_BY_LANGUAGE[language]) ?? [];
+}
+
 export function matchPhrases(text: string, phrases: string[]): string[] {
-  const normalized = text.toLowerCase().replace(/\s+/g, ' ');
+  const normalized = fold(text);
   return phrases.filter((phrase) => normalized.includes(phrase));
 }
 
