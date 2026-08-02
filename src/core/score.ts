@@ -20,7 +20,7 @@ import { burstSignal } from './signals/burst.js';
 import { depthSignal } from './signals/depth.js';
 import { helpfulnessSignal } from './signals/helpfulness.js';
 
-export const ENGINE_VERSION = '0.2.0';
+export const ENGINE_VERSION = '0.3.0';
 
 export const PRODUCT_SIGNALS: ProductSignal[] = [distributionSignal];
 

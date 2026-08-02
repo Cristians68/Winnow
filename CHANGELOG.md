@@ -4,6 +4,74 @@ All notable changes to Winnow are recorded here. The scoring engine carries its 
 (`ENGINE_VERSION` in `src/core/score.ts`), shown in the on-page panel, so a grade can always be
 traced to the logic that produced it.
 
+## [0.3.0]
+
+Engine version moves to `0.3.0`: this release changes what several checks report and, on non-English
+storefronts, what they are able to see at all.
+
+The theme is one failure repeated in four places — **Winnow reporting its own blind spots as findings
+about a listing**. That is the exact mistake the product exists to name, and it was shipping.
+
+### Fixed
+- **Non-English storefronts were being analysed as though they were English.** The manifest matches
+  fourteen Amazon domains and eleven of them do not serve English.
+  - The word tokenizer matched `[a-z0-9']+`, so a Japanese review tokenised to **zero words** — and
+    the review-substance check renders a zero word count as *"5-star rating with no written review"*.
+    That sentence was printed to users about a paragraph of text sitting on the screen, and it pushed
+    real listings toward a worse grade. German was mangled rather than erased: *"für die Qualität"*
+    became `f`, `r`, `die`, `qualit`, `t`. Words are now matched in any script, and scripts written
+    without spaces (Japanese, Chinese, Thai) are segmented properly.
+  - **The wording check now says when it cannot run.** Incentive-disclosure detection is made of
+    specific phrases; run against a language it has no list for it matched nothing and reported *"No
+    incentive disclosures, boilerplate or generated-text patterns found"* — a clean bill of health
+    from a check that never looked, and indistinguishable from a real one. Phrase lists were added
+    for German, French, Spanish and Italian; every other language now reports the check as skipped.
+    The generated-text heuristic stays English-only, because its thresholds were tuned on English
+    prose and porting them untested would be a guess dressed as a measurement.
+  - **Review dates** are read in every storefront language. French and Japanese dates never parsed,
+    which silently switched off the review-timing and community-response checks on those domains.
+  - **The rating histogram** required the literal word "star", making it unreadable — and the
+    rating-distribution check permanently blind — on eleven of the fourteen storefronts.
+  - Bare numeric dates such as `03/06/2026` are now **refused** rather than passed to `Date.parse`,
+    which silently picks the American reading. A wrongly ordered sample would cost the timing check
+    its honesty; an undated review only costs one signal.
+- **A grade built on the rating breakdown alone no longer talks about reviews.** Every product page
+  renders its histogram before the review module loads, and on a high-volume listing that histogram
+  is enough to produce a grade with no reviews behind it. The panel was announcing that grade as
+  *"Reviews look genuine"*, *"Nothing flagged across 0 visible reviews"*, *"Every check came back
+  clear"* and an *Adjusted rating* identical to Amazon's own — directly above six rows reading *"No
+  reviews were readable on this page"*. The grade is defensible; the words were not. That state now
+  names itself in the panel, the popup and the verdict, and the adjusted rating is withheld rather
+  than restated.
+- **The panel could freeze on a page it could read.** The change detector counted
+  `[data-hook="review"]` nodes — one entry in the five-deep fallback chain the parser tries — so on
+  any layout served through a different entry it never noticed reviews arriving. It is now derived
+  from the parser's own output and cannot drift out of step with it.
+- **The panel could fail to appear at all.** The 400 ms settle timer was a plain trailing debounce,
+  and Amazon pages mutate continuously, so every carousel tick reset it. There is now a two-second
+  deadline.
+- **Re-rendering no longer discards what the user was doing.** An opened breakdown stayed open, a
+  recorded disagreement keeps its acknowledgement, and keyboard focus is returned to the control it
+  was on — previously it was lost entirely, dropping a keyboard or screen-reader user back to the top
+  of a very long page with no announcement.
+- Exporting the feedback log revoked its object URL in the same task that started the download, which
+  can cancel it.
+
+### Changed
+- `optional_host_permissions` now covers `https://localhost` and `https://127.0.0.1`, which the dev
+  endpoint validator already accepted. Still loopback-only, still optional, still absent from a
+  normal install.
+
+### Testing
+- Two new suites: `tests/i18n.test.ts` and `tests/lifecycle.test.ts`. Both were mutation-checked —
+  each fix was reverted in turn and the corresponding tests confirmed to go red — because a test that
+  passes against the broken code measures nothing.
+- A German corpus fixture (`tests/corpus/synthetic-de-padded-listing.html`) drives the whole
+  localisation through the real parser and engine: column-layout German histogram, German dates,
+  German incentive disclosures. The two English cases are byte-identical to before.
+- The rating-breakdown-only panel state was added to the axe audit list at the same time as the state
+  itself. A UI branch that is not in that list is untested by construction.
+
 ## [0.2.0]
 
 Engine version moves to `0.2.0` alongside the extension. The panel prints the engine version so a

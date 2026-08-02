@@ -88,6 +88,23 @@ those scores to adjust the product's rating and assign a grade.
 |---|---|
 | **Rating distribution** | Genuine products are J-shaped, with a persistent 1-star tail from damage and defects. Campaigns add 5-star reviews but cannot remove organic 1-star ones, so a very high 5-star share with a near-absent negative tail is the clearest histogram-level tell. |
 
+### Storefronts and languages
+
+Winnow runs on all fourteen Amazon domains it lists, and eleven of them do not serve English. The
+mechanical parts of reading a page — review dates, the rating histogram, measurements and durations,
+word counts in any script including Japanese and Chinese — are localised for every one of them.
+
+**The wording check is not, and says so.** Detecting a disclosed incentive means recognising specific
+phrases, and there are phrase lists for English, German, French, Spanish and Italian. On any other
+language that check reports itself as *skipped* rather than returning the clean result it would get
+for free by looking for nothing. That distinction is the whole point: a pass from a check that never
+ran is indistinguishable from a pass it earned, and is the single most damaging output this tool
+could produce. The generated-text heuristic is held to English for the same reason — its thresholds
+were tuned on English prose and have not been re-tuned elsewhere.
+
+Purely numeric dates like `03/06/2026` are refused rather than guessed, because they mean 3 June on
+most of these storefronts and 6 March on the largest.
+
 ### The adjusted rating
 
 If share `s` of reviews look manipulated, and manipulated reviews sit at roughly 5 stars, then:
@@ -157,6 +174,12 @@ identify patterns that manipulated reviews tend to produce. Every result states 
 and how confident it is, and a low-confidence result is labelled as such rather than dressed up.
 
 A grade of "couldn't read this page" is not a verdict about the product.
+
+Winnow also distinguishes a grade built on reviews from one built on the rating breakdown alone. A
+product page renders its histogram before the review module loads, and on a high-volume listing that
+histogram alone can support a grade — but a grade reached that way is announced as *"Rating breakdown
+looks normal"*, never as *"Reviews look genuine"*, and no adjusted rating is offered. Reporting an
+inspection of nothing as a clean inspection is the failure this whole project is a complaint about.
 
 ---
 
