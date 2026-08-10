@@ -379,3 +379,40 @@ describe('the rest of the engine still works in English', () => {
     expect(analysis.discountedCount).toBe(6);
   });
 });
+
+describe('language fallback comes from the storefront registry', () => {
+  const docFor = (url: string): Document => {
+    const window = new Window({ url });
+    const doc = window.document as unknown as Document;
+    doc.documentElement.removeAttribute('lang');
+    return doc;
+  };
+
+  // amazon.com.mx was missing from the hand-written DOMAIN_LANGUAGE table, so a
+  // Mexican page served without a lang attribute reported no language at all
+  // and the wording check went dark without saying so. The registry cannot
+  // develop that gap: a storefront that names no language does not compile.
+  it('knows amazon.com.mx speaks Spanish', () => {
+    expect(detectLanguage(docFor('https://www.amazon.com.mx/dp/B000000001'), 'https://www.amazon.com.mx/dp/B000000001')).toBe('es');
+  });
+
+  it('still resolves the storefronts it always did', () => {
+    for (const [url, language] of [
+      ['https://www.amazon.de/dp/B000000001', 'de'],
+      ['https://www.amazon.co.jp/dp/B000000001', 'ja'],
+      ['https://www.amazon.se/dp/B000000001', 'sv'],
+    ] as const) {
+      expect(detectLanguage(docFor(url), url), url).toBe(language);
+    }
+  });
+
+  it('returns undefined for a host it does not know, rather than guessing English', () => {
+    const url = 'https://example.com/dp/B000000001';
+    expect(detectLanguage(docFor(url), url)).toBeUndefined();
+  });
+
+  it('refuses a lookalike domain the old substring guard would have accepted', () => {
+    const url = 'https://www.amazon.evil.com/dp/B000000001';
+    expect(detectLanguage(docFor(url), url)).toBeUndefined();
+  });
+});

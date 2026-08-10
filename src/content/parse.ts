@@ -16,6 +16,7 @@
 
 import type { ProductSnapshot, Review, SampleSource, Star } from '../core/types.js';
 import { findStarCount, parseLocalisedDate, parseStarLabel } from '../core/language.js';
+import { marketplaceFor } from '../core/marketplaces.js';
 
 /** Try selectors in order, return the first element that matches. */
 function pick(root: ParentNode, selectors: string[]): Element | null {
@@ -134,25 +135,19 @@ export function isInterstitial(doc: Document = document): boolean {
  * because a wrong language is worse here than an unknown one: it lets the
  * wording check run against a dictionary that cannot match.
  */
-const DOMAIN_LANGUAGE: Array<[RegExp, string]> = [
-  [/amazon\.de$/i, 'de'],
-  [/amazon\.fr$/i, 'fr'],
-  [/amazon\.es$/i, 'es'],
-  [/amazon\.it$/i, 'it'],
-  [/amazon\.nl$/i, 'nl'],
-  [/amazon\.se$/i, 'sv'],
-  [/amazon\.pl$/i, 'pl'],
-  [/amazon\.co\.jp$/i, 'ja'],
-  [/amazon\.(com|co\.uk|ca|com\.au|in)$/i, 'en'],
-];
-
 export function detectLanguage(doc: Document = document, url: string = location.href): string | undefined {
   const declared = doc.documentElement?.getAttribute('lang')?.trim();
   if (declared) return declared;
 
   try {
-    const { hostname } = new URL(url);
-    return DOMAIN_LANGUAGE.find(([pattern]) => pattern.test(hostname))?.[1];
+    // Falls back to the storefront's primary language, read from the registry.
+    // This used to be a hand-written table of domain regexes that had silently
+    // drifted from the manifest: amazon.com.mx, a Spanish storefront, was
+    // absent from it entirely, so a Mexican page missing its lang attribute
+    // reported no language and the wording check went quiet without saying so.
+    // The registry cannot develop that gap — a storefront that names no
+    // language it has tables for does not compile.
+    return marketplaceFor(new URL(url).hostname)?.languages[0];
   } catch {
     return undefined;
   }
