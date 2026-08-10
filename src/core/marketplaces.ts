@@ -65,6 +65,12 @@ export const MARKETPLACES: Marketplace[] = [
   { host: 'amazon.com.tr', languages: ['tr'], region: 'TR' },
   { host: 'amazon.ie', languages: ['en'], region: 'IE' },
   { host: 'amazon.com.be', languages: ['fr', 'nl'], region: 'BE' },
+  // Arabic was gated on being able to read its numerals. `\d` matches neither
+  // the Arabic-Indic set nor the Extended one, and until normaliseDigits landed
+  // a listing with ٢٣٤ ratings parsed as having none — a number several checks
+  // branch on. This entry was only added once tests/numerals.test.ts drove the
+  // real parser over a real Arabic page and got 234 back.
+  { host: 'amazon.ae', languages: ['ar', 'en'], region: 'AE' },
 ];
 
 /**

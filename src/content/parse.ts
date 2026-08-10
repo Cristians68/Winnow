@@ -15,7 +15,7 @@
  */
 
 import type { ProductSnapshot, Review, SampleSource, Star } from '../core/types.js';
-import { findStarCount, parseLocalisedDate, parseStarLabel } from '../core/language.js';
+import { findStarCount, normaliseDigits, parseLocalisedDate, parseStarLabel } from '../core/language.js';
 import { marketplaceFor } from '../core/marketplaces.js';
 
 /** Try selectors in order, return the first element that matches. */
@@ -47,18 +47,32 @@ function textOf(el: Element | null): string {
   return el?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 }
 
-/** Parse a number that may carry thousands separators, e.g. "12,345". */
+/**
+ * Parse a number that may carry thousands separators, e.g. "12,345".
+ *
+ * Digits are normalised first. `\d` matches neither Arabic-Indic numerals nor
+ * the Extended set, so on an Arabic storefront "٢٣٤ تقييم" returned undefined —
+ * a listing with 234 ratings read as having none. That is not a harmless gap:
+ * `MIN_RATINGS_FOR_HISTOGRAM_ONLY` and the helpfulness floor both branch on this
+ * number, so our own inability to read it would surface as a finding about the
+ * listing.
+ */
 function parseCount(raw: string): number | undefined {
-  const match = raw.replace(/[  ]/g, ' ').match(/([\d][\d.,\s]*)/);
+  const match = normaliseDigits(raw).replace(/[  ]/g, ' ').match(/([\d][\d.,\s]*)/);
   if (!match) return undefined;
   const cleaned = match[1]!.replace(/[.,\s](?=\d{3}\b)/g, '').replace(/[,\s]/g, '');
   const value = Number.parseInt(cleaned, 10);
   return Number.isFinite(value) ? value : undefined;
 }
 
-/** Pull the leading decimal from strings like "4.3 out of 5 stars". */
+/**
+ * Pull the leading decimal from strings like "4.3 out of 5 stars".
+ *
+ * Digits normalised for the same reason as `parseCount`. The Arabic decimal
+ * separator U+066B is folded to a period so "٤٫٣" reads as 4.3 rather than 43.
+ */
 function parseDecimal(raw: string): number | undefined {
-  const match = raw.match(/(\d+(?:[.,]\d+)?)/);
+  const match = normaliseDigits(raw).replace(/٫/g, '.').match(/(\d+(?:[.,]\d+)?)/);
   if (!match) return undefined;
   const value = Number.parseFloat(match[1]!.replace(',', '.'));
   return Number.isFinite(value) ? value : undefined;

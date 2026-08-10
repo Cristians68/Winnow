@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { matchPatterns } from '../src/core/marketplaces.js';
 
 const DIST = 'dist/manifest.json';
@@ -8,8 +8,12 @@ const DIST = 'dist/manifest.json';
 describe('generated manifest', () => {
   let manifest: any;
 
+  // Build rather than read whatever happens to be in dist/. A stale build makes
+  // this suite fail for a reason that has nothing to do with the code under
+  // test, and — worse in the other direction — a stale build that happens to
+  // match would let a registry change ship unverified.
   beforeAll(async () => {
-    if (!existsSync(DIST)) throw new Error('run `npm run build` before this suite');
+    execFileSync(process.execPath, ['build.mjs'], { stdio: 'pipe' });
     manifest = JSON.parse(await readFile(DIST, 'utf8'));
   });
 

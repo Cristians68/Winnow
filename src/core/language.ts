@@ -44,9 +44,9 @@
 
 /** Languages the engine has any specific knowledge of. */
 export type LanguageCode =
-  | 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'sv' | 'pl' | 'ja' | 'hi' | 'pt' | 'tr';
+  | 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'sv' | 'pl' | 'ja' | 'hi' | 'pt' | 'tr' | 'ar';
 
-const KNOWN: LanguageCode[] = ['en', 'de', 'fr', 'es', 'it', 'nl', 'sv', 'pl', 'ja', 'hi', 'pt', 'tr'];
+const KNOWN: LanguageCode[] = ['en', 'de', 'fr', 'es', 'it', 'nl', 'sv', 'pl', 'ja', 'hi', 'pt', 'tr', 'ar'];
 
 /**
  * Reduce a BCP-47 tag to a language we know something about.
@@ -80,8 +80,30 @@ export function normaliseLanguage(raw: string | null | undefined): LanguageCode 
  * could otherwise fold into different shingle sets purely by how the page
  * happened to encode them.
  */
+/**
+ * Rewrite Eastern Arabic and Extended Arabic-Indic digits as ASCII.
+ *
+ * `\d` matches neither set, so without this every number on an Arabic
+ * storefront — rating count, histogram percentage, helpful votes, the day and
+ * year in a review date — parses as zero or undefined.
+ *
+ * Zero is not a neutral input here. Zero ratings and zero helpful votes are the
+ * shapes that make checks fire, so this gap would not degrade to silence, it
+ * would degrade to a confident accusation against a seller built entirely out
+ * of our own inability to read the page. That is the same failure as the
+ * histogram-column bug and the English-only tokenizer, and it is worth spending
+ * a pass over every folded string to avoid a third instance.
+ */
+export function normaliseDigits(text: string): string {
+  return text.replace(/[٠-٩۰-۹]/g, (digit) => {
+    const code = digit.charCodeAt(0);
+    const base = code >= 0x06f0 ? 0x06f0 : 0x0660;
+    return String(code - base);
+  });
+}
+
 export function fold(text: string): string {
-  return text
+  return normaliseDigits(text)
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .normalize('NFC')
@@ -126,6 +148,7 @@ export const MONTH_NAMES: Record<LanguageCode, string[]> = {
   hi: ['janavari', 'pharavari', 'march', 'aprail', 'mai', 'jun', 'julai', 'agast', 'sitambar', 'aktubar', 'navambar', 'disambar'],
   pt: ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
   tr: ['ocak', 'subat', 'mart', 'nisan', 'mayis', 'haziran', 'temmuz', 'agustos', 'eylul', 'ekim', 'kasim', 'aralik'],
+  ar: ['يناير', 'فبراير', 'مارس', 'ابريل', 'مايو', 'يونيو', 'يوليو', 'اغسطس', 'سبتمبر', 'اكتوبر', 'نوفمبر', 'ديسمبر'],
 };
 
 /**
@@ -164,6 +187,7 @@ const STAR_WORDS = [
   'gwiazdek', 'gwiazdki', 'gwiazdka', 'gwiazd',
   'estrelas', 'estrela',
   'yildiz',
+  'نجوم', 'نجمة',
   '星',
 ];
 
