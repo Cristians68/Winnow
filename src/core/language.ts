@@ -44,9 +44,9 @@
 
 /** Languages the engine has any specific knowledge of. */
 export type LanguageCode =
-  | 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'sv' | 'pl' | 'ja' | 'hi';
+  | 'en' | 'de' | 'fr' | 'es' | 'it' | 'nl' | 'sv' | 'pl' | 'ja' | 'hi' | 'pt' | 'tr';
 
-const KNOWN: LanguageCode[] = ['en', 'de', 'fr', 'es', 'it', 'nl', 'sv', 'pl', 'ja', 'hi'];
+const KNOWN: LanguageCode[] = ['en', 'de', 'fr', 'es', 'it', 'nl', 'sv', 'pl', 'ja', 'hi', 'pt', 'tr'];
 
 /**
  * Reduce a BCP-47 tag to a language we know something about.
@@ -85,6 +85,17 @@ export function fold(text: string): string {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .normalize('NFC')
+    // Turkish letters NFD does not reduce to ASCII. U+0131 (dotless i) and
+    // U+0130 (dotted capital I) are atomic, not base-plus-combining-mark, so
+    // the strip above leaves them untouched: 'yıldız' folds to itself and never
+    // matches the star noun, which makes the rating histogram unreadable on
+    // amazon.com.tr. That is a parse failure that would render as a finding
+    // about the seller — the failure mode this whole file exists to prevent.
+    // ş and ğ do decompose, so those two are belt-and-braces; ı and İ are the
+    // ones that matter.
+    .replace(/[ıİ]/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ğ/g, 'g')
     .replace(/[‘’ʼ]/g, "'")
     .toLowerCase()
     .replace(/\s+/g, ' ')
@@ -113,6 +124,8 @@ export const MONTH_NAMES: Record<LanguageCode, string[]> = {
   pl: ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'wrzesnia', 'pazdziernika', 'listopada', 'grudnia'],
   ja: [],
   hi: ['janavari', 'pharavari', 'march', 'aprail', 'mai', 'jun', 'julai', 'agast', 'sitambar', 'aktubar', 'navambar', 'disambar'],
+  pt: ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
+  tr: ['ocak', 'subat', 'mart', 'nisan', 'mayis', 'haziran', 'temmuz', 'agustos', 'eylul', 'ekim', 'kasim', 'aralik'],
 };
 
 /**
@@ -149,6 +162,8 @@ const STAR_WORDS = [
   'sterren', 'ster',
   'stjarnor', 'stjarna',
   'gwiazdek', 'gwiazdki', 'gwiazdka', 'gwiazd',
+  'estrelas', 'estrela',
+  'yildiz',
   '星',
 ];
 
@@ -294,6 +309,11 @@ export const UNIT_WORDS = [
   'timme', 'timmar', 'dagar', 'vecka', 'veckor', 'manad', 'manader', 'ar',
   // Polish
   'godzina', 'godziny', 'dzien', 'dni', 'tydzien', 'tygodnie', 'miesiac', 'miesiace', 'rok', 'lata',
+  // Portuguese
+  'polegada', 'polegadas', 'grama', 'gramas', 'litro', 'litros', 'segundo', 'segundos',
+  'minuto', 'minutos', 'semanas', 'meses', 'anos',
+  // Turkish
+  'saat', 'gun', 'gunler', 'hafta', 'haftalar', 'ay', 'aylar', 'yil', 'yillar', 'inc', 'gram', 'litre',
 ];
 
 /** CJK units, which attach to the number with no space and no word boundary. */

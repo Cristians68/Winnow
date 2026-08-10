@@ -60,6 +60,11 @@ export const MARKETPLACES: Marketplace[] = [
   { host: 'amazon.nl', languages: ['nl'], region: 'NL' },
   { host: 'amazon.se', languages: ['sv'], region: 'SE' },
   { host: 'amazon.pl', languages: ['pl'], region: 'PL' },
+  { host: 'amazon.com.br', languages: ['pt'], region: 'BR' },
+  { host: 'amazon.sg', languages: ['en'], region: 'SG' },
+  { host: 'amazon.com.tr', languages: ['tr'], region: 'TR' },
+  { host: 'amazon.ie', languages: ['en'], region: 'IE' },
+  { host: 'amazon.com.be', languages: ['fr', 'nl'], region: 'BE' },
 ];
 
 /**

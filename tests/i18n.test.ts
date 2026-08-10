@@ -27,6 +27,7 @@ import { depthSignal } from '../src/core/signals/depth.js';
 import { phrasingSignal } from '../src/core/signals/phrasing.js';
 import { analyse } from '../src/core/score.js';
 import { buildSnapshot, detectLanguage, extractHistogram } from '../src/content/parse.js';
+import { MARKETPLACES, marketplaceFor } from '../src/core/marketplaces.js';
 import type { ProductSnapshot, Review, Star } from '../src/core/types.js';
 
 const JAPANESE_REVIEW =
@@ -340,7 +341,12 @@ describe('language detection', () => {
   it('normalises regional tags and rejects unknown ones', () => {
     expect(normaliseLanguage('de-DE')).toBe('de');
     expect(normaliseLanguage('EN')).toBe('en');
-    expect(normaliseLanguage('pt-BR')).toBeNull();
+    // pt-BR used to stand in for "unknown" here. It is a storefront language
+    // now, so the case has to be carried by a tag that is still genuinely
+    // outside the tables — otherwise this assertion quietly stops testing the
+    // boundary it was written for.
+    expect(normaliseLanguage('ko-KR')).toBeNull();
+    expect(normaliseLanguage('zh-CN')).toBeNull();
     expect(normaliseLanguage(undefined)).toBeNull();
   });
 
@@ -414,5 +420,65 @@ describe('language fallback comes from the storefront registry', () => {
   it('refuses a lookalike domain the old substring guard would have accepted', () => {
     const url = 'https://www.amazon.evil.com/dp/B000000001';
     expect(detectLanguage(docFor(url), url)).toBeUndefined();
+  });
+});
+
+describe('Portuguese and Turkish storefronts', () => {
+  it('recognises the language codes', () => {
+    expect(normaliseLanguage('pt-BR')).toBe('pt');
+    expect(normaliseLanguage('tr-TR')).toBe('tr');
+  });
+
+  it('parses Portuguese review dates', () => {
+    expect(parseLocalisedDate('Avaliado no Brasil em 14 de marco de 2026')).toBe('2026-03-14');
+    expect(parseLocalisedDate('Avaliado no Brasil em 2 de setembro de 2025')).toBe('2025-09-02');
+  });
+
+  it('parses Turkish review dates', () => {
+    expect(parseLocalisedDate("Turkiye'de 5 Agustos 2026 tarihinde incelendi")).toBe('2026-08-05');
+    expect(parseLocalisedDate("Turkiye'de 11 Subat 2025 tarihinde incelendi")).toBe('2025-02-11');
+  });
+
+  it('reads Portuguese and Turkish histogram star labels', () => {
+    expect(findStarCount('5 estrelas')).toBe(5);
+    expect(findStarCount('1 estrela')).toBe(1);
+    expect(findStarCount('5 yildiz')).toBe(5);
+  });
+
+  // The dotted/dotless i is the Turkish trap. NFD does not reduce U+0131 to
+  // ASCII, so without an explicit mapping 'yıldız' folds to itself and never
+  // matches the star noun -- which makes the rating histogram unreadable on
+  // amazon.com.tr, the exact silent blindness this file exists to prevent.
+  it('folds the Turkish dotless i so star labels still match', () => {
+    expect(fold('5 yıldız')).toBe('5 yildiz');
+    expect(findStarCount('5 yıldız')).toBe(5);
+    expect(findStarCount('1 yıldız')).toBe(1);
+  });
+
+  it('parses a Turkish date written with real Turkish letters', () => {
+    expect(parseLocalisedDate("Türkiye'de 5 Ağustos 2026 tarihinde incelendi")).toBe('2026-08-05');
+  });
+
+  it('parses a Portuguese date written with real accents', () => {
+    expect(parseLocalisedDate('Avaliado no Brasil em 14 de março de 2026')).toBe('2026-03-14');
+  });
+
+  it('tokenises Portuguese and Turkish without shattering words', () => {
+    expect(tokenize('produto de ótima qualidade não recomendo')).toHaveLength(6);
+    expect(tokenize('yıldız ürün kalitesi çok iyi')).toHaveLength(5);
+  });
+});
+
+describe('the five new storefronts', () => {
+  it('are in the registry with languages the engine knows', () => {
+    const hosts = MARKETPLACES.map((m) => m.host);
+    for (const host of ['amazon.com.br', 'amazon.sg', 'amazon.com.tr', 'amazon.ie', 'amazon.com.be']) {
+      expect(hosts, host).toContain(host);
+    }
+    expect(marketplaceFor('www.amazon.com.br')?.languages[0]).toBe('pt');
+    expect(marketplaceFor('www.amazon.com.tr')?.languages[0]).toBe('tr');
+    expect(marketplaceFor('www.amazon.com.be')?.languages).toEqual(['fr', 'nl']);
+    expect(marketplaceFor('www.amazon.sg')?.languages).toEqual(['en']);
+    expect(marketplaceFor('www.amazon.ie')?.languages).toEqual(['en']);
   });
 });
