@@ -3,48 +3,23 @@
   "name": "Winnow — Amazon Review Integrity",
   "version": "0.1.0",
   "description": "What the reviews actually say. Analyses Amazon review integrity locally, in your browser. No affiliate links, ever.",
-  "permissions": ["storage"],
+  "_generated": "host_permissions and content_scripts[].matches are generated from src/core/marketplaces.ts by build.mjs. Editing them here has no effect.",
+  "permissions": [
+    "storage"
+  ],
   "optional_host_permissions": [
     "http://localhost/*",
     "http://127.0.0.1/*",
     "https://localhost/*",
     "https://127.0.0.1/*"
   ],
-  "host_permissions": [
-    "*://*.amazon.com/*",
-    "*://*.amazon.co.uk/*",
-    "*://*.amazon.ca/*",
-    "*://*.amazon.de/*",
-    "*://*.amazon.fr/*",
-    "*://*.amazon.es/*",
-    "*://*.amazon.it/*",
-    "*://*.amazon.com.au/*",
-    "*://*.amazon.co.jp/*",
-    "*://*.amazon.in/*",
-    "*://*.amazon.com.mx/*",
-    "*://*.amazon.nl/*",
-    "*://*.amazon.se/*",
-    "*://*.amazon.pl/*"
-  ],
+  "host_permissions": [],
   "content_scripts": [
     {
-      "matches": [
-        "*://*.amazon.com/*",
-        "*://*.amazon.co.uk/*",
-        "*://*.amazon.ca/*",
-        "*://*.amazon.de/*",
-        "*://*.amazon.fr/*",
-        "*://*.amazon.es/*",
-        "*://*.amazon.it/*",
-        "*://*.amazon.com.au/*",
-        "*://*.amazon.co.jp/*",
-        "*://*.amazon.in/*",
-        "*://*.amazon.com.mx/*",
-        "*://*.amazon.nl/*",
-        "*://*.amazon.se/*",
-        "*://*.amazon.pl/*"
+      "matches": [],
+      "js": [
+        "content/index.js"
       ],
-      "js": ["content/index.js"],
       "run_at": "document_idle"
     }
   ],

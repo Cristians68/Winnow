@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { readFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { isKnownAmazonHost } from './src/core/marketplaces.ts';
 
 const EXPECTED_PERMISSIONS = ['storage'];
 
@@ -36,12 +37,21 @@ if (extra.length > 0) {
 // dev endpoint below. If a hosted endpoint is ever added it must be added here
 // deliberately, because the privacy policy tells users exactly which hosts this
 // extension can reach.
-const ALLOWED_HOSTS = [/amazon\./];
-const strayHosts = (manifest.host_permissions ?? []).filter(
-  (h) => !ALLOWED_HOSTS.some((pattern) => pattern.test(h)),
-);
+// Exact match against the registry, not a substring test. The previous guard
+// was `/amazon\./` unanchored, which passes `*://*.amazon.evil.com/*` — a hole
+// in the one check standing between this build and a host the privacy policy
+// does not disclose.
+const strayHosts = (manifest.host_permissions ?? []).filter((h) => !isKnownAmazonHost(h));
 if (strayHosts.length > 0) {
   problems.push(`unexpected host_permissions: ${strayHosts.join(', ')}`);
+}
+
+// Content scripts are a second grant of the same reach and must agree.
+for (const script of manifest.content_scripts ?? []) {
+  const strayMatches = (script.matches ?? []).filter((h) => !isKnownAmazonHost(h));
+  if (strayMatches.length > 0) {
+    problems.push(`unexpected content_script matches: ${strayMatches.join(', ')}`);
+  }
 }
 
 // Optional hosts exist only for the local dev server and must stay loopback.

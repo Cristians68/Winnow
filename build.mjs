@@ -2,6 +2,7 @@ import * as esbuild from 'esbuild';
 import { cp, mkdir, rm, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { matchPatterns } from './src/core/marketplaces.ts';
 
 const watch = process.argv.includes('--watch');
 const outdir = 'dist';
@@ -47,6 +48,16 @@ async function copyStatic() {
   const manifestPath = path.join(outdir, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   manifest.version = pkg.version;
+
+  // Storefronts are generated rather than hand-listed. src/core/marketplaces.ts
+  // is the only place they exist; see the header comment there for the five
+  // places they used to live and what that cost.
+  const hosts = matchPatterns();
+  manifest.host_permissions = hosts;
+  for (const script of manifest.content_scripts ?? []) {
+    script.matches = hosts;
+  }
+
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 }
 
