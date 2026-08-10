@@ -1,0 +1,33 @@
+<!-- SYNTHETIC fixture. Not captured from Amazon. Proves the card reader's
+     contract, not that Amazon's selectors still look like this — that is
+     tools/capture-corpus.js's job.
+
+     Deliberately NOT in tests/corpus/: that directory is swept whole by
+     tools/freeze-corpus.mjs and tests/corpus.test.ts, both of which run the
+     *product* parser over every .html they find and demand a matching
+     .expected.json. A search page there would be graded as a listing. -->
+<!doctype html>
+<html lang="en"><body>
+<div class="s-main-slot">
+  <div data-component-type="s-search-result" data-asin="B0REAL0001">
+    <h2><a class="a-link-normal" href="/dp/B0REAL0001">A real product</a></h2>
+    <span class="a-icon-alt">4.5 out of 5 stars</span>
+  </div>
+  <div data-component-type="s-search-result" data-asin="B0REAL0002">
+    <h2><a class="a-link-normal" href="/dp/B0REAL0002">Another real product</a></h2>
+  </div>
+  <div data-component-type="s-search-result" data-asin="">
+    <h2><a class="a-link-normal" href="/gp/slredirect/x">Card with no ASIN</a></h2>
+  </div>
+  <!-- ASINs are exactly ten characters. Anything else is not one, whatever
+       Amazon put in the attribute. -->
+  <div data-component-type="s-search-result" data-asin="B0MALFORMED1">
+    <h2><a class="a-link-normal" href="/gp/slredirect/y">Card with a malformed ASIN</a></h2>
+  </div>
+  <div data-component-type="s-search-result" data-asin="B0SPONSOR1">
+    <span class="s-sponsored-label-text">Sponsored</span>
+    <h2><a class="a-link-normal" href="/dp/B0SPONSOR1">A sponsored product</a></h2>
+  </div>
+  <div class="s-widget-container">Not a product at all</div>
+</div>
+</body></html>
