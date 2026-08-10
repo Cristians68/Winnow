@@ -17,6 +17,7 @@ import type { DeepAugmentation } from '../core/score.js';
 import { DEFAULT_SETTINGS, getSettings, isDevEndpoint, SETTINGS_KEY, type Settings } from '../shared/settings.js';
 import { API_ENDPOINT, buildRequest, toAugmentation, type DeepAnalysisResponse } from '../shared/deep.js';
 import { recordDisagreement, type DisagreementDirection } from '../shared/feedback.js';
+import { rememberGrade } from '../shared/cache.js';
 
 let currentAnalysis: Analysis | null = null;
 let settings: Settings = DEFAULT_SETTINGS;
@@ -147,6 +148,20 @@ function run(): void {
   currentSnapshot = snapshot;
   currentAnalysis = analyse(snapshot, augmentation);
   render();
+
+  // Feed the search-page badges. Only real grades are stored: a snapshot the
+  // engine declined to judge must not come back as a confident badge on a
+  // search card. Fire-and-forget, after render, so storage never delays the
+  // panel the user is actually looking at.
+  if (!currentAnalysis.insufficientData && snapshot.asin) {
+    void rememberGrade({
+      asin: snapshot.asin,
+      grade: currentAnalysis.grade,
+      score: currentAnalysis.trustScore,
+      engineVersion: currentAnalysis.engineVersion,
+      date: new Date().toISOString().slice(0, 10),
+    });
+  }
 }
 
 function removePanel(): void {

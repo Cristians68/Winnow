@@ -16,6 +16,9 @@
  */
 
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { SETTINGS_KEY } from '../src/shared/settings.js';
+import { readCache } from '../src/shared/cache.js';
+import { ENGINE_VERSION } from '../src/core/score.js';
 
 const PRODUCT_PAGE = `
   <span id="productTitle">Test Headphones</span>
@@ -37,8 +40,21 @@ const PRODUCT_PAGE = `
   <div id="customerReviews"></div>
 `;
 
+/**
+ * Readable enough to mount the panel, too thin to grade: 12 ratings is under
+ * MIN_RATINGS_FOR_HISTOGRAM_ONLY and there are no reviews at all, so the engine
+ * reports insufficientData rather than a grade.
+ */
+const UNGRADEABLE_PAGE = `
+  <span id="productTitle">Test Headphones</span>
+  <span id="acrPopover" title="4.3 out of 5 stars"></span>
+  <span id="acrCustomerReviewText">12 ratings</span>
+  <div id="customerReviews"></div>
+`;
+
 let sendMessage: ReturnType<typeof vi.fn>;
 let storageListeners: Array<(changes: unknown, area: string) => void>;
+let storage: Record<string, unknown>;
 
 /** The rendered panel, reached through its shadow root. */
 function panel(): ShadowRoot | null {
@@ -70,12 +86,18 @@ const LOOPBACK = 'http://127.0.0.1:8787/v1/analyse';
 async function loadContentScript(
   url = 'https://www.amazon.com/dp/B08N5WRWNW',
   settings: Record<string, unknown> = {},
+  page = PRODUCT_PAGE,
 ): Promise<void> {
   (window as HappyWindow).happyDOM?.setURL?.(url);
-  document.body.innerHTML = PRODUCT_PAGE;
+  document.body.innerHTML = page;
 
   storageListeners = [];
   sendMessage = vi.fn(async () => ({ ok: true, data: deepResponse() }));
+
+  // A real key/value store rather than "every key returns the settings". The
+  // content script now writes the grade cache through this same API, and a
+  // stubbed-out set() would let a missing write pass as a passing test.
+  storage = {};
 
   (globalThis as unknown as { chrome: unknown }).chrome = {
     runtime: {
@@ -84,8 +106,11 @@ async function loadContentScript(
     },
     storage: {
       local: {
-        get: vi.fn(async (key: string) => ({ [key]: settings })),
-        set: vi.fn(async () => undefined),
+        get: vi.fn(async (key: string) => ({
+          [key]: key === SETTINGS_KEY ? settings : storage[key],
+        })),
+        set: vi.fn(async (patch: Record<string, unknown>) => { Object.assign(storage, patch); }),
+        remove: vi.fn(async (key: string) => { delete storage[key]; }),
       },
       onChanged: { addListener: (fn: (c: unknown, a: string) => void) => storageListeners.push(fn) },
     },
@@ -206,6 +231,25 @@ describe('content script on a product page', () => {
     await settle(20);
 
     expect(document.getElementById('winnow-root')).toBeNull();
+  });
+
+  it('remembers the grade it just computed, so search pages can show it', async () => {
+    await loadContentScript();
+
+    const entry = (await readCache()).get('B08N5WRWNW');
+    expect(entry).toBeDefined();
+    expect(entry?.grade).toMatch(/^[A-F]$/);
+    expect(entry?.engineVersion).toBe(ENGINE_VERSION);
+  });
+
+  // An unreadable page must not leave a grade behind. Caching an
+  // insufficient-data result would let the search page show a confident badge
+  // for a product Winnow explicitly declined to judge.
+  it('remembers nothing when it could not grade the page', async () => {
+    await loadContentScript(undefined, {}, UNGRADEABLE_PAGE);
+
+    expect(panel()).not.toBeNull();
+    expect((await readCache()).size).toBe(0);
   });
 });
 
