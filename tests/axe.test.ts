@@ -21,6 +21,10 @@ import { describe, expect, it } from 'vitest';
 import axe from 'axe-core';
 import { renderPanel } from '../src/content/ui.js';
 import type { Analysis, Grade } from '../src/core/types.js';
+import { readFileSync } from 'node:fs';
+import { findSearchCards } from '../src/content/serp-parse.js';
+import { renderBadges, BADGE_CLASS } from '../src/content/serp-ui.js';
+import type { CachedGrade } from '../src/shared/cache.js';
 
 function analysis(overrides: Partial<Analysis> = {}): Analysis {
   return {
@@ -209,4 +213,54 @@ describe('axe-core audit of the panel', () => {
     const canaryResults = await axe.run(canary, { resultTypes: ['violations'] });
     expect(canaryResults.violations.map((v) => v.id).sort()).toEqual(['button-name', 'image-alt']);
   });
+});
+
+/**
+ * Search badges are audited separately because they are the one piece of Winnow
+ * UI that is NOT in a shadow root — they sit inside Amazon's own grid. The
+ * shadow-crossing proof above therefore says nothing about them, and the states
+ * they can be in are different states, not more panel states.
+ */
+describe('axe-core audit of the search badges', () => {
+  function badgedGrid(cache: Map<string, CachedGrade>): HTMLElement {
+    document.body.innerHTML = readFileSync('tests/fixtures/search-synthetic.html', 'utf8')
+      .replace(/^[\s\S]*?<body>/, '')
+      .replace(/<\/body>[\s\S]*$/, '');
+    renderBadges(findSearchCards(document), cache);
+    return document.body;
+  }
+
+  const cached = (grade: Grade): Map<string, CachedGrade> => new Map([['B0REAL0001', {
+    asin: 'B0REAL0001', grade, score: 42,
+    engineVersion: '0.3.0', date: '2026-08-01', seen: Date.now(),
+  }]]);
+
+  // Guards the guard, exactly as the panel audit above does. "No violations" is
+  // also what an audit of nothing reports, and this is the failure that let the
+  // feedback UI go unaudited across 290 green tests.
+  it('actually reaches the badges, rather than passing on an empty audit', async () => {
+    const grid = badgedGrid(new Map());
+    expect(grid.querySelectorAll(`.${BADGE_CLASS}`).length).toBeGreaterThan(0);
+
+    const results = await axe.run(grid);
+    expect(results.passes.length).toBeGreaterThan(0);
+  });
+
+  for (const [name, cache] of [
+    ['not checked', new Map<string, CachedGrade>()],
+    ['graded', cached('D')],
+  ] as const) {
+    it(`reports no violations — search badge, ${name}`, async () => {
+      const results = await axe.run(badgedGrid(cache), {
+        resultTypes: ['violations'],
+        runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] },
+        // The fixture is a bare grid with no <main>, so `region` fires on
+        // Amazon's markup rather than on anything Winnow adds. Excluding the
+        // one rule rather than the whole best-practice tag keeps the rest live
+        // — a badge that broke `aria-valid-attr` would still be caught.
+        rules: { region: { enabled: false } },
+      });
+      expect(results.violations, `\n  ${describeViolations(results)}\n`).toEqual([]);
+    });
+  }
 });

@@ -21,6 +21,13 @@
         "content/index.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [],
+      "js": [
+        "content/serp.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "background": {

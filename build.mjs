@@ -13,6 +13,7 @@ await mkdir(outdir, { recursive: true });
 /** Entry points that become their own bundles in the extension. */
 const entryPoints = {
   'content/index': 'src/content/index.ts',
+  'content/serp': 'src/content/serp.ts',
   'background/index': 'src/background/index.ts',
   'popup/index': 'src/popup/index.ts',
   'options/index': 'src/options/index.ts',
