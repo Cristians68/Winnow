@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { buildVerdict } from '../src/core/verdict.js';
 import { analyse } from '../src/core/score.js';
 import type { Analysis, ProductSnapshot, Review } from '../src/core/types.js';
@@ -318,5 +319,42 @@ describe('the camera-lens listing', () => {
     );
     const helpfulness = busy.signals.find((s) => s.id === 'helpfulness')!;
     expect(helpfulness.status).not.toBe('pass');
+  });
+});
+
+/**
+ * Comparative claims name categories, never products.
+ *
+ * Partly because naming a competitor is a defamation surface, and mostly
+ * because a tool whose pitch is calibrated honesty does not get to run the
+ * comparison-table playbook it is positioned against. The claim Winnow is
+ * entitled to make is about itself, and the reader can check it in ten seconds
+ * without believing a word of it.
+ */
+describe('trust-proof copy', () => {
+  const files = ['src/content/ui.ts', 'src/options/ui/options.html', 'docs/store-listing.md'];
+  const sources = files.map((p) => readFileSync(p, 'utf8')).join('\n');
+
+  it('names no competing product', () => {
+    for (const name of ['SureVett', 'RateBud', 'NullFake', 'ReviewMeta', 'FakeFind', 'Savinoo']) {
+      expect(sources).not.toMatch(new RegExp(name, 'i'));
+    }
+  });
+
+  it('tells the reader how to verify the permission claim themselves', () => {
+    expect(sources).toMatch(/chrome:\/\/extensions/);
+  });
+
+  // Winnow ships a Firefox build as of 0.4.0, and chrome://extensions does not
+  // exist there. Copy that names only the Chrome path is copy that is wrong for
+  // every Firefox user reading it.
+  it('names the Firefox path too, since Winnow ships there', () => {
+    expect(sources).toMatch(/about:addons/);
+  });
+
+  // The point of the claim is that it is checkable, not that it is reassuring.
+  // "We respect your privacy" would pass the tests above and mean nothing.
+  it('states what the permission actually is, not just that it is small', () => {
+    expect(sources).toMatch(/\bstorage\b/);
   });
 });

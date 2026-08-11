@@ -675,6 +675,7 @@ const SELF_CHECKS: string[] = [
   'Trust reviews with customer photos more. Photos are far more work to fake than a paragraph of text.',
   'Try a reverse image search on the product photos. The same item under several unfamiliar brand names usually means a generic product being resold rather than one somebody designed.',
   'Be wary of a listing that is new but already has hundreds of five-star ratings. Genuine reviews accumulate at roughly the speed of sales.',
+  'Check what any shopping extension can reach, including this one. Open chrome://extensions (or about:addons in Firefox), find it, and read its permissions. Winnow asks for storage and the Amazon storefronts it runs on — it cannot read your passwords, your logins, or any other site.',
 ];
 
 /** Extra advice that only makes sense in some states. */

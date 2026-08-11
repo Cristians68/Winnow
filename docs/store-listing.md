@@ -88,10 +88,18 @@ PRIVACY
 • No data leaves your browser. Ever.
 • No analytics, telemetry or tracking of any kind.
 • No account, no sign-up, no personal information.
-• The only permission requested is "storage", used solely to remember two settings.
+• The only permission requested is "storage", used to remember your settings, the grades
+  you marked as wrong, and the grades Winnow worked out — all on your device, all erasable
+  from the options page, none of it transmittable by any code in Winnow.
 • Winnow never crawls Amazon using your session — it reads only what your browser already
   rendered. Automated scraping through a logged-in session can put YOUR Amazon account at
   risk, and we will not do that to you.
+
+Winnow requests one permission — storage — plus the Amazon storefronts it runs on. It
+cannot read your logins, your passwords, or any site that is not Amazon. Don't take our
+word for it: open chrome://extensions (or about:addons in Firefox), find Winnow, and read
+the list. Every listing in this store shows what an extension requests. Compare before you
+install anything that watches you shop, this included.
 
 Open source: https://github.com/Cristians68/Winnow
 ```
@@ -111,10 +119,26 @@ script exists to serve that single function.
 ### `storage`
 
 ```
-Used solely to persist two user preferences: whether the on-page panel is shown, and whether
-the analysis breakdown starts expanded. No user data, browsing history, or product data is
-stored. Nothing stored is ever transmitted.
+Used to persist three things locally, all of them erasable from the options page:
+
+1. User preferences: whether the on-page panel is shown, whether the breakdown starts
+   expanded, and the theme.
+2. Grades the user explicitly marked as too harsh or too lenient, so scoring can be
+   corrected. The listing is identified by a one-way hash, not by ASIN, name or URL.
+3. Grades Winnow has already computed, so the same grade can be shown beside that product
+   on Amazon search pages. Each entry holds the ASIN, the grade, the score, the engine
+   version and the date. This is a record of Amazon product pages the user has opened. It
+   is capped at 500 entries, expires after 90 days, and is disclosed in the privacy policy
+   and on the options page.
+
+No data of any kind is transmitted. There is no code path in the extension capable of
+sending any of it anywhere, which is verifiable in the public source.
 ```
+
+Note for future edits: item 3 is browsing history in substance, and this justification says
+so in those words on purpose. An earlier version of this text read "No user data, browsing
+history, or product data is stored", which was true when written and became false the moment
+the grade cache shipped. A disclosure that silently goes stale is worse than a broad one.
 
 ### Host permissions (`*://*.amazon.*/*`)
 
@@ -155,6 +179,14 @@ remotely-hosted code.
 ## Data usage disclosures
 
 Tick **none** of the data collection categories. Then affirm:
+
+This stays "none" after the 0.4.0 grade cache, and the reasoning should be checked rather
+than assumed each release: Chrome's disclosure asks what the extension **collects**, which
+it defines as transmitting off the user's device. Winnow stores a record of product pages
+opened, but nothing leaves the browser and no code path can send it. If a hosted endpoint is
+ever enabled, revisit this section first — it would move "Website content" from not-collected
+to collected, and that answer is attested to Google.
+
 
 - [x] I do not sell or transfer user data to third parties, outside of approved use cases
 - [x] I do not use or transfer user data for purposes unrelated to my item's single purpose
