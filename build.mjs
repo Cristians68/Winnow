@@ -7,6 +7,18 @@ import { matchPatterns } from './src/core/marketplaces.ts';
 const watch = process.argv.includes('--watch');
 const outdir = 'dist';
 
+/**
+ * Which browser this build is for.
+ *
+ * Unknown values throw rather than falling back to Chrome. A typo'd flag that
+ * silently produced a Chrome build would be discovered by a Firefox reviewer,
+ * not by us.
+ */
+const target = (process.argv.find((a) => a.startsWith('--target=')) ?? '--target=chrome').split('=')[1];
+if (!['chrome', 'firefox'].includes(target)) {
+  throw new Error(`unknown --target=${target}; expected chrome or firefox`);
+}
+
 await rm(outdir, { recursive: true, force: true });
 await mkdir(outdir, { recursive: true });
 
@@ -57,6 +69,20 @@ async function copyStatic() {
   manifest.host_permissions = hosts;
   for (const script of manifest.content_scripts ?? []) {
     script.matches = hosts;
+  }
+
+  if (target === 'firefox') {
+    // Firefox needs an explicit, stable add-on id, and accepts `scripts`
+    // alongside `service_worker` for the background context. Chrome ignores
+    // `scripts`, but there is no reason to ship a key to a browser that has no
+    // use for it, so the two manifests are generated rather than shared.
+    manifest.browser_specific_settings = {
+      gecko: { id: 'winnow@winnow.tools', strict_min_version: '128.0' },
+    };
+    manifest.background = {
+      service_worker: 'background/index.js',
+      scripts: ['background/index.js'],
+    };
   }
 
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
