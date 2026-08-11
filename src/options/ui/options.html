@@ -143,6 +143,39 @@
         </div>
       </section>
 
+      <h2>Grades remembered on this device</h2>
+      <section>
+        <div class="setting" style="display: block">
+          <div>
+            <label class="label" for="gradeCacheClear">Grades kept for search results</label>
+            <div class="help" style="margin-bottom: 10px">
+              <p style="margin: 0 0 8px">
+                When you open a product page, Winnow stores the grade it worked out so the same
+                grade can appear beside that product on search results pages. That record is a list
+                of products you have opened. It stays on this device, it holds at most 500 products
+                for 90 days, and nothing is ever sent anywhere.
+              </p>
+              <p style="margin: 0">
+                Winnow will not grade a product from a search page you have not opened. A search
+                card shows a star average and a rating count and no reviews at all, and the only way
+                to get the reviews would be to load those pages using your Amazon session — which we
+                will not do, because it puts your Amazon account at risk. So a badge that says
+                "not checked" means exactly that, and never a guess.
+              </p>
+            </div>
+            <p class="help" id="gradeCacheCount" style="margin: 0 0 10px"></p>
+            <button
+              type="button"
+              id="gradeCacheClear"
+              style="font: inherit; padding: 7px 12px; border-radius: 7px; border: 1px solid #ccd2db; background: #fff; cursor: pointer"
+            >
+              Erase remembered grades
+            </button>
+            <p class="help" id="gradeCacheStatus" role="status" aria-live="polite" style="margin: 8px 0 0"></p>
+          </div>
+        </div>
+      </section>
+
       <h2>Developer</h2>
       <section>
         <div class="setting" style="display: block">

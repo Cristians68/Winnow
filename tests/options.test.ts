@@ -17,6 +17,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, type Settings } from '../src/shared/settings.js';
 import { DISAGREEMENTS_KEY } from '../src/shared/feedback.js';
+import { readFileSync } from 'node:fs';
+import { CACHE_CAP, CACHE_TTL_DAYS, CACHE_KEY } from '../src/shared/cache.js';
+import { ENGINE_VERSION } from '../src/core/score.js';
 
 const DOM = `
   <input type="checkbox" id="enabled" />
@@ -33,7 +36,20 @@ const DOM = `
   <button type="button" id="feedbackExport">Export as JSON</button>
   <button type="button" id="feedbackClear">Delete all of it</button>
   <p class="help" id="feedbackStatus"></p>
+  <p class="help" id="gradeCacheCount"></p>
+  <button type="button" id="gradeCacheClear">Erase remembered grades</button>
+  <p class="help" id="gradeCacheStatus"></p>
 `;
+
+/**
+ * The real options page, as shipped.
+ *
+ * DOM above is a hand-written stub of the ids the module touches, which is the
+ * right shape for behaviour but useless for copy: asserting that the stub
+ * contains a disclosure only proves the stub contains it. Anything about what
+ * the page *says* is checked against the file the user actually sees.
+ */
+const OPTIONS_HTML = readFileSync('src/options/ui/options.html', 'utf8');
 
 let setStored: ReturnType<typeof vi.fn>;
 let requestPermission: ReturnType<typeof vi.fn>;
@@ -42,7 +58,12 @@ let removed: string[];
 
 async function loadOptions(
   settings: Partial<Settings> = {},
-  { permissionGranted = true, permissionThrows = false, disagreements = undefined as unknown[] | undefined } = {},
+  {
+    permissionGranted = true,
+    permissionThrows = false,
+    disagreements = undefined as unknown[] | undefined,
+    grades = undefined as unknown[] | undefined,
+  } = {},
 ): Promise<void> {
   document.body.innerHTML = DOM;
 
@@ -55,6 +76,7 @@ async function loadOptions(
   storageArea = {
     [SETTINGS_KEY]: { ...DEFAULT_SETTINGS, ...settings },
     [DISAGREEMENTS_KEY]: disagreements,
+    [CACHE_KEY]: grades,
   };
   removed = [];
 
@@ -271,6 +293,72 @@ describe('grade feedback controls', () => {
     const labels = [...document.querySelectorAll('button')].map((b) => b.textContent ?? '');
     for (const label of labels) {
       expect(label).not.toMatch(/send|submit|upload|share|report/i);
+    }
+  });
+});
+
+describe('grade cache controls', () => {
+  const cached = (asin: string) => ({
+    asin, grade: 'B', score: 80, engineVersion: ENGINE_VERSION,
+    date: new Date().toISOString().slice(0, 10), seen: Date.now(),
+  });
+
+  it('offers a way to erase the cache', () => {
+    expect(OPTIONS_HTML).toContain('id="gradeCacheClear"');
+  });
+
+  // These numbers are a promise about how long a record of what you shopped
+  // for sticks around. The page has to state them, and state the same ones the
+  // code enforces -- a disclosure that drifts from the implementation is worse
+  // than none, because it is believed.
+  it('says how many grades are stored and for how long', () => {
+    expect(OPTIONS_HTML).toContain(String(CACHE_CAP));
+    expect(OPTIONS_HTML).toMatch(new RegExp(`${CACHE_TTL_DAYS} days`));
+  });
+
+  // The refusal is the feature. If the page does not say why search badges are
+  // sparse, the honest limit reads as a bug.
+  // The refusal is the feature. If the page does not say why search badges are
+  // sparse, the honest limit reads as a bug. Both halves are required: what
+  // Winnow will not do, and the reason, which is the user's own account.
+  it('says plainly that it will not fetch pages you have not opened', () => {
+    expect(OPTIONS_HTML).toMatch(/search (page|result)/i);
+    expect(OPTIONS_HTML).toMatch(/puts your Amazon account at risk/i);
+  });
+
+  it('says so plainly when nothing has been remembered', async () => {
+    await loadOptions();
+    expect(document.getElementById('gradeCacheCount')!.textContent)
+      .toMatch(/No grades remembered/);
+  });
+
+  it('counts remembered grades, with the singular right', async () => {
+    await loadOptions({}, { grades: [cached('B0000000A1')] });
+    expect(document.getElementById('gradeCacheCount')!.textContent)
+      .toMatch(/^1 grade remembered/);
+
+    await loadOptions({}, { grades: [cached('B0000000A1'), cached('B0000000A2')] });
+    expect(document.getElementById('gradeCacheCount')!.textContent)
+      .toMatch(/^2 grades remembered/);
+  });
+
+  it('erases the cache and updates the count', async () => {
+    await loadOptions({}, { grades: [cached('B0000000A1')] });
+    (document.getElementById('gradeCacheClear') as HTMLButtonElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(removed).toContain(CACHE_KEY);
+    expect(document.getElementById('gradeCacheCount')!.textContent)
+      .toMatch(/No grades remembered/);
+    expect(document.getElementById('gradeCacheStatus')!.textContent).toBe('Erased.');
+  });
+
+  // The whole options page is held to this already; the new controls must not
+  // be the exception that introduces a transmit path.
+  it('still offers no way to send anything anywhere', async () => {
+    await loadOptions({}, { grades: [cached('B0000000A1')] });
+    for (const button of document.querySelectorAll('button')) {
+      expect(button.textContent ?? '').not.toMatch(/send|submit|upload|share|report/i);
     }
   });
 });

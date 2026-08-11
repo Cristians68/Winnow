@@ -1,5 +1,6 @@
 import { getSettings, setSettings, isDevEndpoint, isTheme, type Settings } from '../shared/settings.js';
 import { clearDisagreements, exportDisagreements, listDisagreements } from '../shared/feedback.js';
+import { clearCache, readCache, CACHE_CAP, CACHE_TTL_DAYS } from '../shared/cache.js';
 
 function checkbox(id: string): HTMLInputElement {
   const el = document.getElementById(id);
@@ -35,6 +36,43 @@ async function init(): Promise<void> {
   wireTheme(settings);
   await wireDevEndpoint(settings);
   await wireFeedback();
+  await wireGradeCache();
+}
+
+/**
+ * The grade cache's controls.
+ *
+ * One button, and a count. The cache is a record of products the user has
+ * opened, so the page has to make it visible and erasable — a local store the
+ * user cannot see or empty is indistinguishable from one they should not have
+ * been given. The cap and the retention window are printed from the constants
+ * the code enforces rather than typed into the copy, so the disclosure cannot
+ * quietly drift away from the behaviour it describes.
+ */
+async function wireGradeCache(): Promise<void> {
+  const count = document.getElementById('gradeCacheCount');
+  const status = document.getElementById('gradeCacheStatus');
+  const clearButton = document.getElementById('gradeCacheClear');
+  if (!count || !status || !clearButton) return;
+
+  async function refresh(): Promise<void> {
+    const remembered = (await readCache()).size;
+    count!.textContent =
+      remembered === 0
+        ? `No grades remembered yet. Up to ${CACHE_CAP} are kept, for ${CACHE_TTL_DAYS} days each.`
+        : `${remembered} ${remembered === 1 ? 'grade' : 'grades'} remembered, of a maximum `
+          + `${CACHE_CAP}, kept ${CACHE_TTL_DAYS} days each.`;
+
+    (clearButton as HTMLButtonElement).disabled = remembered === 0;
+  }
+
+  clearButton.addEventListener('click', async () => {
+    await clearCache();
+    await refresh();
+    status!.textContent = 'Erased.';
+  });
+
+  await refresh();
 }
 
 /**

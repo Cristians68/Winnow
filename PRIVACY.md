@@ -54,8 +54,29 @@ at 200 entries, and you can export or delete all of it from Winnow's options pag
 transmits the log — deliberately, so this promise rests on the code rather than on our restraint.
 If you want to send it in, you export the file and do it yourself.
 
-Both live in your browser's extension storage and never leave your device. This is the only reason
-Winnow requests the `storage` permission.
+**Grades you have already seen.** When you open an Amazon product page, Winnow stores the grade it
+computed — the product's ASIN, the letter grade, the score, the engine version, and the date. This
+exists so the same grade can be shown beside that product on Amazon search pages.
+
+Be clear about what this is: **a record of products you have opened**, and unlike the feedback log
+above, the ASIN is stored in the clear rather than hashed. That is a deliberate choice in the other
+direction, and the reason is that hashing would buy nothing here. The record's whole job is to
+recognise a specific ASIN on a search page, so anyone reading your local storage could undo a hash
+by hashing candidate ASINs themselves — while you would lose the ability to open the file and see
+exactly what Winnow kept. Storing it plainly and telling you plainly is the more honest of the two.
+
+It holds at most 500 products, entries expire after 90 days, and Winnow's options page erases the
+whole record in one click. It never leaves your device, and there is no code in Winnow capable of
+transmitting it.
+
+**Winnow does not and will not load Amazon pages in the background to grade products you have not
+opened.** Doing so would mean using your logged-in Amazon session to crawl the site, which puts your
+Amazon account at risk — see the section below, which is a permanent commitment. This is why search
+pages show grades only for products you have already visited, and say "not checked" for the rest.
+A sparse row of badges is the honest consequence of that refusal, not a defect.
+
+All three live in your browser's extension storage and never leave your device. This is the only
+reason Winnow requests the `storage` permission.
 
 ---
 
