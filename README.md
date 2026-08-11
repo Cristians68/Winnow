@@ -90,7 +90,7 @@ those scores to adjust the product's rating and assign a grade.
 
 ### Storefronts and languages
 
-Winnow runs on all fourteen Amazon domains it lists, and eleven of them do not serve English. The
+Winnow runs on all twenty Amazon domains it lists, and twelve of them do not serve English. The
 mechanical parts of reading a page — review dates, the rating histogram, measurements and durations,
 word counts in any script including Japanese and Chinese — are localised for every one of them.
 

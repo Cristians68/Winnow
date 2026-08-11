@@ -4,6 +4,54 @@ All notable changes to Winnow are recorded here. The scoring engine carries its 
 (`ENGINE_VERSION` in `src/core/score.ts`), shown in the on-page panel, so a grade can always be
 traced to the logic that produced it.
 
+## [0.4.0]
+
+`ENGINE_VERSION` stays at `0.3.0`. **Scoring did not change in this release.** The engine version
+exists so a grade traces to the logic that produced it; bumping it without a scoring change would
+invalidate every remembered grade for nothing and make the number mean less.
+
+### Added
+- **Search results pages.** Products you have already opened now carry their grade beside them in
+  the search grid. Products you have not are marked "not checked", and Winnow does not guess.
+  A search card shows a star average and a rating count and no reviews at all; the only way to get
+  the reviews would be to load those pages using your Amazon session, which risks your account.
+  So the grid shows what was actually earned, and coverage builds as you browse. A sparse row of
+  badges is the honest consequence of that refusal, not a defect.
+- **A record of grades, on your device.** Up to 500 products for 90 days, erasable in one click from
+  Options, disclosed in the privacy policy and on the options page in the same words. Nothing is
+  sent anywhere; no code in Winnow can send it. Entries from a different engine version are ignored
+  rather than shown, so a grade on a search card always traces to the logic that produced it.
+- **Firefox.** Built from the same source as the Chrome package, with the same permissions, checked
+  by the same guards — every packaging check now runs against both manifests rather than one.
+- **Six more storefronts** — Brazil, Singapore, Türkiye, Ireland, Belgium and the UAE — with
+  Portuguese, Turkish and Arabic month names, star nouns and date parsing, so they do not repeat the
+  failure 0.3.0 fixed.
+- **The permission list, pointed at rather than paraphrased.** The panel's self-check section and the
+  options page name what Winnow requests and tell you to go read it yourself, in Chrome or Firefox.
+  Categories are named; competing products are not.
+
+### Changed
+- **One list of storefronts instead of five.** They previously lived in the two manifest arrays, the
+  packaging guard, a domain table in the parser, and the locale tables, with nothing keeping them in
+  step. Adding a storefront now requires declaring the languages it serves, as a compile error rather
+  than a convention.
+- The store listing's `storage` justification described a state of affairs that stopped being true
+  when the feedback log shipped and was further wrong once grades were remembered. It now says
+  plainly that the cache is a record of pages you opened.
+
+### Fixed
+- **The packaging guard had a hole in it.** It tested an unanchored `/amazon\./`, which passes
+  `amazon.evil.com` — verified before fixing. It now matches the registry exactly, and checks
+  `content_scripts[].matches`, which nothing had ever checked.
+- **`amazon.com.mx` was missing from the parser's language table**, so Mexican pages without a `lang`
+  attribute reported no language and the wording check went quiet without saying so.
+- **Turkish dotless `ı` (U+0131) survives Unicode decomposition**, so the star noun `yıldız` never
+  matched and the rating histogram was unreadable on `amazon.com.tr`.
+- **`\d` matches no Arabic-Indic digit.** Its seven unit tests all passed while the parser was still
+  blind, because the number parsers read raw text and never called the folding function. Only a test
+  driving a whole Arabic page caught it: 234 ratings read as none. `amazon.ae` was added only after
+  that test passed.
+
 ## [0.3.0]
 
 Engine version moves to `0.3.0`: this release changes what several checks report and, on non-English

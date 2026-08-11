@@ -228,7 +228,7 @@ function pairHistogramColumns(container: ParentNode): Partial<Record<Star, numbe
     const text = textOf(leaf);
     // Star nouns differ per storefront ("5 Sterne", "5 étoiles", "星5つ"), and
     // requiring the English word left the histogram unreadable on eleven of the
-    // fourteen domains the manifest matches.
+    // fourteen domains the manifest matched at the time.
     const star = parseStarLabel(text);
     if (star !== null) {
       stars.push(star as Star);

@@ -3,7 +3,7 @@
  *
  * ## Why this file exists
  *
- * The manifest matches fourteen Amazon storefronts, eleven of which do not
+ * The manifest matches twenty Amazon storefronts, twelve of which do not
  * serve English. Every text-handling path in the engine was written against
  * English and silently produced wrong answers on the rest:
  *

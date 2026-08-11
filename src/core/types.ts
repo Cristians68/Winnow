@@ -56,7 +56,7 @@ export interface ProductSnapshot {
   /**
    * Language of the storefront page, as a BCP-47 tag from `<html lang>`.
    *
-   * The manifest matches fourteen Amazon domains and eleven of them are not
+   * The manifest matches twenty Amazon domains and twelve of them are not
    * English, so "what language is this" is load-bearing rather than cosmetic:
    * it decides which phrase lists the language check may use, and whether that
    * check is allowed to run at all. Undefined means we could not tell, which is

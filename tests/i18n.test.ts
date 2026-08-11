@@ -1,7 +1,7 @@
 /**
  * Non-English storefronts.
  *
- * The manifest matches fourteen Amazon domains, eleven of which do not serve
+ * The manifest matches twenty Amazon domains, twelve of which do not serve
  * English, and every text path in the engine was written against English. These
  * tests pin the four places that produced *wrong answers* rather than missing
  * ones, because a wrong answer here is a false accusation against a seller and
@@ -300,7 +300,7 @@ describe('star labels', () => {
 
 describe('histogram on a German storefront', () => {
   // Pre-fix: the histogram required the literal word "star", so it was
-  // unreadable on eleven of the fourteen domains the manifest matches, and the
+  // unreadable on eleven of the fourteen domains the manifest matched then, and the
   // rating-distribution check reported no data on all of them.
   it('reads a column-laid-out German histogram', () => {
     const window = new Window({ url: 'https://www.amazon.de/dp/B000000001' });
