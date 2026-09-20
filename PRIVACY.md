@@ -155,10 +155,15 @@ and we will delete it.
 ## What Winnow does not do, in any mode
 
 - Sell, rent or share data with third parties
-- Run analytics, telemetry, crash reporting, advertising or fingerprinting
+- Run analytics, telemetry, crash reporting or fingerprinting
 - Set cookies
-- Read any site other than the Amazon domains listed in its manifest and its own API endpoint
+- Send anything about the product you are viewing to an advertiser
+- Read any site other than the Amazon domains listed in its manifest, its own API endpoint, and
+  the sponsorship host named below
 - Ask for personal information
+
+Winnow does show one sponsored message inside its own two windows. That is described in full under
+[Sponsorship](#sponsorship) below, including what the sponsor is and is not told.
 
 Winnow requests no `tabs` permission and no broad host access. You can verify this in the manifest
 before installing.
@@ -172,17 +177,54 @@ This is permanent. Amazon's terms prohibit automated data mining, and scraping t
 session puts **your** Amazon account at risk of suspension. Winnow accepts a shallower analysis
 rather than exposing you to that. No future version will crawl your session.
 
-## How we make money
+## Sponsorship
 
-**You pay us. Nobody else does.**
+**Winnow shows one sponsored message, in its own two windows only.**
 
-Winnow carries no affiliate links, no referral tags, no sponsored placements, no commissions and no
-merchant relationships. Winnow does not and will not accept payment, in any form, from any seller,
-brand, marketplace or advertiser to influence, alter, suppress or promote any rating, grade or
-result it produces.
+It appears in the toolbar popup and on this settings page. It **never appears on an Amazon page**,
+never appears beside a grade, and never appears in the analysis panel. You can switch it off in
+Settings, and nothing else about Winnow changes when you do.
+
+### What the sponsor is told
+
+That a Winnow window was opened. Nothing else.
+
+The request contains three values: a schema version, which of the two windows is asking, and the
+creative formats that window can display. There is no field in it that could carry anything else —
+not the product, not the page address, not your search terms, not the grade, not a trust score, not
+a review, and not an identifier of any kind. Two different people opening the same window send
+byte-identical requests, so the request cannot be used to recognise you or to count you twice.
+
+It is sent with no cookies, no credentials and no referrer.
+
+Because the sponsor is never told which product you are viewing, **a sponsor cannot buy placement
+against a particular product, listing or seller** — not as a matter of our restraint, but because
+the information needed to do it never leaves your machine.
+
+### What the sponsor can do to a grade
+
+Nothing. Grades are computed locally, before any sponsorship request is made, by an open-source
+engine you can read. The sponsored message is fetched by the extension's background worker and
+drawn into Winnow's own window; no part of it reaches the scoring code, and no part of the scoring
+code is reachable from it.
+
+### Switching it off
+
+Settings → *Show sponsorship in Winnow's own windows*. Turning it off stops the request being made
+at all. It does not merely hide the result — a request sent and then discarded would still have
+told the sponsor that this installation exists, which is the thing you are asking us not to do.
+
+### What has not changed
+
+**You pay us, or a sponsor who cannot see your screen does. No merchant does.**
+
+Winnow carries no affiliate links, no referral tags, no commissions and no merchant relationships.
+Winnow does not and will not accept payment, in any form, from any seller, brand, marketplace or
+advertiser to influence, alter, suppress or promote any rating, grade or result it produces.
 
 This is a binding commitment, not a description of current practice. A tool that earns a commission
-when you buy cannot credibly tell you not to buy.
+when you buy cannot credibly tell you not to buy — which is precisely why the money comes from a
+slot that cannot see what you are buying.
 
 The scoring engine is open source so that this claim can be verified rather than merely trusted.
 
@@ -202,6 +244,12 @@ Winnow is not directed at children and collects no data from anyone, including c
 Material changes will be noted in the extension's changelog and reflected in the date above. If the
 no-affiliate commitment above ever changes, it will be announced prominently before taking effect,
 never altered quietly in this document.
+
+**Changed in 0.5.0:** Winnow now shows one sponsored message in its own two windows, described
+under [Sponsorship](#sponsorship). Earlier versions of this document listed advertising among the
+things Winnow does not do, and said Winnow made no money. Both statements were true when written
+and are no longer, so both were removed rather than reworded. The no-affiliate and no-merchant-
+payment commitments are unchanged.
 
 ## Contact
 

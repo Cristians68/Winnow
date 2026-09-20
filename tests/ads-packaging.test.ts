@@ -17,6 +17,9 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { adMatchPatterns, isKnownAdHost } from '../src/shared/ads/registry.js';
 import { isKnownAmazonHost, matchPatterns } from '../src/core/marketplaces.js';
 
+/** This suite's own build directory — see the note in tests/manifest.test.ts. */
+const OUT = '.tmp-test/ads-packaging';
+
 let manifest: {
   host_permissions?: string[];
   content_scripts?: Array<{ matches?: string[] }>;
@@ -25,8 +28,8 @@ let manifest: {
 };
 
 beforeAll(() => {
-  execFileSync(process.execPath, ['build.mjs'], { stdio: 'pipe' });
-  manifest = JSON.parse(readFileSync('dist/manifest.json', 'utf8'));
+  execFileSync(process.execPath, ['build.mjs', `--outdir=${OUT}`], { stdio: 'pipe' });
+  manifest = JSON.parse(readFileSync(`${OUT}/manifest.json`, 'utf8'));
 }, 60_000);
 
 describe('generated manifest', () => {

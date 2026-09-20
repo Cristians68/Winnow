@@ -18,8 +18,13 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const CONTENT_BUNDLES = ['dist/content/index.js', 'dist/content/serp.js'];
-const WORKER_BUNDLE = 'dist/background/index.js';
+/** This suite's own build directory — see the note in tests/manifest.test.ts. */
+const OUT = '.tmp-test/ads-containment';
+
+const CONTENT_BUNDLES = [`${OUT}/content/index.js`, `${OUT}/content/serp.js`];
+const WORKER_BUNDLE = `${OUT}/background/index.js`;
+const POPUP_BUNDLE = `${OUT}/popup/index.js`;
+const OPTIONS_BUNDLE = `${OUT}/options/index.js`;
 
 /** Strings that would only appear if ad code had been bundled in. */
 const AD_MARKERS = ['Sponsored', 'ad-slot', 'winnow:ad-request', 'ethicalads'];
@@ -31,7 +36,7 @@ function read(file: string): string {
 beforeAll(() => {
   // Build once, from scratch, so the assertions cannot be reading a stale
   // dist/ left behind by an earlier run with different source.
-  execFileSync(process.execPath, ['build.mjs'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['build.mjs', `--outdir=${OUT}`], { stdio: 'pipe' });
 }, 60_000);
 
 describe('the built content scripts', () => {
@@ -99,7 +104,7 @@ describe('the popup and options bundles', () => {
    * exactly one network boundary rather than three.
    */
   it('render ads without being able to request them', () => {
-    for (const bundle of ['dist/popup/index.js', 'dist/options/index.js']) {
+    for (const bundle of [POPUP_BUNDLE, OPTIONS_BUNDLE]) {
       const source = read(bundle);
       expect(source.includes('fetch('), `${bundle} gained a network call`).toBe(false);
       expect(source.includes('XMLHttpRequest'), `${bundle} gained XMLHttpRequest`).toBe(false);
@@ -109,6 +114,6 @@ describe('the popup and options bundles', () => {
   it('control: the popup bundle does contain the ad renderer', () => {
     // Otherwise the assertion above would pass for a popup that simply has no
     // ad code in it, which would mean the slot silently stopped shipping.
-    expect(read('dist/popup/index.js')).toContain('Sponsored');
+    expect(read(POPUP_BUNDLE)).toContain('Sponsored');
   });
 });

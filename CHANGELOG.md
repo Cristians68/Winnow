@@ -4,6 +4,59 @@ All notable changes to Winnow are recorded here. The scoring engine carries its 
 (`ENGINE_VERSION` in `src/core/score.ts`), shown in the on-page panel, so a grade can always be
 traced to the logic that produced it.
 
+## [0.5.0]
+
+`ENGINE_VERSION` stays at `0.3.0`. **Scoring did not change in this release.** Nothing in this
+release can change a grade — that is the central design constraint of the feature it adds.
+
+### Added
+- **Sponsorship, in Winnow's own windows only.** One sponsored message now appears in the toolbar
+  popup and on the settings page. It **never appears on an Amazon page** and never appears beside a
+  grade. Settings → *Show sponsorship in Winnow's own windows* turns it off.
+
+  The sponsor is told that a Winnow window opened, and nothing else. The request carries a schema
+  version, which of the two windows is asking, and the formats that window can render. There is no
+  field in it for a product, a page address, a search term, a grade or an identifier, and two
+  installations therefore send byte-identical requests. Because the sponsor cannot learn which
+  product you are viewing, **it cannot buy placement against a listing** — not as a matter of our
+  restraint, but because the information never leaves your machine.
+
+  Switching it off prevents the request rather than discarding the response. A request sent and
+  then thrown away would still have told the sponsor that this installation exists.
+
+  How that is kept true mechanically, rather than promised: `tests/ads-policy.test.ts` pins the
+  request's key set so a field added later fails the suite; `tests/ads-containment.test.ts` reads
+  the built bundles and proves no ad code and no network call reaches the content scripts;
+  `build.mjs` puts ad hosts in `host_permissions` and never in `content_scripts[].matches`, so ad
+  code cannot execute on a page. Every one of those checks is paired with a control proving it can
+  fail.
+
+- **`build.mjs --outdir=`.** Three test suites build the extension, and vitest runs them in
+  parallel worker processes. They shared `dist/`, which `build.mjs` removes on its first line, so
+  whichever suite lost the race read a half-written tree and failed with `EEXIST: mkdir
+  dist/icons`. Each now builds somewhere private.
+
+### Changed
+- **The privacy policy, the README, the landing page, the popup footer and the settings page all
+  said things that sponsorship makes false**, and all of them were rewritten rather than quietly
+  adjusted. Specifically: "advertising" was removed from the list of things Winnow does not do,
+  and "Winnow makes no money" / "Right now, we don't" / "no sponsored placements" are gone.
+
+  The privacy policy said material changes to the money model would be "announced prominently,
+  never altered quietly in this document", so it now carries a dated note naming the two statements
+  that stopped being true. `tests/claims.test.ts` fails the build if any of them returns.
+
+- **What did not change, and is now load-bearing:** no affiliate links, no referral tags, no
+  merchant relationships, and no payment from any seller, brand, marketplace or advertiser to
+  influence, alter, suppress or promote any grade. The same suite asserts that clause survives
+  every future edit to the money section.
+
+### Fixed
+- **WCAG 1.4.3 on the new disclosure line.** It first used `#858e9c`, the 3:1 colour chosen during
+  the earlier 1.4.11 pass for non-text contrast. This is body text and needs 4.5:1; it measured
+  **3.20:1**. Now `#6b7280` (4.67:1) in light and `#9aa1ab` (6.26:1) in dark, both already in the
+  palette.
+
 ## [0.4.0]
 
 `ENGINE_VERSION` stays at `0.3.0`. **Scoring did not change in this release.** The engine version

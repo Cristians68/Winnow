@@ -6,7 +6,20 @@ import { matchPatterns } from './src/core/marketplaces.ts';
 import { adMatchPatterns } from './src/shared/ads/registry.ts';
 
 const watch = process.argv.includes('--watch');
-const outdir = 'dist';
+
+/**
+ * Where the build lands. Defaults to dist/, which is what load-unpacked and
+ * the packaging script expect.
+ *
+ * Overridable because more than one test suite needs a build of its own, and
+ * they run in parallel worker processes. Sharing dist/ made them race: the
+ * first line of this script removes the directory the others are mid-way
+ * through writing, which surfaced as `EEXIST: mkdir dist/icons` in whichever
+ * suite lost. Giving each its own directory removes the race rather than
+ * papering over it by forcing the suites to run one at a time.
+ */
+const outdir = (process.argv.find((a) => a.startsWith('--outdir=')) ?? '--outdir=dist').split('=')[1];
+if (!outdir) throw new Error('--outdir= requires a value');
 
 /**
  * Which browser this build is for.

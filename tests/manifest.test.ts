@@ -11,7 +11,18 @@ import { adMatchPatterns } from '../src/shared/ads/registry.js';
  */
 const allHosts = () => [...matchPatterns(), ...adMatchPatterns()];
 
-const DIST = 'dist/manifest.json';
+/**
+ * This suite's own build directory.
+ *
+ * Three suites build the extension and vitest runs them in parallel worker
+ * processes. They used to share dist/, and build.mjs starts by removing its
+ * output directory — so whichever suite lost the race read a half-written
+ * tree and failed with `EEXIST: mkdir dist/icons`. Each suite now builds
+ * somewhere private, which removes the race instead of hiding it by forcing
+ * the files to run sequentially.
+ */
+const OUT = '.tmp-test/manifest';
+const DIST = `${OUT}/manifest.json`;
 
 describe('generated manifest', () => {
   let manifest: any;
@@ -21,7 +32,7 @@ describe('generated manifest', () => {
   // test, and — worse in the other direction — a stale build that happens to
   // match would let a registry change ship unverified.
   beforeAll(async () => {
-    execFileSync(process.execPath, ['build.mjs'], { stdio: 'pipe' });
+    execFileSync(process.execPath, ['build.mjs', `--outdir=${OUT}`], { stdio: 'pipe' });
     manifest = JSON.parse(await readFile(DIST, 'utf8'));
   });
 
@@ -69,18 +80,21 @@ describe('firefox target', () => {
   // Reads both manifests itself rather than reaching for the `manifest`
   // variable above. That one is scoped to its own block, and sharing build
   // output across sibling blocks would make the two suites order-dependent.
+  const FF_OUT = '.tmp-test/manifest-firefox';
+
   beforeAll(async () => {
-    execFileSync(process.execPath, ['build.mjs'], { stdio: 'pipe' });
+    execFileSync(process.execPath, ['build.mjs', `--outdir=${OUT}`], { stdio: 'pipe' });
     chromeManifest = JSON.parse(await readFile(DIST, 'utf8'));
-    execFileSync(process.execPath, ['build.mjs', '--target=firefox'], { stdio: 'pipe' });
-    firefox = JSON.parse(await readFile(DIST, 'utf8'));
+    execFileSync(process.execPath, ['build.mjs', '--target=firefox', `--outdir=${FF_OUT}`], {
+      stdio: 'pipe',
+    });
+    firefox = JSON.parse(await readFile(`${FF_OUT}/manifest.json`, 'utf8'));
   });
 
-  // Leave dist/ holding the Chrome build, which is what every other suite and
-  // any manual load-unpacked expects to find there.
-  afterAll(() => {
-    execFileSync(process.execPath, ['build.mjs'], { stdio: 'pipe' });
-  });
+  // Nothing to restore: neither build touched dist/, so whatever a developer
+  // had loaded unpacked is still there. The previous version of this block
+  // rebuilt dist/ in afterAll precisely because it had overwritten it.
+  afterAll(() => {});
 
   it('declares a stable gecko id and a minimum version', () => {
     expect(firefox.browser_specific_settings.gecko.id).toBe('winnow@winnow.tools');
