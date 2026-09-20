@@ -17,7 +17,7 @@
  * when read aloud.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import axe from 'axe-core';
 import { renderPanel } from '../src/content/ui.js';
 import type { Analysis, Grade } from '../src/core/types.js';
@@ -25,6 +25,8 @@ import { readFileSync } from 'node:fs';
 import { findSearchCards } from '../src/content/serp-parse.js';
 import { renderBadges, BADGE_CLASS } from '../src/content/serp-ui.js';
 import type { CachedGrade } from '../src/shared/cache.js';
+import { renderAd } from '../src/shared/ads/render.js';
+import { TEST_ORIGIN, clearTestNetwork, useTestNetwork } from './helpers/ad-fixture.js';
 
 function analysis(overrides: Partial<Analysis> = {}): Analysis {
   return {
@@ -263,4 +265,79 @@ describe('axe-core audit of the search badges', () => {
       expect(results.violations, `\n  ${describeViolations(results)}\n`).toEqual([]);
     });
   }
+});
+
+/**
+ * The sponsorship slot, audited like every other state.
+ *
+ * It is audited here because of what happened in 0.2.0: a feedback section
+ * shipped rendering in *zero* audited states, because the suites never passed
+ * `onFeedback` and an unexercised optional branch is untested by construction.
+ * 290 tests stayed green throughout. The slot is a new UI branch on a surface
+ * this file had never touched at all — the popup, rather than the panel — so
+ * the same hole was available again.
+ */
+describe('sponsorship slot accessibility', () => {
+  beforeAll(() => useTestNetwork());
+  afterAll(() => clearTestNetwork());
+
+  const POPUP_HTML = readFileSync('src/popup/ui/popup.html', 'utf8');
+
+  /** Render the real popup document, then fill the slot with a real creative. */
+  function popupWithAd(creative: Parameters<typeof renderAd>[1]): HTMLElement {
+    const root = document.createElement('div');
+    const body = POPUP_HTML.match(/<body>([\s\S]*)<\/body>/)?.[1] ?? '';
+    root.innerHTML = body.replace(/<script[\s\S]*?<\/script>/g, '');
+
+    const style = document.createElement('style');
+    style.textContent = POPUP_HTML.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
+    root.prepend(style);
+
+    renderAd(root.querySelector('#ad') as HTMLElement, creative);
+    return root;
+  }
+
+  const creative = {
+    provider: 'ethical' as const,
+    headline: 'Ship faster with Widgets',
+    body: 'A tool for people who build things.',
+    advertiser: 'Widget Co',
+    clickUrl: `${TEST_ORIGIN}/click/abc`,
+    imageUrl: null,
+    viewUrl: null,
+  };
+
+  it('has no violations with a text creative', async () => {
+    const results = await audit(popupWithAd(creative));
+    expect(results.violations.length, describeViolations(results)).toBe(0);
+  });
+
+  it('has no violations with an image creative', async () => {
+    const results = await audit(
+      popupWithAd({ ...creative, imageUrl: `${TEST_ORIGIN}/img/a.png` }),
+    );
+    expect(results.violations.length, describeViolations(results)).toBe(0);
+  });
+
+  it('has no violations with an empty slot', async () => {
+    const results = await audit(popupWithAd(null));
+    expect(results.violations.length, describeViolations(results)).toBe(0);
+  });
+
+  it('control: the slot is actually present in the audited document', async () => {
+    // Without this, all three results above would be "no violations found in a
+    // document containing no ad" — which is exactly the 0.2.0 failure.
+    const root = popupWithAd(creative);
+    expect(root.querySelector('.ad-slot'), 'the audited document has no ad slot').not.toBe(null);
+    expect(root.textContent).toContain('Sponsored');
+    expect(root.textContent).toContain('Widget Co');
+  });
+
+  it('control: axe would report a violation planted in this document', async () => {
+    const root = popupWithAd(creative);
+    // An image with no alt text and a button with no accessible name.
+    root.insertAdjacentHTML('beforeend', '<img src="x.png"><button></button>');
+    const results = await audit(root);
+    expect(results.violations.length).toBeGreaterThan(0);
+  });
 });

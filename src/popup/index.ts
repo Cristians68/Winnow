@@ -2,6 +2,7 @@ import type { Analysis, Grade } from '../core/types.js';
 import { getSettings, setSettings } from '../shared/settings.js';
 import { isRatingsOnly } from '../core/score.js';
 import { RATINGS_ONLY_TITLES } from '../core/verdict.js';
+import { mountAdSlot } from '../shared/ads/render.js';
 
 const GRADE_TONE: Record<Grade, string> = {
   A: 'good',
@@ -115,6 +116,20 @@ function wireOptionsLink(): void {
   });
 }
 
+/**
+ * Fill the sponsorship slot.
+ *
+ * Deliberately not awaited alongside the analysis: the grade must paint
+ * immediately whether or not an ad server answers, and mountAdSlot already
+ * swallows every failure. If the slot stays empty, the popup simply has a
+ * little less in it.
+ */
+function wireAdSlot(): void {
+  const host = document.getElementById('ad');
+  if (host) void mountAdSlot(host, 'popup');
+}
+
 void loadAnalysis();
 void wireSettings();
 wireOptionsLink();
+wireAdSlot();

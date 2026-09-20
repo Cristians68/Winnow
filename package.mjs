@@ -15,6 +15,7 @@ import { readFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { isKnownAmazonHost } from './src/core/marketplaces.ts';
+import { isKnownAdHost } from './src/shared/ads/registry.ts';
 
 const EXPECTED_PERMISSIONS = ['storage'];
 const TARGETS = ['chrome', 'firefox'];
@@ -50,12 +51,21 @@ for (const target of TARGETS) {
   // was `/amazon\./` unanchored, which passes `*://*.amazon.evil.com/*` — a hole
   // in the one check standing between this build and a host the privacy policy
   // does not disclose.
-  const strayHosts = (manifest.host_permissions ?? []).filter((h) => !isKnownAmazonHost(h));
+  // Widened for advertising by adding a second exact-match registry, never by
+  // loosening the test. The hole this guard was written to close was an
+  // unanchored /amazon\./ that passed `*://*.amazon.evil.com/*`; a regex
+  // relaxed to admit ad hosts would reopen it on the ad side.
+  const strayHosts = (manifest.host_permissions ?? []).filter(
+    (h) => !isKnownAmazonHost(h) && !isKnownAdHost(h),
+  );
   if (strayHosts.length > 0) {
     problems.push(`unexpected host_permissions: ${strayHosts.join(', ')}`);
   }
 
   // Content scripts are a second grant of the same reach and must agree.
+  // Note what is absent: isKnownAdHost. Content scripts must stay Amazon-only,
+  // so an ad host appearing here is a stray even though it is a host we do
+  // reach from the worker.
   for (const script of manifest.content_scripts ?? []) {
     const strayMatches = (script.matches ?? []).filter((h) => !isKnownAmazonHost(h));
     if (strayMatches.length > 0) {

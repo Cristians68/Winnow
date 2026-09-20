@@ -3,9 +3,23 @@ import { cp, mkdir, rm, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { matchPatterns } from './src/core/marketplaces.ts';
+import { adMatchPatterns } from './src/shared/ads/registry.ts';
 
 const watch = process.argv.includes('--watch');
-const outdir = 'dist';
+
+/**
+ * Where the build lands. Defaults to dist/, which is what load-unpacked and
+ * the packaging script expect.
+ *
+ * Overridable because more than one test suite needs a build of its own, and
+ * they run in parallel worker processes. Sharing dist/ made them race: the
+ * first line of this script removes the directory the others are mid-way
+ * through writing, which surfaced as `EEXIST: mkdir dist/icons` in whichever
+ * suite lost. Giving each its own directory removes the race rather than
+ * papering over it by forcing the suites to run one at a time.
+ */
+const outdir = (process.argv.find((a) => a.startsWith('--outdir=')) ?? '--outdir=dist').split('=')[1];
+if (!outdir) throw new Error('--outdir= requires a value');
 
 /**
  * Which browser this build is for.
@@ -66,7 +80,14 @@ async function copyStatic() {
   // is the only place they exist; see the header comment there for the five
   // places they used to live and what that cost.
   const hosts = matchPatterns();
-  manifest.host_permissions = hosts;
+
+  // Ad hosts go in host_permissions, where only the service worker can use
+  // them, and deliberately NOT in content_scripts[].matches. A host in
+  // `matches` means code executes on that origin, and no version of a
+  // sponsorship slot needs to run on an ad server. The two lists diverge here
+  // on purpose; tests/ads-packaging.test.ts pins the divergence so a future
+  // edit cannot quietly collapse them back together.
+  manifest.host_permissions = [...hosts, ...adMatchPatterns()];
   for (const script of manifest.content_scripts ?? []) {
     script.matches = hosts;
   }

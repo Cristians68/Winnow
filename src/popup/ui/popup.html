@@ -32,6 +32,32 @@
         margin: 12px 0 0; padding: 9px 10px; border-radius: 8px;
         background: #f7f8fa; font-size: 11.5px; color: #5b6472;
       }
+      /* Sponsorship slot. Visually quieter than the grade above it — an ad
+         that competes with the verdict for attention is an ad that looks like
+         part of the verdict. */
+      .ad-wrap { padding: 0 16px 14px; }
+      .ad-slot {
+        border: 1px solid #eceef2; border-radius: 9px; padding: 10px 11px;
+        background: #fbfbfc;
+      }
+      .ad-head {
+        display: flex; align-items: baseline; gap: 6px;
+        font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .ad-label { font-weight: 700; color: #6b7280; }
+      .ad-by { color: #6b7280; letter-spacing: normal; text-transform: none; font-size: 11px; }
+      .ad-body {
+        display: flex; gap: 9px; align-items: flex-start;
+        text-decoration: none; color: inherit;
+      }
+      .ad-body:hover .ad-headline { text-decoration: underline; }
+      .ad-img { width: 40px; height: 40px; flex: none; border-radius: 6px; object-fit: cover; }
+      .ad-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .ad-headline { font-weight: 600; font-size: 12.5px; }
+      .ad-text { font-size: 11.5px; color: #5b6472; }
+      .ad-note { margin: 7px 0 0; font-size: 10.5px; color: #6b7280; }
+      .ad-body:focus-visible { outline: 2px solid #0b5cab; outline-offset: 2px; border-radius: 6px; }
       .row {
         display: flex; align-items: center; justify-content: space-between;
         gap: 10px; padding: 11px 16px; border-top: 1px solid #eceef2;
@@ -53,6 +79,11 @@
         .grade.good { background: #10321f; color: #6ee7a0; }
         .grade.mixed { background: #33270c; color: #f5c66b; }
         .grade.bad { background: #3a1614; color: #f79c96; }
+        .ad-slot { background: #1d2027; border-color: #2c313a; }
+        .ad-label, .ad-by { color: #9aa1ab; }
+        .ad-text { color: #9aa1ab; }
+        .ad-note { color: #9aa1ab; }
+        .ad-body:focus-visible { outline-color: #6fb0f0; }
         .pledge { color: #6ee7a0; }
         a { color: #6fb0f0; }
       }
@@ -75,6 +106,8 @@
       <p class="basis" id="basis" hidden></p>
     </main>
 
+    <div class="ad-wrap"><div id="ad"></div></div>
+
     <div class="row">
       <label for="enabled">Show the panel on Amazon</label>
       <input type="checkbox" id="enabled" checked />
@@ -86,10 +119,11 @@
 
     <footer>
       <span class="pledge">No affiliate links. Ever.</span>
-      Winnow is free and makes no money today. If that ever changes it will be you paying us,
-      never a merchant. The scoring engine is
-      <a href="https://github.com/Cristians68/Winnow" target="_blank" rel="noopener noreferrer">open source</a>
-      so you can check.
+      Sponsorship is how Winnow will pay for itself, and it only ever appears in Winnow's own
+      windows — never on Amazon, never beside a grade. A sponsor is never told which product you
+      are viewing. No merchant can pay for a better grade; the
+      <a href="https://github.com/Cristians68/Winnow" target="_blank" rel="noopener noreferrer">open-source engine</a>
+      is how you check rather than trust.
     </footer>
 
     <script src="../index.js"></script>

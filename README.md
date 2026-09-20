@@ -21,9 +21,15 @@ It takes no affiliate money, in any mode.
 
 ## How we make money
 
-Today: we don't. Winnow is free, there is nothing to buy, and no money changes hands.
+**Sponsorship, in Winnow's own windows only.** One sponsored message can appear in the toolbar
+popup and the settings page. It never appears on an Amazon page and never appears beside a grade,
+and it can be switched off in Settings.
 
-When that changes, the rule is: **you pay us, nobody else does.**
+**No sponsor is configured in 0.5.0**, so nothing is shown and no advertising request is made —
+the build carries no advertising host permission at all. See [docs/SPONSORSHIP.md](docs/SPONSORSHIP.md)
+for what has to exist before a rail can be switched on, and why none was switched on speculatively.
+
+The rule underneath it is: **no merchant pays us, ever.**
 
 That sentence is the whole product. Winnow exists because the alternatives failed this test:
 
@@ -32,9 +38,23 @@ That sentence is the whole product. Winnow exists because the alternatives faile
 - **RateBud**, the most-recommended Fakespot replacement, ships an undisclosed Amazon Associates
   tag on its "Buy Now" button.
 
-A tool that earns a commission when you buy cannot credibly tell you not to buy. So Winnow carries
-no affiliate links, no sponsored placements, and no merchant relationships of any kind — not as a
-current policy, but as a permanent commitment written into the privacy policy.
+A tool that earns a commission when you buy cannot credibly tell you not to buy. That is exactly
+why the money comes from a slot that *cannot see what you are buying*: the sponsorship request
+carries a schema version, which window is asking, and the formats it can render. There is no field
+in it for a product, a page address, a search term, a grade or an identifier, so a sponsor cannot
+buy placement against a listing even if it wanted to. Two installations send byte-identical
+requests.
+
+So Winnow carries no affiliate links, no referral tags and no merchant relationships of any kind —
+not as a current policy, but as a permanent commitment written into the privacy policy.
+
+How it is kept honest, mechanically:
+
+- `tests/ads-policy.test.ts` pins the request's key set, so a field added later fails the suite.
+- `tests/ads-containment.test.ts` reads the *built* bundles and proves no ad code and no network
+  call reaches the content scripts — each assertion paired with a control proving it can fire.
+- `build.mjs` puts ad hosts in `host_permissions` and never in `content_scripts[].matches`, so ad
+  code can never execute on a page.
 
 The scoring engine in [`src/core`](src/core) is open source specifically so you can verify that no
 merchant is paying for a better grade.
