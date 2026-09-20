@@ -2,6 +2,14 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { matchPatterns } from '../src/core/marketplaces.js';
+import { adMatchPatterns } from '../src/shared/ads/registry.js';
+
+/**
+ * Everything the shipped build may reach: storefronts, plus the ad hosts the
+ * service worker contacts for the sponsorship slot. Content scripts get the
+ * storefront list alone — see the assertions below.
+ */
+const allHosts = () => [...matchPatterns(), ...adMatchPatterns()];
 
 const DIST = 'dist/manifest.json';
 
@@ -17,8 +25,21 @@ describe('generated manifest', () => {
     manifest = JSON.parse(await readFile(DIST, 'utf8'));
   });
 
-  it('lists exactly the registry storefronts as host permissions', () => {
-    expect([...manifest.host_permissions].sort()).toEqual([...matchPatterns()].sort());
+  it('lists exactly the registry storefronts plus the ad hosts', () => {
+    expect([...manifest.host_permissions].sort()).toEqual([...allHosts()].sort());
+  });
+
+  it('grants ad hosts to the worker but never to a content script', () => {
+    // The asymmetry is the point. A host in content_scripts[].matches means
+    // code runs on that origin, and a sponsorship slot has no business
+    // executing on an ad server. host_permissions is what the worker needs.
+    expect(adMatchPatterns().length).toBeGreaterThan(0); // control
+    for (const adHost of adMatchPatterns()) {
+      expect(manifest.host_permissions).toContain(adHost);
+      for (const script of manifest.content_scripts) {
+        expect(script.matches).not.toContain(adHost);
+      }
+    }
   });
 
   it('gives every content script the same host list', () => {
@@ -84,7 +105,7 @@ describe('firefox target', () => {
   // browser and broken in the other.
   it('asks for exactly what the chrome build asks for', () => {
     expect(firefox.permissions).toEqual(chromeManifest.permissions);
-    expect([...firefox.host_permissions].sort()).toEqual([...matchPatterns()].sort());
+    expect([...firefox.host_permissions].sort()).toEqual([...allHosts()].sort());
     expect([...(firefox.optional_host_permissions ?? [])].sort())
       .toEqual([...(chromeManifest.optional_host_permissions ?? [])].sort());
   });
