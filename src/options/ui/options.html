@@ -55,12 +55,33 @@
         body { background: #101216; color: #e8eaed; }
         section { background: #16181d; border-color: #2c313a; }
         .setting { border-color: #24272e; }
+        .ad-slot { background: #1d2027; border-color: #2c313a; }
+        .ad-label, .ad-by, .ad-note { color: #9aa1ab; }
+        .ad-text { color: #9aa1ab; }
+        .ad-body:focus-visible { outline-color: #6fb0f0; }
         .tagline, .setting .help, h2 { color: #9aa1ab; }
         code { background: #24272e; }
         a { color: #6fb0f0; }
         .pledge { border-color: #6ee7a0; color: #6ee7a0; }
         .saved { color: #6ee7a0; }
       }
+
+      /* Sponsorship slot. Deliberately placed inside the section that explains
+         it, so a reader meets the disclosure and the thing it discloses at the
+         same moment rather than finding an unexplained ad further up. */
+      .ad-host:not(:empty) { margin-bottom: 18px; }
+      .ad-slot { border: 1px solid #e4e7ec; border-radius: 10px; padding: 12px 13px; background: #fbfbfc; max-width: 520px; }
+      .ad-head { display: flex; align-items: baseline; gap: 7px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 7px; }
+      .ad-label { font-weight: 700; color: #6b7280; }
+      .ad-by { color: #6b7280; letter-spacing: normal; text-transform: none; font-size: 11.5px; }
+      .ad-body { display: flex; gap: 10px; align-items: flex-start; text-decoration: none; color: inherit; }
+      .ad-body:hover .ad-headline { text-decoration: underline; }
+      .ad-body:focus-visible { outline: 2px solid #0b5cab; outline-offset: 2px; border-radius: 6px; }
+      .ad-img { width: 44px; height: 44px; flex: none; border-radius: 6px; object-fit: cover; }
+      .ad-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .ad-headline { font-weight: 600; font-size: 13.5px; }
+      .ad-text { font-size: 12.5px; color: #5b6472; }
+      .ad-note { margin: 8px 0 0; font-size: 11.5px; color: #6b7280; }
     </style>
   </head>
   <body>
@@ -249,6 +270,7 @@
 
       <h2>How we make money</h2>
       <section>
+        <div id="ad" class="ad-host"></div>
         <div class="prose">
           <p class="pledge">Sponsorship, in Winnow's own windows only.</p>
           <p>

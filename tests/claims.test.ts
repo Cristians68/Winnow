@@ -113,3 +113,37 @@ describe('what the new copy has to state plainly', () => {
     }
   });
 });
+
+/**
+ * The copy says sponsorship appears on two surfaces. Both had better have one.
+ *
+ * This exists because the first version of this feature shipped copy naming
+ * the popup *and* the settings page while only the popup actually mounted a
+ * slot. That is the precise failure mode Winnow exists to detect in other
+ * people's listings, committed in its own privacy policy.
+ */
+describe('surfaces the copy promises', () => {
+  const sources: Record<string, [html: string, script: string]> = {
+    popup: ['src/popup/ui/popup.html', 'src/popup/index.ts'],
+    options: ['src/options/ui/options.html', 'src/options/index.ts'],
+  };
+
+  for (const [surface, [html, script]] of Object.entries(sources)) {
+    it(`${surface} has a slot host and mounts it`, () => {
+      expect(read(html), `${html} has no #ad host`).toMatch(/id="ad"/);
+      expect(read(script), `${script} never calls mountAdSlot`).toMatch(/mountAdSlot/);
+    });
+  }
+
+  it('mounts each surface under its own slot name', () => {
+    expect(read(sources.popup![1])).toMatch(/mountAdSlot\([^)]*'popup'\)/);
+    expect(read(sources.options![1])).toMatch(/mountAdSlot\([^)]*'options'\)/);
+  });
+
+  it('control: these assertions would notice a missing mount', () => {
+    // The regexes are specific enough to fail if the call were removed, and
+    // generic enough to survive a rename of the host variable. Prove they do
+    // not match a file that has no mount at all.
+    expect(read('src/content/index.ts')).not.toMatch(/mountAdSlot/);
+  });
+});

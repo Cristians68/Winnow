@@ -1,6 +1,7 @@
 import { getSettings, setSettings, isDevEndpoint, isTheme, type Settings } from '../shared/settings.js';
 import { clearDisagreements, exportDisagreements, listDisagreements } from '../shared/feedback.js';
 import { clearCache, readCache, CACHE_CAP, CACHE_TTL_DAYS } from '../shared/cache.js';
+import { mountAdSlot } from '../shared/ads/render.js';
 
 function checkbox(id: string): HTMLInputElement {
   const el = document.getElementById(id);
@@ -33,6 +34,11 @@ async function init(): Promise<void> {
       flashSaved();
     });
   }
+
+  // Fires and forgets: the slot filling or staying empty must never delay or
+  // affect anything else on this page.
+  const adHost = document.getElementById('ad');
+  if (adHost) void mountAdSlot(adHost, 'options');
 
   wireTheme(settings);
   await wireDevEndpoint(settings);
