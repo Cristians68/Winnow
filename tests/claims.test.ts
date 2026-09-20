@@ -314,3 +314,62 @@ describe('the copy that goes to store reviewers', () => {
     expect(shipped).toMatch(/Right now, we don't|there is nothing to buy/i);
   });
 });
+
+/**
+ * The limit of "nothing leaves your machine".
+ *
+ * The sponsorship section's strongest sentence said the request "cannot be used
+ * to recognise you or to count you twice". The request *body* cannot: it is
+ * byte-identical between installations, and `tests/ads-policy.test.ts` pins its
+ * key set. The connection can — any request shows the receiving server an IP
+ * address, and approximate location follows from it.
+ *
+ * Winnow's entire claim on this slot is that it does not overclaim, so the one
+ * thing sponsorship cannot prevent has to be written down rather than left for
+ * a critic to find.
+ */
+describe('the honest limit of a request that leaves the machine', () => {
+  /**
+   * Read one `## ` section rather than the whole document. PRIVACY.md already
+   * mentions an IP address under deep analysis, so a document-wide match would
+   * pass whether or not the sponsorship disclosure exists.
+   */
+  const section = (path: string, heading: string) => {
+    const raw = readFileSync(path, 'utf8');
+    const start = raw.indexOf(`## ${heading}`);
+    expect(start, `${path} has no "## ${heading}" section`).toBeGreaterThan(-1);
+    const body = raw.slice(start + 3);
+    const end = body.search(/\n## /);
+    return (end === -1 ? body : body.slice(0, end)).replace(/\s+/g, ' ');
+  };
+
+  it('says inside the sponsorship section that the sponsor sees the connection', () => {
+    expect(
+      section(FILES.privacy, 'Sponsorship'),
+      'the sponsorship section never mentions the IP address a request reveals',
+    ).toMatch(/IP address/i);
+  });
+
+  it('no longer claims the request cannot be used to recognise you', () => {
+    expect(read(FILES.privacy)).not.toMatch(/cannot be used to recognise you/i);
+  });
+
+  it('still says the request body distinguishes nobody', () => {
+    // The precise version of the claim that was too broad. Narrowing it must
+    // not amount to dropping it.
+    expect(section(FILES.privacy, 'Sponsorship')).toMatch(/byte-identical/i);
+  });
+
+  it('control: the section read is scoped, and the old sentence would be caught', () => {
+    // Scoping: a phrase that exists elsewhere in PRIVACY.md must not appear in
+    // the slice, or the assertions above are reading the whole document.
+    const sponsorship = section(FILES.privacy, 'Sponsorship');
+    expect(read(FILES.privacy)).toMatch(/never crawl Amazon using your session/i);
+    expect(sponsorship).not.toMatch(/never crawl Amazon using your session/i);
+
+    // And the regex is wide enough to have matched what was there.
+    expect('so the request cannot be used to recognise you or to count you twice.').toMatch(
+      /cannot be used to recognise you/i,
+    );
+  });
+});

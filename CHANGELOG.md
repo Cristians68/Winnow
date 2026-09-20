@@ -91,6 +91,19 @@ release can change a grade — that is the central design constraint of the feat
   rebuilding the archives from the exact commit being submitted — the `winnow-0.5.0-*.zip` files in
   the repo root were built three commits before HEAD, one of them a fix.
 
+- **The sponsorship section's strongest sentence overclaimed.** It said the request "cannot be
+  used to recognise you or to count you twice". The *body* cannot — it is byte-identical between
+  installations and `tests/ads-policy.test.ts` pins its key set — but any request shows the
+  receiving server an IP address, and the policy did not say so anywhere. It now carries a *What a
+  sponsor can see anyway* subsection that does.
+
+  `tests/claims.test.ts` reads that disclosure from inside the Sponsorship section rather than from
+  the whole file, because PRIVACY.md already mentions an IP address in the deep-analysis section and
+  a document-wide match would have passed without the new text existing at all.
+
+  Stating it costs nothing and explains something: it is why switching sponsorship off prevents the
+  request rather than discarding the response.
+
 - **WCAG 1.4.3 on the new disclosure line.** It first used `#858e9c`, the 3:1 colour chosen during
   the earlier 1.4.11 pass for non-text contrast. This is body text and needs 4.5:1; it measured
   **3.20:1**. Now `#6b7280` (4.67:1) in light and `#9aa1ab` (6.26:1) in dark, both already in the
