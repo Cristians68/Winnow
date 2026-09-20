@@ -88,7 +88,15 @@ export function normaliseCreative(provider: AdProviderId, raw: unknown): AdCreat
   const headline = text(source.headline, MAX_HEADLINE);
   const advertiser = text(source.advertiser, MAX_ADVERTISER);
   // Body is the one genuinely optional string; an empty one renders as no line.
-  const body = source.body === undefined || source.body === '' ? '' : text(source.body, MAX_BODY);
+  //
+  // null counts as absent, matching imageUrl and viewUrl. A sponsor file
+  // author writing "body": null is following the pattern of the rest of the
+  // file, and rejecting the creative over it would lose the ad silently —
+  // an empty slot reads as "no sponsor available", so nothing would ever
+  // report the mistake. A body that is present but not text is still a
+  // rejection: that means the network sent something we do not understand.
+  const absent = source.body === undefined || source.body === null || source.body === '';
+  const body = absent ? '' : text(source.body, MAX_BODY);
 
   if (!headline || !advertiser || body === null) return null;
 

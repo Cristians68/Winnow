@@ -90,6 +90,27 @@ describe('normaliseCreative', () => {
     expect(creative && 'campaignColour' in creative).toBe(false);
   });
 
+
+  it('treats a null body as absent, like the other optional fields', () => {
+    // imageUrl and viewUrl accept null as "not supplied", so a sponsor file
+    // author writing "body": null is following the pattern of the file — and
+    // the example in site/sponsors.json uses null for exactly that reason.
+    // Rejecting the whole creative over it loses the ad silently: an empty
+    // slot is indistinguishable from "no sponsor available", in the one code
+    // path revenue actually comes from.
+    const creative = normaliseCreative('direct', good({ body: null }));
+    expect(creative).not.toBe(null);
+    expect(creative?.body).toBe('');
+  });
+
+  it('still rejects a body that is present but not text', () => {
+    // null means absent; a number or an object means the network sent us
+    // something we do not understand, and that is still a rejection.
+    for (const body of [123, { toString: () => 'x' }, ['a'], true]) {
+      expect(normaliseCreative('direct', good({ body })), `body=${JSON.stringify(body)}`).toBe(null);
+    }
+  });
+
   it('drops an optional image without discarding the creative', () => {
     // Absent is fine; present-but-hostile is not. Those are different cases.
     const creative = normaliseCreative('ethical', good({ imageUrl: undefined, viewUrl: undefined }));
