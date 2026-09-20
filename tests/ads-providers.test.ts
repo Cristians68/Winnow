@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { TEST_ORIGIN, clearTestNetwork, useTestNetwork } from './helpers/ad-fixture.js';
+import { readFileSync } from 'node:fs';
+import { TEST_NETWORK, TEST_ORIGIN, clearTestNetwork, useTestNetwork } from './helpers/ad-fixture.js';
 import {
   BEHAVIOUR_FIELDS,
   MAX_BODY,
@@ -189,5 +190,55 @@ describe('selectCreative', () => {
     const first = selectCreative('direct', list, () => 0)?.advertiser;
     const second = selectCreative('direct', list, () => 0.75)?.advertiser;
     expect(first).not.toBe(second);
+  });
+});
+
+/**
+ * The example sponsor file has to be an example of something that works.
+ *
+ * It is the template a sponsor file gets copied from, and every limit here is
+ * enforced by rejection rather than truncation — so a template that violated
+ * one would teach people to write entries that silently never render.
+ */
+describe('site/sponsors.json', () => {
+  const raw = JSON.parse(readFileSync('site/sponsors.json', 'utf8')) as unknown[];
+
+  it('is a list, which is the shape that rotates', () => {
+    expect(Array.isArray(raw)).toBe(true);
+    expect(raw.length).toBeGreaterThan(0);
+  });
+
+  it('documents the limits, since breaking one fails silently', () => {
+    const comment = String((raw[0] as Record<string, unknown>)._comment ?? '');
+    expect(comment).toMatch(/80/);
+    expect(comment).toMatch(/140/);
+    expect(comment).toMatch(/40/);
+    expect(comment).toMatch(/same origin/i);
+  });
+
+  it('would validate if its placeholder origin were the configured one', () => {
+    // The template's clickUrl points at example.invalid, which no registry
+    // will ever allow — so validate it against a fixture network standing at
+    // that origin. This proves the shape is right without pretending the
+    // placeholder is a real host.
+    useTestNetwork([{ ...TEST_NETWORK, id: 'direct', origin: 'https://example.invalid' }]);
+    try {
+      const entry = { ...(raw[0] as Record<string, unknown>) };
+      delete entry._comment; // stripped so the field-count check below is honest
+      expect(selectCreative('direct', [entry], () => 0)).not.toBe(null);
+    } finally {
+      useTestNetwork();
+    }
+  });
+
+  it('control: a template breaking a limit would be caught', () => {
+    useTestNetwork([{ ...TEST_NETWORK, id: 'direct', origin: 'https://example.invalid' }]);
+    try {
+      const entry = { ...(raw[0] as Record<string, unknown>), headline: 'x'.repeat(MAX_HEADLINE + 1) };
+      delete entry._comment;
+      expect(selectCreative('direct', [entry], () => 0)).toBe(null);
+    } finally {
+      useTestNetwork();
+    }
   });
 });
