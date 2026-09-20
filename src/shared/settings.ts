@@ -22,6 +22,19 @@ export interface Settings {
    * dictate that.
    */
   theme: Theme;
+  /**
+   * Show the sponsorship slot in Winnow's own surfaces.
+   *
+   * On by default, because sponsorship is what pays for the work and a default
+   * nobody finds is the same as no revenue. Off is one click away in options,
+   * and the popup slot links to it.
+   *
+   * This flag gates the *request*, not the rendering — see src/background/ads.ts.
+   * Fetching an ad and then declining to show it would still have told the
+   * network this install exists, which is the thing someone switching ads off
+   * is asking us not to do.
+   */
+  adsEnabled: boolean;
 }
 
 export type Theme = 'system' | 'light' | 'dark';
@@ -33,6 +46,7 @@ export const DEFAULT_SETTINGS: Settings = {
   alwaysExpand: false,
   devApiEndpoint: '',
   theme: 'system',
+  adsEnabled: true,
 };
 
 export function isTheme(value: unknown): value is Theme {

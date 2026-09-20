@@ -63,13 +63,13 @@ describe('ad host registry', () => {
   });
 
   it('rejects a host permission that merely contains a known origin', () => {
-    const [first] = AD_NETWORKS;
+    const first = AD_NETWORKS[0]!;
     expect(isKnownAdHost(`https://evil.com/?x=${first.origin}`)).toBe(false);
   });
 });
 
 describe('isAllowedCreativeUrl', () => {
-  const origin = AD_NETWORKS[0].origin;
+  const origin = AD_NETWORKS[0]!.origin;
 
   it('accepts an https url on a registry origin', () => {
     expect(isAllowedCreativeUrl(`${origin}/creative/1.png`)).toBe(true);
@@ -99,7 +99,7 @@ describe('isAllowedCreativeUrl', () => {
 
 describe('networkFor', () => {
   it('finds a configured network by id', () => {
-    const [first] = AD_NETWORKS;
+    const first = activeNetworks()[0]!;
     expect(networkFor(first.id)?.origin).toBe(first.origin);
   });
 

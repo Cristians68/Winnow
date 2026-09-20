@@ -10,6 +10,7 @@
 
 import { DEFAULT_SETTINGS, SETTINGS_KEY, getSettings, isDevEndpoint } from '../shared/settings.js';
 import { API_ENDPOINT } from '../shared/deep.js';
+import { countView, requestAd } from './ads.js';
 
 const REQUEST_TIMEOUT_MS = 12_000;
 
@@ -72,6 +73,30 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     } finally {
       clearTimeout(timeout);
     }
+  })();
+
+  return true; // keep the message channel open for the async reply
+});
+
+/**
+ * Sponsorship slot for Winnow's own surfaces.
+ *
+ * Registered as its own listener rather than folded into the deep-analysis one
+ * so the two never share a code path. Deep analysis sends page data the user
+ * explicitly asked to have analysed; ads send none and must keep sending none,
+ * and a shared branch is how that distinction erodes.
+ */
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === 'winnow:ad-view') {
+    void countView(message.viewUrl as string);
+    return false;
+  }
+  if (message?.type !== 'winnow:ad-request') return false;
+
+  void (async () => {
+    // Always ok:true — a missing ad is a normal outcome, not an error the UI
+    // should distinguish or report. The slot simply stays empty.
+    sendResponse({ ok: true, creative: await requestAd(message.slot) });
   })();
 
   return true; // keep the message channel open for the async reply

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AD_NETWORKS } from '../src/shared/ads/registry.js';
 import { BEHAVIOUR_FIELDS, MAX_BODY, MAX_HEADLINE, normaliseCreative } from '../src/shared/ads/providers.js';
 
-const ORIGIN = AD_NETWORKS[0].origin;
+const ORIGIN = AD_NETWORKS[0]!.origin;
 
 /** A response with every field valid, used as the base for each hostile variant. */
 function good(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -35,7 +35,7 @@ describe('normaliseCreative', () => {
    * advertiser name dropped is an ad whose payer is hidden, which is worse
    * than showing nothing.
    */
-  const hostile: Array<[string, Record<string, unknown>]> = [
+  const hostile: Array<[string, unknown]> = [
     ['a javascript: click url', good({ clickUrl: 'javascript:alert(1)' })],
     ['a data: click url', good({ clickUrl: 'data:text/html,<script>alert(1)</script>' })],
     ['a click url on an unknown host', good({ clickUrl: 'https://tracker.example.com/c' })],
