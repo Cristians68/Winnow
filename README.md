@@ -21,9 +21,13 @@ It takes no affiliate money, in any mode.
 
 ## How we make money
 
-**Sponsorship, in Winnow's own windows only.** One sponsored message appears in the toolbar popup
-and the settings page. It never appears on an Amazon page and never appears beside a grade, and it
-can be switched off in Settings.
+**Sponsorship, in Winnow's own windows only.** One sponsored message can appear in the toolbar
+popup and the settings page. It never appears on an Amazon page and never appears beside a grade,
+and it can be switched off in Settings.
+
+**No sponsor is configured in 0.5.0**, so nothing is shown and no advertising request is made —
+the build carries no advertising host permission at all. See [docs/SPONSORSHIP.md](docs/SPONSORSHIP.md)
+for what has to exist before a rail can be switched on, and why none was switched on speculatively.
 
 The rule underneath it is: **no merchant pays us, ever.**
 

@@ -10,8 +10,16 @@ traced to the logic that produced it.
 release can change a grade — that is the central design constraint of the feature it adds.
 
 ### Added
-- **Sponsorship, in Winnow's own windows only.** One sponsored message now appears in the toolbar
-  popup and on the settings page. It **never appears on an Amazon page** and never appears beside a
+- **Sponsorship, in Winnow's own windows only.** One sponsored message can appear in the toolbar
+  popup and on the settings page.
+
+  **No sponsor is configured in this release.** Every network in the registry ships
+  `configured: false`, so the build carries no advertising host permission and makes no
+  advertising request at all. EthicalAds has no publisher account yet; the direct-sponsor host is
+  not deployed; PlayYield does not resolve as a service. A host permission granted "for later" is
+  a permission granted, and this project has already shipped one to a domain owned by someone else
+  (`api.winnow.app`). `docs/SPONSORSHIP.md` documents what must exist before each rail is switched
+  on. It **never appears on an Amazon page** and never appears beside a
   grade. Settings → *Show sponsorship in Winnow's own windows* turns it off.
 
   The sponsor is told that a Winnow window opened, and nothing else. The request carries a schema

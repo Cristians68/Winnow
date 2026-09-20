@@ -147,3 +147,50 @@ describe('surfaces the copy promises', () => {
     expect(read('src/content/index.ts')).not.toMatch(/mountAdSlot/);
   });
 });
+
+/**
+ * Copy must match what the build actually does, in tense as well as fact.
+ *
+ * v0.3.0 had to strip "false revenue claims" — the popup said "We make money
+ * from subscriptions" and the site said "You pay us. Nobody else does.", both
+ * present tense, both describing something that did not exist. This release
+ * walked straight back into it: the sponsorship copy was written in the
+ * present tense while every network in the registry ships configured:false,
+ * so the extension shows no sponsor at all.
+ *
+ * The rule: while no network is configured, no surface may state as present
+ * fact that a sponsored message is shown.
+ */
+describe('copy matches the configured state', () => {
+  it('states plainly that no sponsor is configured, while none is', async () => {
+    const { activeNetworks } = await import('../src/shared/ads/registry.js');
+    if (activeNetworks().length > 0) return; // a rail is live; rule does not apply
+
+    for (const [name, path] of [
+      ['privacy', FILES.privacy],
+      ['readme', FILES.readme],
+      ['options', FILES.options],
+    ] as const) {
+      expect(read(path), `${name} does not disclose that no sponsor is configured`).toMatch(
+        /no sponsor is configured/i,
+      );
+    }
+  });
+
+  it('never claims in the present tense that a sponsored message is shown', async () => {
+    const { activeNetworks } = await import('../src/shared/ads/registry.js');
+    if (activeNetworks().length > 0) return;
+
+    for (const [name, text] of all()) {
+      expect(text, `${name} claims a sponsor is shown when none is configured`).not.toMatch(
+        /Winnow shows one sponsored message|sponsored message appears in|Sponsorship pays for Winnow/i,
+      );
+    }
+  });
+
+  it('control: the tense rule would catch the wording it was written for', () => {
+    // The exact sentence this release shipped and had to correct.
+    const offending = 'Winnow shows one sponsored message, in its own two windows only.';
+    expect(offending).toMatch(/Winnow shows one sponsored message/i);
+  });
+});
