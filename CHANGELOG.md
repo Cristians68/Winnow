@@ -66,6 +66,31 @@ release can change a grade — that is the central design constraint of the feat
   every future edit to the money section.
 
 ### Fixed
+- **The two documents a store reviewer reads were left out of that rewrite.**
+  `docs/store-listing.md` becomes the public store page and the answers typed into the submission
+  form, and `docs/host-permission-justification.txt` is pasted into the permission field. Both were
+  last edited for 0.4.0. The listing still read "Right now, we don't" and "no sponsored
+  placements"; both files still promised the extension "makes no network requests of any kind" and
+  "has no server to send anything to"; and the `storage` justification still claimed "there is no
+  code path in the extension capable of sending any of it anywhere", which the ad broker had
+  falsified.
+
+  This is the same failure as the copy the release did fix, in the one place where it is an
+  attestation to Google and Mozilla rather than a sentence on a web page — and the listing's own
+  note warns that "a disclosure that silently goes stale is worse than a broad one". It had now
+  gone stale twice, the same way, which is why the fix is a test and not just an edit: both files
+  are read by `tests/claims.test.ts`, so stale listing copy fails CI instead of a review.
+
+  The data-usage disclosure was re-argued rather than re-ticked. It stays "none", but on the
+  grounds that the request's pinned key set carries no user data — not on "no code path can send
+  it", which is no longer true. It now names the two things to revisit before a live rail ships,
+  including that a sponsor's server necessarily observes the connection itself: the IP address,
+  and approximate location from it. That is the honest limit of "nothing leaves your machine".
+
+  The pre-submission checklist gained the steps this release proved were missable, including
+  rebuilding the archives from the exact commit being submitted — the `winnow-0.5.0-*.zip` files in
+  the repo root were built three commits before HEAD, one of them a fix.
+
 - **WCAG 1.4.3 on the new disclosure line.** It first used `#858e9c`, the 3:1 colour chosen during
   the earlier 1.4.11 pass for non-text contrast. This is body text and needs 4.5:1; it measured
   **3.20:1**. Now `#6b7280` (4.67:1) in light and `#9aa1ab` (6.26:1) in dark, both already in the

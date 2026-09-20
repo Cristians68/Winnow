@@ -21,6 +21,11 @@ const FILES = {
   popup: 'src/popup/ui/popup.html',
   options: 'src/options/ui/options.html',
   site: 'site/index.html',
+  // The two documents a store reviewer reads, and whose text becomes the public
+  // store page. They were written before sponsorship existed and were not part
+  // of the release that falsified them, so they are pinned here too.
+  store: 'docs/store-listing.md',
+  justification: 'docs/host-permission-justification.txt',
 };
 
 /**
@@ -192,5 +197,120 @@ describe('copy matches the configured state', () => {
     // The exact sentence this release shipped and had to correct.
     const offending = 'Winnow shows one sponsored message, in its own two windows only.';
     expect(offending).toMatch(/Winnow shows one sponsored message/i);
+  });
+});
+
+/**
+ * The copy that goes to a store reviewer.
+ *
+ * `docs/store-listing.md` becomes the public store page and the answers typed
+ * into the submission form; `docs/host-permission-justification.txt` is pasted
+ * into the permission field. Both were last edited for 0.4.0, before
+ * sponsorship existed, and the release that rewrote every user-facing surface
+ * left them behind — so the most public copy Winnow has was still promising
+ * "no sponsored placements" while the build carried a sponsorship slot.
+ *
+ * A false monetisation claim here is not an embarrassment, it is an attestation
+ * to Google and Mozilla. These assertions hold both files to the standard the
+ * storage justification already sets for itself in its own note: a disclosure
+ * that silently goes stale is worse than a broad one.
+ */
+describe('the copy that goes to store reviewers', () => {
+  const REVIEWER_FILES = [
+    ['store', FILES.store],
+    ['justification', FILES.justification],
+  ] as const;
+
+  it('no longer promises that no network request is ever made', () => {
+    // False since the ad broker shipped, whether or not a rail is configured:
+    // the code path exists, and the claim is about the extension, not the build.
+    for (const [name, path] of REVIEWER_FILES) {
+      expect(read(path), `${name} still promises no network requests of any kind`).not.toMatch(
+        /no network requests of any kind/i,
+      );
+    }
+  });
+
+  it('no longer claims there is no server to send anything to', () => {
+    for (const [name, path] of REVIEWER_FILES) {
+      expect(read(path), `${name} still claims there is nothing to send to`).not.toMatch(
+        /no server to send anything to/i,
+      );
+    }
+  });
+
+  it('no longer claims no code path can transmit what is stored', () => {
+    expect(read(FILES.store)).not.toMatch(/no code path in the extension capable of sending/i);
+  });
+
+  it('still says that what is stored is never transmitted', () => {
+    // This is the part that stayed true, and the data disclosure rests on it.
+    // The edit that removes the overclaim must not remove the claim.
+    expect(read(FILES.store)).toMatch(/none of it is transmitted/i);
+  });
+
+  it('discloses sponsorship and names the boundary', () => {
+    const store = read(FILES.store);
+    expect(store, 'the listing never mentions sponsorship').toMatch(/sponsor/i);
+    expect(store, 'the listing does not say where sponsorship cannot appear').toMatch(
+      /never appears on an Amazon page/i,
+    );
+  });
+
+  it('tells a reviewer the request carries no product and no identifier', () => {
+    // The question a reviewer actually has about an ad-bearing extension.
+    expect(read(FILES.store)).toMatch(/not the product|no field/i);
+    expect(read(FILES.justification)).toMatch(/sponsor/i);
+  });
+
+  it('still states the load-bearing refusal of seller payment', () => {
+    expect(read(FILES.store)).toMatch(
+      /payment[^.]*from any seller, brand, marketplace or advertiser to influence, alter, suppress or promote/i,
+    );
+  });
+
+  it('states that no sponsor is configured, while none is', async () => {
+    const { activeNetworks } = await import('../src/shared/ads/registry.js');
+    if (activeNetworks().length > 0) return; // a rail is live; rule does not apply
+
+    for (const [name, path] of REVIEWER_FILES) {
+      expect(read(path), `${name} does not disclose that no sponsor is configured`).toMatch(
+        /no sponsor is configured/i,
+      );
+    }
+  });
+
+  it('no longer tells shoppers the extension makes no network requests', () => {
+    // This one is on the public store page, not just the reviewer form.
+    expect(read(FILES.store)).not.toMatch(/makes no network requests, has no server/i);
+  });
+
+  it('scopes the promise about what leaves the browser', () => {
+    // "No data leaves your browser. Ever." is the same trap one sentence wider:
+    // true of everything Winnow reads, and false the moment a sponsorship
+    // request is made — which carries nothing about you, but is a request.
+    const store = read(FILES.store);
+    expect(store).not.toMatch(/No data leaves your browser\. Ever\./i);
+    expect(store).not.toMatch(/transmittable by any code/i);
+    expect(store, 'the listing does not say what does stay put').toMatch(
+      /nothing about what you view leaves your browser/i,
+    );
+  });
+
+  it('control: these assertions would catch the sentences they were written for', () => {
+    // The literal text both files carried before this change. If the regexes
+    // were too narrow to match it, the suite would have passed vacuously.
+    const shipped = [
+      'makes no network requests of any kind — the extension has no server to send anything to.',
+      'There is no code path in the extension capable of sending any of it anywhere',
+      'Winnow carries no affiliate links, no referral tags, no sponsored placements',
+      "Right now, we don't. Winnow is free and there is nothing to buy.",
+    ].join(' ');
+
+    expect(shipped).toMatch(/no network requests of any kind/i);
+    expect(shipped).toMatch(/no server to send anything to/i);
+    expect(shipped).toMatch(/no code path in the extension capable of sending/i);
+    expect(shipped).toMatch(/no sponsored placements/i);
+    expect(shipped).toMatch(/Right now, we don't|there is nothing to buy/i);
   });
 });

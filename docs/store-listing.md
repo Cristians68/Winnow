@@ -41,8 +41,9 @@ It analyses the reviews on any Amazon product page and shows you an ADJUSTED RAT
 rating the product would have if apparently manipulated reviews were removed — along with a
 plain-English breakdown of exactly why.
 
-Everything runs on your own device. Winnow makes no network requests, has no server, and has
-no account.
+Everything that produces a grade runs on your own device. Winnow has no account, and the
+analysis makes no network requests — it reads the page your browser already rendered and
+scores it there.
 
 
 WHAT IT CHECKS
@@ -61,12 +62,26 @@ WHAT IT CHECKS
 
 HOW WE MAKE MONEY
 
-Right now, we don't. Winnow is free and there is nothing to buy. If that ever changes, it
-will be you paying us — never a merchant.
+Sponsorship, in Winnow's own two windows only: the toolbar popup and the settings page.
 
-Winnow carries no affiliate links, no referral tags, no sponsored placements and no merchant
-relationships — permanently, as a binding commitment in our privacy policy. A tool that earns
-a commission when you buy cannot credibly tell you not to buy.
+No sponsor is configured in this version, so nothing sponsored is shown and no advertising
+request is made at all. This is what happens when one is.
+
+A sponsored message never appears on an Amazon page, never appears beside a grade, and never
+appears in the analysis panel. It is labelled, and Settings turns it off.
+
+What the sponsor is told: that a Winnow window opened. The request carries a schema version,
+which of the two windows is asking, and the formats that window can draw — not the product,
+not the page address, not your search terms, not the grade, and no identifier of any kind.
+Because the sponsor is never told what you are looking at, a sponsor cannot buy placement
+against a product, a listing or a seller: the information needed to do it never leaves your
+machine.
+
+What that buys nobody: Winnow carries no affiliate links, no referral tags, no commissions and
+no merchant relationships, and does not and will not accept payment, in any form, from any
+seller, brand, marketplace or advertiser to influence, alter, suppress or promote any rating,
+grade or result it produces. That is a binding commitment in our privacy policy. A tool that
+earns a commission when you buy cannot credibly tell you not to buy.
 
 The scoring engine is open source so you can verify no merchant is paying for a better grade.
 
@@ -85,12 +100,12 @@ page" is never a verdict about the product.
 
 PRIVACY
 
-• No data leaves your browser. Ever.
+• Nothing about you and nothing about what you view leaves your browser.
 • No analytics, telemetry or tracking of any kind.
 • No account, no sign-up, no personal information.
 • The only permission requested is "storage", used to remember your settings, the grades
   you marked as wrong, and the grades Winnow worked out — all on your device, all erasable
-  from the options page, none of it transmittable by any code in Winnow.
+  from the options page, and none of it is ever put into a network request.
 • Winnow never crawls Amazon using your session — it reads only what your browser already
   rendered. Automated scraping through a logged-in session can put YOUR Amazon account at
   risk, and we will not do that to you.
@@ -131,14 +146,26 @@ Used to persist three things locally, all of them erasable from the options page
    is capped at 500 entries, expires after 90 days, and is disclosed in the privacy policy
    and on the options page.
 
-No data of any kind is transmitted. There is no code path in the extension capable of
-sending any of it anywhere, which is verifiable in the public source.
+None of it is transmitted. Nothing in Winnow reads these stored values into a network
+request, which is verifiable in the public source.
+
+Winnow does contain one network path, and this is not it: when a sponsor is configured, the
+background worker fetches a sponsored message for Winnow's own popup and settings page. That
+request is assembled from a fixed set of keys — a schema version, which of the two windows
+asked, and the formats it can draw — and carries none of the values above, no page address
+and no identifier. No sponsor is configured in this version, so the shipped build makes no
+such request and carries no advertising host permission.
 ```
 
 Note for future edits: item 3 is browsing history in substance, and this justification says
 so in those words on purpose. An earlier version of this text read "No user data, browsing
 history, or product data is stored", which was true when written and became false the moment
 the grade cache shipped. A disclosure that silently goes stale is worse than a broad one.
+
+It went stale a second time, the same way: this file still said the extension was incapable
+of sending anything anywhere after 0.5.0 added the sponsorship path, because that release
+rewrote every user-facing surface and not the two documents a reviewer reads. Both are now
+read by `tests/claims.test.ts`, so the next release cannot leave them behind quietly.
 
 ### Host permissions (`*://*.amazon.*/*`)
 
@@ -148,8 +175,14 @@ to function. The content script reads the already-rendered product rating, ratin
 visible reviews, scores them locally, and injects a results panel.
 
 Access is limited to Amazon storefront domains only. Winnow requests no access to any other
-site, does not use the "tabs" permission, and makes no network requests of any kind — the
-extension has no server to send anything to.
+site and does not use the "tabs" permission. The content script makes no network requests at
+all, so nothing read from an Amazon page is sent anywhere — which the test suite proves
+against the built bundle rather than asserting in prose.
+
+This permission has nothing to do with sponsorship. A sponsored message, when a sponsor is
+configured, is fetched by the background worker for Winnow's own popup and settings page, is
+drawn only there, and never appears on an Amazon page. No sponsor is configured in this
+version, so this build carries no advertising host permission at all.
 ```
 
 ### Optional host permissions (`http://localhost/*`, `http://127.0.0.1/*`)
@@ -183,10 +216,24 @@ Tick **none** of the data collection categories. Then affirm:
 This stays "none" after the 0.4.0 grade cache, and the reasoning should be checked rather
 than assumed each release: Chrome's disclosure asks what the extension **collects**, which
 it defines as transmitting off the user's device. Winnow stores a record of product pages
-opened, but nothing leaves the browser and no code path can send it. If a hosted endpoint is
-ever enabled, revisit this section first — it would move "Website content" from not-collected
-to collected, and that answer is attested to Google.
+opened, and nothing reads it into a request.
 
+**Checked again for 0.5.0 sponsorship. It stays "none" — but the reasoning changed.** There
+is now a network path in the extension, so "no code path can send it" is no longer the
+argument. The argument is the request's contents: a sponsorship request carries a schema
+version, a window name and a format list, and `tests/ads-policy.test.ts` pins that key set so
+a field added later fails the suite rather than leaking quietly. None of it is user data, so
+nothing is collected. It is moot in this build, which configures no sponsor and makes no
+request at all.
+
+Two things to revisit before submitting a build where that is no longer true:
+
+1. A live sponsorship rail means the sponsor's server observes the connection itself — the IP
+   address, and approximate location from it. That is not one of Chrome's collection
+   categories and is not something Winnow transmits, but it is the honest limit of "nothing
+   leaves your machine", and any surface using that phrase should say so.
+2. A hosted deep-analysis endpoint — anything beyond the loopback developer setup — would
+   move "Website content" from not-collected to collected. That answer is attested to Google.
 
 - [x] I do not sell or transfer user data to third parties, outside of approved use cases
 - [x] I do not use or transfer user data for purposes unrelated to my item's single purpose
@@ -206,7 +253,8 @@ Privacy policy URL: link to the hosted copy of `PRIVACY.md`.
    inspectable rather than a black box.
 4. **The honesty state** — a low-confidence result showing the "estimate, not proof" basis line.
    Differentiates from competitors who project false certainty.
-5. **The options page** — the "how we make money" pledge and the methodology notes.
+5. **The options page** — the "How we make money" section, which now states the sponsorship
+   position and shows its off switch, plus the methodology notes.
 
 Do not fabricate these. Capture them from real product pages once the parser is verified against
 live Amazon.
@@ -221,3 +269,12 @@ live Amazon.
 - [ ] Repo public at the URL referenced in the UI footer, README and privacy policy
 - [ ] `npm run package` passes its manifest guard
 - [ ] Version bumped in `package.json` (the manifest inherits it at build time)
+- [ ] `npm test` green — `tests/claims.test.ts` reads this file, so stale copy here fails CI
+- [ ] Zips rebuilt from the exact commit being submitted. The 0.5.0 archives in the repo root
+      were built before three later commits, one of them a fix, and an archive that is merely
+      *near* the tag is the kind of thing nobody notices until a bug report fails to reproduce
+- [ ] Money section re-read against `activeNetworks()` in `src/shared/ads/registry.ts`. If a
+      rail is live, the "no sponsor is configured" sentences here are false, and the Data usage
+      disclosures section above has two items to revisit first
+- [ ] Generated `dist/manifest.json` inspected for advertising hosts in `host_permissions` —
+      and for their absence while no rail is configured
