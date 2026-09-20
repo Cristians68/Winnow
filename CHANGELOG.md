@@ -39,6 +39,12 @@ release can change a grade — that is the central design constraint of the feat
   code cannot execute on a page. Every one of those checks is paired with a control proving it can
   fail.
 
+- **Rotating sponsors for the self-hosted rail.** `site/sponsors.json` may hold a list, and
+  Winnow picks one per render. That keeps the host a static file — no server, no request logs,
+  nothing running — and it is the privacy-preserving choice too, since a server that rotated for
+  us would have to observe every request to do it. An entry that fails validation is skipped
+  rather than taking the rest of the file down with it.
+
 - **`build.mjs --outdir=`.** Three test suites build the extension, and vitest runs them in
   parallel worker processes. They shared `dist/`, which `build.mjs` removes on its first line, so
   whichever suite lost the race read a half-written tree and failed with `EEXIST: mkdir

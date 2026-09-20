@@ -1,0 +1,11 @@
+[
+  {
+    "_comment": "EXAMPLE FILE — not served as real sponsorship until the `direct` network in src/shared/ads/registry.ts is configured with the domain this is deployed to. Replace these entries with real sponsors, or delete the file. An entry Winnow cannot validate is skipped, so a broken one does not take the others down; see selectCreative in src/shared/ads/providers.ts.",
+    "headline": "Your sponsor's one-line pitch",
+    "body": "One sentence of supporting copy. Keep it under 140 characters.",
+    "advertiser": "Sponsor Name",
+    "clickUrl": "https://example.invalid/go/sponsor-name",
+    "imageUrl": null,
+    "viewUrl": null
+  }
+]

@@ -231,6 +231,31 @@ describe('ad broker', () => {
     expect(response.creative).toBe(null);
   });
 
+  it('accepts a sponsor file holding a list', async () => {
+    // The direct rail serves a static JSON file with several sponsors in it.
+    // If the broker only understood a single object, that whole rail would be
+    // dead on arrival while every unit test of selectCreative stayed green.
+    await loadWorker({ adsEnabled: true }, async () =>
+      new Response(JSON.stringify([creativePayload()]), { status: 200 }),
+    );
+    const response = await send({ type: 'winnow:ad-request', slot: 'popup' });
+    expect((response.creative as { advertiser: string } | null)?.advertiser).toBe('Widget Co');
+  });
+
+  it('still accepts a single creative object', async () => {
+    await loadWorker({ adsEnabled: true });
+    const response = await send({ type: 'winnow:ad-request', slot: 'popup' });
+    expect((response.creative as { advertiser: string } | null)?.advertiser).toBe('Widget Co');
+  });
+
+  it('renders nothing when a list holds only invalid entries', async () => {
+    await loadWorker({ adsEnabled: true }, async () =>
+      new Response(JSON.stringify([{ headline: 'broken' }]), { status: 200 }),
+    );
+    const response = await send({ type: 'winnow:ad-request', slot: 'popup' });
+    expect(response.creative).toBe(null);
+  });
+
   it('never contacts an unconfigured network', async () => {
     await loadWorker({ adsEnabled: true });
     await send({ type: 'winnow:ad-request', slot: 'popup' });

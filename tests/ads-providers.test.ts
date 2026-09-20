@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { TEST_ORIGIN, clearTestNetwork, useTestNetwork } from './helpers/ad-fixture.js';
-import { BEHAVIOUR_FIELDS, MAX_BODY, MAX_HEADLINE, normaliseCreative } from '../src/shared/ads/providers.js';
+import {
+  BEHAVIOUR_FIELDS,
+  MAX_BODY,
+  MAX_HEADLINE,
+  normaliseCreative,
+  selectCreative,
+} from '../src/shared/ads/providers.js';
 
 const ORIGIN = TEST_ORIGIN;
 
@@ -106,5 +112,61 @@ describe('normaliseCreative', () => {
     // Prove the helper can return non-null, so the 19 rejections above mean
     // "validation fired", not "normaliseCreative always returns null".
     expect(normaliseCreative('ethical', good())).not.toBe(null);
+  });
+});
+
+/**
+ * A self-hosted sponsor file holds more than one sponsor.
+ *
+ * The direct rail is the one that can earn without anybody's approval, and a
+ * file that can hold exactly one sponsor is a file you have to redeploy to
+ * rotate. Selecting here rather than server-side keeps the host a static
+ * document — no server, no logs, nothing to run.
+ */
+describe('selectCreative', () => {
+  it('accepts a single creative object', () => {
+    const creative = selectCreative('direct', good(), () => 0);
+    expect(creative?.advertiser).toBe('Widget Co');
+  });
+
+  it('accepts a list and picks one', () => {
+    const list = [good({ advertiser: 'First Co' }), good({ advertiser: 'Second Co' })];
+    expect(selectCreative('direct', list, () => 0)?.advertiser).toBe('First Co');
+    // 0.99 must land on the last entry, not past it.
+    expect(selectCreative('direct', list, () => 0.99)?.advertiser).toBe('Second Co');
+  });
+
+  it('never indexes past the end of the list', () => {
+    // Math.random() is documented as < 1, but a caller could pass anything and
+    // an out-of-range index would silently return undefined, which normalises
+    // to null and looks exactly like "no sponsor available".
+    const list = [good({ advertiser: 'Only Co' })];
+    for (const r of [0, 0.5, 0.999999, 1, 1.5, -1]) {
+      expect(selectCreative('direct', list, () => r)?.advertiser, `r=${r}`).toBe('Only Co');
+    }
+  });
+
+  it('skips an invalid entry rather than showing nothing', () => {
+    // One malformed sponsor must not take the whole file down with it — but a
+    // malformed one is still never rendered.
+    const list = [{ headline: 'broken' }, good({ advertiser: 'Valid Co' })];
+    expect(selectCreative('direct', list, () => 0)?.advertiser).toBe('Valid Co');
+  });
+
+  it('returns null when every entry is invalid', () => {
+    expect(selectCreative('direct', [{ headline: 'broken' }, null], () => 0)).toBe(null);
+  });
+
+  it('returns null for an empty list', () => {
+    expect(selectCreative('direct', [], () => 0)).toBe(null);
+  });
+
+  it('control: selection can return different sponsors', () => {
+    // Otherwise "picks one" would pass for an implementation that always
+    // returns the first entry, and rotation would silently not rotate.
+    const list = [good({ advertiser: 'A Co' }), good({ advertiser: 'B Co' })];
+    const first = selectCreative('direct', list, () => 0)?.advertiser;
+    const second = selectCreative('direct', list, () => 0.75)?.advertiser;
+    expect(first).not.toBe(second);
   });
 });

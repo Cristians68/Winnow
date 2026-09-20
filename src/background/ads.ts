@@ -17,7 +17,7 @@
 
 import { getSettings } from '../shared/settings.js';
 import { activeNetworks, isAllowedCreativeUrl } from '../shared/ads/registry.js';
-import { decisionBody, decisionUrl, normaliseCreative } from '../shared/ads/providers.js';
+import { decisionBody, decisionUrl, selectCreative } from '../shared/ads/providers.js';
 import type { AdCreative, AdSlot } from '../shared/ads/types.js';
 
 /**
@@ -63,7 +63,10 @@ export async function requestAd(slot: AdSlot): Promise<AdCreative | null> {
     });
 
     if (!response.ok) return null;
-    return normaliseCreative(network.id, await response.json());
+    // selectCreative, not normaliseCreative: a self-hosted sponsor file holds a
+    // list so it can rotate without a redeploy, and a network returns a single
+    // decision. Both shapes arrive here.
+    return selectCreative(network.id, await response.json());
   } catch {
     // Offline, aborted, blocked by the user's own filter list, or malformed
     // JSON. All of them mean the same thing here: show no ad, say nothing.

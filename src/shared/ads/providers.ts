@@ -107,6 +107,45 @@ export function normaliseCreative(provider: AdProviderId, raw: unknown): AdCreat
 }
 
 /**
+ * Pick a creative from whatever a network returned.
+ *
+ * A self-hosted sponsor file is the rail that can earn without anybody's
+ * approval, and one that holds a single sponsor is one you must redeploy to
+ * rotate. Accepting a list and choosing here keeps the host a static document:
+ * no server, no request logs, nothing running.
+ *
+ * Choosing client-side is also the privacy-preserving option. A server that
+ * rotated for us would need to see each request to do it, and the entire point
+ * of this design is that nothing observes the slot being filled.
+ *
+ * `random` is injectable so the tests can pin the choice; production passes
+ * Math.random.
+ */
+export function selectCreative(
+  provider: AdProviderId,
+  raw: unknown,
+  random: () => number = Math.random,
+): AdCreative | null {
+  if (!Array.isArray(raw)) return normaliseCreative(provider, raw);
+  if (raw.length === 0) return null;
+
+  // Clamped rather than trusted. Math.random() is documented as < 1, but an
+  // out-of-range index would yield undefined, normalise to null, and look
+  // exactly like "no sponsor available" — a silent failure in the one place
+  // revenue actually comes from.
+  const index = Math.min(raw.length - 1, Math.max(0, Math.floor(random() * raw.length)));
+
+  // Try the chosen entry, then the rest in order. One malformed sponsor must
+  // not take the whole file down with it, but a malformed one is still never
+  // rendered — normaliseCreative decides that, not this function.
+  for (let offset = 0; offset < raw.length; offset += 1) {
+    const creative = normaliseCreative(provider, raw[(index + offset) % raw.length]);
+    if (creative) return creative;
+  }
+  return null;
+}
+
+/**
  * Where to send a decision request.
  *
  * For a GET network the request *is* the URL, so the slot and the network's

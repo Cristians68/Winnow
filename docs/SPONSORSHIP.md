@@ -45,20 +45,33 @@ worth more to the right sponsor than a CPM auction will ever pay for it.
    writing product owned by somebody else. Verify with `npx vercel project ls` that the project is
    in your account before using its domain anywhere.
 
-2. Add `site/sponsors.json`:
+2. Edit `site/sponsors.json` — it already exists with one example entry:
    ```json
-   {
-     "headline": "Your sponsor's one-line pitch",
-     "body": "One sentence of supporting copy.",
-     "advertiser": "Sponsor Name",
-     "clickUrl": "https://<your-domain>/go/sponsor-name",
-     "imageUrl": null,
-     "viewUrl": null
-   }
+   [
+     {
+       "headline": "Your sponsor's one-line pitch",
+       "body": "One sentence of supporting copy.",
+       "advertiser": "Sponsor Name",
+       "clickUrl": "https://<your-domain>/go/sponsor-name",
+       "imageUrl": null,
+       "viewUrl": null
+     }
+   ]
    ```
-   `clickUrl` and `imageUrl` must be on the same origin as the manifest — see
+   A **list** rotates: Winnow picks one per slot render, client-side. That keeps the host a static
+   file — no server, no request logs, nothing running — and it is also the privacy-preserving
+   choice, since a server that rotated for us would have to observe every request to do it. An
+   entry that fails validation is skipped rather than taking the file down with it.
+
+   `clickUrl` and `imageUrl` must be on the **same origin** as the manifest — see
    `isAllowedCreativeUrl`. Use a redirect path on your own domain (`/go/...`) so you can measure
-   clicks and swap destinations without shipping an extension update.
+   clicks and swap destinations without shipping an extension update, which is the difference
+   between selling a sponsorship and selling a hardcoded link.
+
+   Rotation happens per render, so a sponsor paying for a share of impressions gets roughly that
+   share. If you sell unequal shares, repeat an entry — two copies of a sponsor is two thirds of
+   a three-entry file. There is deliberately no weight field: a number that silently changes what
+   an advertiser paid for is worth less than a list you can read.
 
 3. In `src/shared/ads/registry.ts`, on the `direct` entry: set `origin` to your deployed domain
    and `configured: true`.
