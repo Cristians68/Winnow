@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { AD_NETWORKS } from '../src/shared/ads/registry.js';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { TEST_ORIGIN, clearTestNetwork, useTestNetwork } from './helpers/ad-fixture.js';
 import { BEHAVIOUR_FIELDS, MAX_BODY, MAX_HEADLINE, normaliseCreative } from '../src/shared/ads/providers.js';
 
-const ORIGIN = AD_NETWORKS[0]!.origin;
+const ORIGIN = TEST_ORIGIN;
+
+beforeAll(() => useTestNetwork());
+afterAll(() => clearTestNetwork());
 
 /** A response with every field valid, used as the base for each hostile variant. */
 function good(overrides: Record<string, unknown> = {}): Record<string, unknown> {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   AD_NETWORKS,
   activeNetworks,
@@ -7,6 +7,7 @@ import {
   isKnownAdHost,
   networkFor,
 } from '../src/shared/ads/registry.js';
+import { TEST_ORIGIN, clearTestNetwork, useTestNetwork } from './helpers/ad-fixture.js';
 
 /**
  * The ad host registry is the single place a host Winnow may talk to for
@@ -69,7 +70,13 @@ describe('ad host registry', () => {
 });
 
 describe('isAllowedCreativeUrl', () => {
-  const origin = AD_NETWORKS[0]!.origin;
+  // Uses the fixture network: every shipped network is configured:false, so
+  // the real registry allows no creative URL at all right now. That is correct
+  // behaviour and is asserted separately below, but it would make these cases
+  // pass for the wrong reason.
+  const origin = TEST_ORIGIN;
+  beforeEach(() => useTestNetwork());
+  afterEach(() => clearTestNetwork());
 
   it('accepts an https url on a registry origin', () => {
     expect(isAllowedCreativeUrl(`${origin}/creative/1.png`)).toBe(true);
@@ -98,6 +105,9 @@ describe('isAllowedCreativeUrl', () => {
 });
 
 describe('networkFor', () => {
+  beforeEach(() => useTestNetwork());
+  afterEach(() => clearTestNetwork());
+
   it('finds a configured network by id', () => {
     const first = activeNetworks()[0]!;
     expect(networkFor(first.id)?.origin).toBe(first.origin);
@@ -107,5 +117,53 @@ describe('networkFor', () => {
     // Falling back to "some network" would mean a typo silently routes ad
     // traffic somewhere nobody chose.
     expect(networkFor('playyield-unconfigured' as never)).toBe(null);
+  });
+});
+
+/**
+ * Invariants a network must satisfy before it may be contacted.
+ *
+ * Each of these is a mistake that has either happened here or came within one
+ * edit of happening: a host permission to a domain somebody else owns, and a
+ * network switched on before the credential it needs was filled in.
+ */
+describe('configured networks are actually usable', () => {
+  it('never points at a placeholder domain', () => {
+    // `.invalid` is reserved by RFC 2606 and can never resolve. Any network
+    // still using one is an adapter waiting for a real endpoint, and must not
+    // be carrying a host permission.
+    for (const network of activeNetworks()) {
+      expect(network.origin, `${network.id} is configured but points at a placeholder`)
+        .not.toMatch(/\.invalid($|\/)/);
+    }
+  });
+
+  it('has every required parameter filled in', () => {
+    // EthicalAds will not serve without a publisher id. Flipping `configured`
+    // without filling it would ship a host permission the build cannot use,
+    // and an empty slot nobody could explain.
+    for (const network of activeNetworks()) {
+      for (const [key, value] of Object.entries(network.params)) {
+        expect(value.trim(), `${network.id} is configured but ${key} is empty`).not.toBe('');
+      }
+    }
+  });
+
+  it('control: these invariants would reject the current placeholders', () => {
+    // Every assertion above iterates activeNetworks(), which is empty while no
+    // network is switched on — so all of them pass vacuously today. Prove the
+    // rules themselves reject what they are meant to reject.
+    const placeholders = AD_NETWORKS.filter((n) => /\.invalid($|\/)/.test(n.origin));
+    expect(placeholders.length, 'no placeholder network left to check the rule against')
+      .toBeGreaterThan(0);
+    for (const network of placeholders) {
+      expect(network.configured, `${network.id} is a placeholder AND configured`).toBe(false);
+    }
+
+    const unfilled = AD_NETWORKS.filter((n) => Object.values(n.params).some((v) => !v.trim()));
+    for (const network of unfilled) {
+      expect(network.configured, `${network.id} has an empty required param AND is configured`)
+        .toBe(false);
+    }
   });
 });

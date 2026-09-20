@@ -34,25 +34,85 @@ export const AD_NETWORKS: readonly AdNetwork[] = [
     origin: 'https://server.ethicalads.io',
     path: '/api/v1/decision/',
     label: 'EthicalAds',
+    // Verified reachable: the host resolves and answers (Cloudflare-fronted),
+    // unlike the parked domain below. Its documented client issues a GET with
+    // query parameters, so that is the transport here rather than the POST
+    // body an ad API is usually assumed to want.
+    transport: 'GET',
+    // EthicalAds requires a publisher account id and will not serve without
+    // one. Empty here because this build has no account yet — which is why
+    // `configured` is false. Fill both in together, never one without the
+    // other, or the build ships a host permission it cannot use.
+    params: { publisher: '', ad_types: 'text-v1,image-v1' },
     // Privacy-first by construction: no cookies, no cross-site tracking, no
     // user profile. It is the only widely-available network whose data model
-    // does not contradict this extension's privacy policy.
-    configured: true,
+    // does not contradict this extension's privacy policy. Flip to true in
+    // the same commit that fills in `publisher`.
+    configured: false,
+  },
+  {
+    id: 'direct',
+    // Sponsors sold directly, served as a static JSON document from a host we
+    // control. No third party is involved: nobody to trust, no account to be
+    // approved for, and a far better rate than programmatic pays a tool this
+    // size. This is the rail most likely to earn first.
+    //
+    // The origin is a deliberate placeholder, and the story behind it is worth
+    // keeping. `winnow.vercel.app` looked like the obvious home and answers
+    // HTTP 200 — but it is an unrelated AI writing product belonging to
+    // somebody else, confirmed by checking this account's Vercel project list
+    // and finding no Winnow project in it. That is the second time this exact
+    // domain-assumption has nearly shipped here; the first was `api.winnow.app`
+    // in a released build. A host answering 200 proves somebody owns it, not
+    // that we do.
+    //
+    // To turn this on: deploy site/ to a project under our own account, put
+    // the origin here, set configured: true, rebuild. See docs/SPONSORSHIP.md.
+    origin: 'https://sponsors.winnow.invalid',
+    path: '/sponsors.json',
+    label: 'Direct sponsor',
+    transport: 'GET',
+    params: {},
+    configured: false,
   },
   {
     id: 'playyield',
-    // Adapter only. See the note above: this domain is parked and for sale.
-    // Left here so wiring a real endpoint is a one-line change plus a test,
-    // rather than a rediscovery of this entire design.
+    // Adapter only. playyield.com serves a GoDaddy for-sale parking page and
+    // playyield.io/.net/.ai/.co/.org do not resolve. Left here so wiring a
+    // real endpoint is a registry edit rather than a rediscovery of this
+    // entire design — but it gets no host permission until it is real.
     origin: 'https://api.playyield.invalid',
     path: '/v1/ad',
     label: 'PlayYield',
+    transport: 'POST',
+    params: {},
     configured: false,
   },
 ];
 
+/**
+ * Test seam.
+ *
+ * Every network above ships `configured: false`, because none of them has a
+ * verified endpoint and credentials yet. That is the honest state, but it
+ * would silently hollow out the suites: `activeNetworks()` returns nothing, so
+ * no valid creative can be constructed, and ~40 assertions about validation,
+ * rendering and brokering would pass while exercising nothing at all — the
+ * exact vacuous-green failure this project keeps rediscovering.
+ *
+ * So tests install a fixture network here. Production code never calls this;
+ * tests/ads-containment.test.ts asserts the shipped bundles never invoke it.
+ */
+let testNetworks: readonly AdNetwork[] | null = null;
+
+/** @internal Used only by the test suite. */
+export function __setTestNetworks(networks: readonly AdNetwork[] | null): void {
+  testNetworks = networks;
+}
+
 /** Networks that may actually be contacted. */
 export function activeNetworks(): AdNetwork[] {
+  if (testNetworks) return [...testNetworks];
   return AD_NETWORKS.filter((network) => network.configured);
 }
 

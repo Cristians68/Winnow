@@ -38,10 +38,27 @@ describe('generated manifest', () => {
     expect([...(manifest.host_permissions ?? [])].sort()).toEqual(expected);
   });
 
-  it('grants at least one ad host, or this suite is guarding nothing', () => {
-    // Control. Every assertion below is "no ad host appears where it must not";
-    // they would all pass if the registry produced no ad hosts at all.
-    expect(adMatchPatterns().length).toBeGreaterThan(0);
+  it('grants no ad host at all while no network is configured', () => {
+    // The shipped state today. Every network in the registry has
+    // configured:false — EthicalAds has no publisher account yet, the direct
+    // sponsor host is not deployed, and PlayYield does not exist — so the
+    // build grants no advertising reach whatsoever. The slot is wired and
+    // dark rather than pointed at a host nobody verified.
+    expect(adMatchPatterns()).toEqual([]);
+    expect(manifest.host_permissions ?? []).toEqual(matchPatterns());
+  });
+
+  it('would place a configured ad host in host_permissions only', () => {
+    // The invariant that matters once one IS configured. Written against the
+    // registry function rather than the current empty list, so it starts
+    // guarding the moment a network is switched on rather than needing to be
+    // remembered then.
+    for (const adHost of adMatchPatterns()) {
+      expect(manifest.host_permissions).toContain(adHost);
+      for (const script of manifest.content_scripts ?? []) {
+        expect(script.matches ?? []).not.toContain(adHost);
+      }
+    }
   });
 
   it('never lets an ad host become a content script grant', () => {

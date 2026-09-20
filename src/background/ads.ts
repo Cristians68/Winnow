@@ -41,10 +41,18 @@ export async function requestAd(slot: AdSlot): Promise<AdCreative | null> {
   const timeout = setTimeout(() => controller.abort(), AD_TIMEOUT_MS);
 
   try {
-    const response = await fetch(decisionUrl(network), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: decisionBody(slot),
+    // Transport comes from the registry rather than being assumed. Networks
+    // genuinely differ: EthicalAds' documented client issues a GET with query
+    // parameters, while a self-hosted sponsor manifest is a plain document.
+    // Guessing POST-with-JSON for all of them would ship a slot that silently
+    // never fills, which is the worst failure mode available here — it looks
+    // exactly like "no ad was available".
+    const isGet = network.transport === 'GET';
+    const response = await fetch(isGet ? decisionUrl(network, slot) : decisionUrl(network), {
+      method: network.transport,
+      ...(isGet
+        ? {}
+        : { headers: { 'content-type': 'application/json' }, body: decisionBody(slot) }),
       signal: controller.signal,
       // No ambient authority: a network that could read cookies could correlate
       // this request with any other session it can see, which is exactly the

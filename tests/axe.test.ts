@@ -17,7 +17,7 @@
  * when read aloud.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import axe from 'axe-core';
 import { renderPanel } from '../src/content/ui.js';
 import type { Analysis, Grade } from '../src/core/types.js';
@@ -26,7 +26,7 @@ import { findSearchCards } from '../src/content/serp-parse.js';
 import { renderBadges, BADGE_CLASS } from '../src/content/serp-ui.js';
 import type { CachedGrade } from '../src/shared/cache.js';
 import { renderAd } from '../src/shared/ads/render.js';
-import { activeNetworks } from '../src/shared/ads/registry.js';
+import { TEST_ORIGIN, clearTestNetwork, useTestNetwork } from './helpers/ad-fixture.js';
 
 function analysis(overrides: Partial<Analysis> = {}): Analysis {
   return {
@@ -278,6 +278,9 @@ describe('axe-core audit of the search badges', () => {
  * the same hole was available again.
  */
 describe('sponsorship slot accessibility', () => {
+  beforeAll(() => useTestNetwork());
+  afterAll(() => clearTestNetwork());
+
   const POPUP_HTML = readFileSync('src/popup/ui/popup.html', 'utf8');
 
   /** Render the real popup document, then fill the slot with a real creative. */
@@ -299,7 +302,7 @@ describe('sponsorship slot accessibility', () => {
     headline: 'Ship faster with Widgets',
     body: 'A tool for people who build things.',
     advertiser: 'Widget Co',
-    clickUrl: `${activeNetworks()[0]!.origin}/click/abc`,
+    clickUrl: `${TEST_ORIGIN}/click/abc`,
     imageUrl: null,
     viewUrl: null,
   };
@@ -311,7 +314,7 @@ describe('sponsorship slot accessibility', () => {
 
   it('has no violations with an image creative', async () => {
     const results = await audit(
-      popupWithAd({ ...creative, imageUrl: `${activeNetworks()[0]!.origin}/img/a.png` }),
+      popupWithAd({ ...creative, imageUrl: `${TEST_ORIGIN}/img/a.png` }),
     );
     expect(results.violations.length, describeViolations(results)).toBe(0);
   });

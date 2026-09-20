@@ -44,13 +44,21 @@ describe('generated manifest', () => {
     // The asymmetry is the point. A host in content_scripts[].matches means
     // code runs on that origin, and a sponsorship slot has no business
     // executing on an ad server. host_permissions is what the worker needs.
-    expect(adMatchPatterns().length).toBeGreaterThan(0); // control
+    //
+    // adMatchPatterns() is empty today — no network is configured — so this
+    // loop guards nothing yet and the assertion below says so explicitly
+    // rather than letting an empty loop read as a pass.
     for (const adHost of adMatchPatterns()) {
       expect(manifest.host_permissions).toContain(adHost);
       for (const script of manifest.content_scripts) {
         expect(script.matches).not.toContain(adHost);
       }
     }
+  });
+
+  it('ships with no advertising reach while no network is configured', () => {
+    expect(adMatchPatterns()).toEqual([]);
+    expect([...manifest.host_permissions].sort()).toEqual([...matchPatterns()].sort());
   });
 
   it('gives every content script the same host list', () => {

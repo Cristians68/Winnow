@@ -17,14 +17,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AD_REQUEST_KEYS } from '../src/shared/ads/policy.js';
 import { AD_NETWORKS, activeNetworks } from '../src/shared/ads/registry.js';
+import { TEST_NETWORK, TEST_ORIGIN } from './helpers/ad-fixture.js';
 import { SETTINGS_KEY } from '../src/shared/settings.js';
+import type { AdNetwork } from '../src/shared/ads/types.js';
 
 type Listener = (message: unknown, sender: unknown, sendResponse: (r: unknown) => void) => boolean;
 
 let listeners: Listener[];
 let fetchMock: ReturnType<typeof vi.fn>;
 
-const ORIGIN = activeNetworks()[0]!.origin;
+const ORIGIN = TEST_ORIGIN;
 
 function creativePayload(): unknown {
   return {
@@ -41,6 +43,7 @@ function creativePayload(): unknown {
 async function loadWorker(
   settings: Record<string, unknown> = {},
   fetchImpl?: () => Promise<Response>,
+  networks: readonly AdNetwork[] = [TEST_NETWORK],
 ): Promise<void> {
   const storage: Record<string, unknown> = { [SETTINGS_KEY]: settings };
   listeners = [];
@@ -64,6 +67,11 @@ async function loadWorker(
   vi.stubGlobal('fetch', fetchMock);
 
   vi.resetModules();
+  // The fixture must be installed into the module instance the worker will
+  // import. vi.resetModules() throws away the registry the top-level import
+  // touched, so setting it in beforeEach reaches a module nobody else uses.
+  const registry = await import('../src/shared/ads/registry.js');
+  registry.__setTestNetworks(networks);
   await import('../src/background/index.js');
 }
 
@@ -94,17 +102,69 @@ describe('ad broker', () => {
     await send({ type: 'winnow:ad-request', slot: 'popup' });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const url = String(fetchMock.mock.calls[0]![0]);
-    expect(activeNetworks().some((n) => url.startsWith(n.origin))).toBe(true);
+    expect(String(fetchMock.mock.calls[0]![0]).startsWith(TEST_ORIGIN)).toBe(true);
   });
 
-  it('sends exactly the declared key set and nothing about the page', async () => {
+  it('uses the transport the registry declares', async () => {
+    // Networks differ, and guessing wrong ships a slot that silently never
+    // fills — indistinguishable from "no ad was available".
     await loadWorker({ adsEnabled: true });
+    await send({ type: 'winnow:ad-request', slot: 'popup' });
+
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(init.method).toBe(TEST_NETWORK.transport);
+  });
+
+  it('sends nothing about the page, whichever transport is used', async () => {
+    await loadWorker({ adsEnabled: true });
+    await send({ type: 'winnow:ad-request', slot: 'popup' });
+
+    const url = String(fetchMock.mock.calls[0]![0]);
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+
+    // Under GET the request *is* the URL, so the query string is where a leak
+    // would appear. Asserting only on the body would have checked nothing.
+    const everythingSent = `${url} ${init.body ? String(init.body) : ''}`;
+    for (const forbidden of [
+      'B0CXXXXXXX',
+      'Acme Wireless Earbuds',
+      'amazon.com/dp',
+      'trustScore',
+      'grade',
+    ]) {
+      expect(everythingSent, `leaked ${forbidden}`).not.toContain(forbidden);
+    }
+
+    // And the parameters that are sent are only the registry's own plus the
+    // slot and formats — no install-specific value of any kind.
+    const params = new URL(url).searchParams;
+    const permitted = new Set([...Object.keys(TEST_NETWORK.params), 'slot', 'formats']);
+    for (const key of params.keys()) {
+      expect(permitted.has(key), `unexpected query parameter ${key}`).toBe(true);
+    }
+  });
+
+  it('sends the declared key set when a network wants a POST body', async () => {
+    await loadWorker({ adsEnabled: true }, undefined, [{ ...TEST_NETWORK, transport: 'POST' }]);
     await send({ type: 'winnow:ad-request', slot: 'popup' });
 
     const init = fetchMock.mock.calls[0]![1] as RequestInit;
     const body = JSON.parse(String(init.body)) as Record<string, unknown>;
     expect(Object.keys(body).sort()).toEqual([...AD_REQUEST_KEYS].sort());
+  });
+
+  it('produces an identical request on two separate installs', async () => {
+    // A request that varied per install would be a fingerprint regardless of
+    // what the fields were called.
+    await loadWorker({ adsEnabled: true });
+    await send({ type: 'winnow:ad-request', slot: 'popup' });
+    const first = String(fetchMock.mock.calls[0]![0]);
+
+    await loadWorker({ adsEnabled: true });
+    await send({ type: 'winnow:ad-request', slot: 'popup' });
+    const second = String(fetchMock.mock.calls[0]![0]);
+
+    expect(first).toBe(second);
   });
 
   it('carries no cookies, no cache and no referrer', async () => {

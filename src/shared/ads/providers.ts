@@ -11,7 +11,7 @@
  */
 
 import { isAllowedCreativeUrl, networkFor } from './registry.js';
-import { buildAdRequest } from './policy.js';
+import { ACCEPTED_FORMATS, buildAdRequest } from './policy.js';
 import type { AdCreative, AdNetwork, AdProviderId, AdSlot } from './types.js';
 
 /**
@@ -106,9 +106,24 @@ export function normaliseCreative(provider: AdProviderId, raw: unknown): AdCreat
   return { provider, headline, body, advertiser, clickUrl, imageUrl, viewUrl };
 }
 
-/** Where to send a decision request for a given network. */
-export function decisionUrl(network: AdNetwork): string {
-  return `${network.origin}${network.path}`;
+/**
+ * Where to send a decision request.
+ *
+ * For a GET network the request *is* the URL, so the slot and the network's
+ * fixed parameters go in the query string. Nothing install-specific is added:
+ * the parameters come from the registry and the slot name is one of two
+ * constants, so two installations still produce byte-identical URLs and the
+ * request cannot become a fingerprint.
+ */
+export function decisionUrl(network: AdNetwork, slot?: AdSlot): string {
+  const base = `${network.origin}${network.path}`;
+  if (slot === undefined) return base;
+
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(network.params)) query.set(key, value);
+  query.set('slot', slot);
+  query.set('formats', ACCEPTED_FORMATS.join(','));
+  return `${base}?${query.toString()}`;
 }
 
 /** The request body for a slot. Page data cannot reach here; see policy.ts. */

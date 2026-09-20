@@ -64,6 +64,17 @@ export interface AdRequest {
   readonly formats: readonly AdFormat[];
 }
 
+/**
+ * How a network wants to be asked.
+ *
+ * Networks differ here and the difference is not cosmetic: EthicalAds' client
+ * issues a GET with query parameters, while a self-hosted sponsor manifest is
+ * a plain document. Encoding this as config rather than as branches in the
+ * broker means adding a network is a registry entry, not a new code path
+ * through the one function that touches the network.
+ */
+export type AdTransport = 'GET' | 'POST';
+
 /** A configured ad network. */
 export interface AdNetwork {
   readonly id: AdProviderId;
@@ -73,6 +84,15 @@ export interface AdNetwork {
   readonly path: string;
   /** Human-readable name for the disclosure line. */
   readonly label: string;
+  /** GET with query parameters, or POST with a JSON body. */
+  readonly transport: AdTransport;
+  /**
+   * Fixed parameters this network requires, such as a publisher account id.
+   *
+   * Constant per build, never per install, so two installations still send
+   * byte-identical requests and the slot cannot become a fingerprint.
+   */
+  readonly params: Readonly<Record<string, string>>;
   /**
    * Whether this network is wired to a verified, reachable endpoint.
    *

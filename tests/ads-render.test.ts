@@ -10,12 +10,15 @@
 
 // @vitest-environment happy-dom
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AD_LABEL, renderAd } from '../src/shared/ads/render.js';
-import { activeNetworks } from '../src/shared/ads/registry.js';
+import { TEST_ORIGIN, clearTestNetwork, useTestNetwork } from './helpers/ad-fixture.js';
 import type { AdCreative } from '../src/shared/ads/types.js';
 
-const ORIGIN = activeNetworks()[0]!.origin;
+const ORIGIN = TEST_ORIGIN;
+
+beforeAll(() => useTestNetwork());
+afterAll(() => clearTestNetwork());
 
 function creative(overrides: Partial<AdCreative> = {}): AdCreative {
   return {
