@@ -234,7 +234,10 @@ describe('site/sponsors.json', () => {
   it('control: a template breaking a limit would be caught', () => {
     useTestNetwork([{ ...TEST_NETWORK, id: 'direct', origin: 'https://example.invalid' }]);
     try {
-      const entry = { ...(raw[0] as Record<string, unknown>), headline: 'x'.repeat(MAX_HEADLINE + 1) };
+      const entry: Record<string, unknown> = {
+        ...(raw[0] as Record<string, unknown>),
+        headline: 'x'.repeat(MAX_HEADLINE + 1),
+      };
       delete entry._comment;
       expect(selectCreative('direct', [entry], () => 0)).toBe(null);
     } finally {
