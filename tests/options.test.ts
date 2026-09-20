@@ -24,6 +24,7 @@ import { ENGINE_VERSION } from '../src/core/score.js';
 const DOM = `
   <input type="checkbox" id="enabled" />
   <input type="checkbox" id="alwaysExpand" />
+  <input type="checkbox" id="adsEnabled" />
   <select id="theme">
     <option value="system">System</option>
     <option value="light">Light</option>
@@ -191,14 +192,15 @@ describe('developer endpoint field', () => {
 
 describe('ordinary settings', () => {
   it('reflects stored values on load', async () => {
-    await loadOptions({ enabled: false, alwaysExpand: true, theme: 'dark' });
+    await loadOptions({ enabled: false, alwaysExpand: true, theme: 'dark', adsEnabled: false });
 
     expect((document.getElementById('enabled') as HTMLInputElement).checked).toBe(false);
     expect((document.getElementById('alwaysExpand') as HTMLInputElement).checked).toBe(true);
     expect((document.getElementById('theme') as HTMLSelectElement).value).toBe('dark');
+    expect((document.getElementById('adsEnabled') as HTMLInputElement).checked).toBe(false);
   });
 
-  it.each(['enabled', 'alwaysExpand'] as const)('persists the %s checkbox', async (id) => {
+  it.each(['enabled', 'alwaysExpand', 'adsEnabled'] as const)('persists the %s checkbox', async (id) => {
     await loadOptions({ [id]: false });
 
     const box = document.getElementById(id) as HTMLInputElement;

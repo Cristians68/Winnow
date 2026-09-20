@@ -20,9 +20,10 @@ async function init(): Promise<void> {
 
   // Only the boolean settings are checkbox-driven; theme and devApiEndpoint
   // have their own controls.
-  const fields: Array<[HTMLInputElement, 'enabled' | 'alwaysExpand']> = [
+  const fields: Array<[HTMLInputElement, 'enabled' | 'alwaysExpand' | 'adsEnabled']> = [
     [checkbox('enabled'), 'enabled'],
     [checkbox('alwaysExpand'), 'alwaysExpand'],
+    [checkbox('adsEnabled'), 'adsEnabled'],
   ];
 
   for (const [input, key] of fields) {
