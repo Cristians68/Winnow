@@ -128,3 +128,21 @@
       footer.site { border-top: 1px solid var(--line); padding: 40px 0 60px; color: var(--muted); font-size: 15px; }
       footer.site a { color: var(--link); }
       .foot-links { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 14px; }
+
+/* --- Utilities -----------------------------------------------------------
+   These exist so no page needs an inline style attribute. The deployed CSP is
+   `style-src 'self'`, which blocks `style="..."` outright; widening it to
+   'unsafe-inline' to keep a handful of one-off margins would trade a real
+   protection for a cosmetic convenience. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.section-install { padding: 44px 0 8px; }
+.callout-centered { text-align: center; }
+.callout-centered h2 { margin-top: 0; }
+.lede-narrow { margin: 10px auto 20px; max-width: 56ch; }
+.cta-centered { justify-content: center; margin-top: 16px; }
+.mt-18 { margin-top: 18px; }
+.mt-26 { margin-top: 26px; }
+.m0 { margin: 0; }

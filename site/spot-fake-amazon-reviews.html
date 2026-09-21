@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to spot fake Amazon reviews — seven checks that take a minute</title>
+    <meta
+      name="description"
+      content="Practical ways to judge Amazon reviews yourself: read the 1-star reviews first, check who you are buying from, watch for reviews describing a different product, and more."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="canonical" href="https://winnow-reviews.vercel.app/spot-fake-amazon-reviews" />
+    <meta property="og:title" content="How to spot fake Amazon reviews" />
+    <meta property="og:description" content="Seven checks you can do by eye in about a minute, and what no tool can tell you." />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://winnow-reviews.vercel.app/spot-fake-amazon-reviews" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to spot fake Amazon reviews",
+      "description": "Seven checks a shopper can do by eye on an Amazon listing.",
+      "step": [
+        { "@type": "HowToStep", "name": "Read the 1- and 2-star reviews first", "text": "Negative reviews are the hardest to fake and tell you what actually goes wrong with the product." },
+        { "@type": "HowToStep", "name": "Watch for reviews describing a different product", "text": "A phone case reviewed on a listing for a lamp means the listing was reused and the rating came with it." },
+        { "@type": "HowToStep", "name": "Check who you are buying from", "text": "Look under the Buy box. Ships from and sold by Amazon is a different proposition from an unfamiliar seller name, and returns work differently." },
+        { "@type": "HowToStep", "name": "Trust reviews with customer photos more", "text": "Photos are far more work to fake than a paragraph of text." },
+        { "@type": "HowToStep", "name": "Reverse image search the product photos", "text": "The same item under several unfamiliar brand names usually means a generic product being resold." },
+        { "@type": "HowToStep", "name": "Be wary of a new listing with hundreds of five-star ratings", "text": "Genuine reviews accumulate at roughly the speed of sales." },
+        { "@type": "HowToStep", "name": "Check what your shopping extensions can reach", "text": "Open chrome://extensions, find each one, and read its permissions." }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site">
+      <div class="wrap">
+        <a class="brand" href="/">Winnow</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="hero wrap">
+        <h1>How to spot fake Amazon reviews</h1>
+        <p class="lede">
+          Seven checks you can do by eye, in about a minute, without installing anything. They are
+          the same checks Winnow shows inside its own panel, because a tool that only works while
+          you are running it has taught you nothing.
+        </p>
+      </div>
+
+      <section>
+        <div class="wrap prose">
+          <h2>1. Read the 1- and 2-star reviews first</h2>
+          <p>
+            This is the single highest-value habit on this page. Negative reviews are the hardest
+            to fake — there is no market for paying people to complain — and they tell you what
+            actually goes wrong with the thing. A product with a 4.6 average and a consistent
+            complaint about the hinge breaking at six months is a product with a hinge problem,
+            whatever the average says.
+          </p>
+
+          <h2>2. Watch for reviews describing a different product</h2>
+          <p>
+            A phone case reviewed on a listing for a desk lamp means the listing was changed and
+            the old rating came along with it. This is one of the most common forms of review
+            manipulation on Amazon and one of the easiest to see: the seller keeps the star average
+            an unrelated product earned and swaps in new inventory underneath it.
+          </p>
+          <p>
+            A related tell is a rating split with nothing in the middle — lots of five stars, a
+            visible tail of one stars, and almost no threes. Genuine products collect a middle.
+          </p>
+
+          <h2>3. Check who you are actually buying from</h2>
+          <p>
+            Look just under the Buy box. "Ships from and sold by Amazon" is a different proposition
+            from a seller name you have never seen, and returns work differently. This costs two
+            seconds and is not about reviews at all, which is exactly why it gets skipped.
+          </p>
+
+          <h2>4. Trust reviews with customer photos more</h2>
+          <p>
+            Photographs are far more work to fake than a paragraph of text, and photos taken in a
+            recognisably ordinary home more so. They are not proof, but they move the odds
+            considerably.
+          </p>
+
+          <h2>5. Reverse image search the product photos</h2>
+          <p>
+            If the same item appears under several unfamiliar brand names, you are usually looking
+            at a generic product being resold rather than something a company designed and stands
+            behind. That is not automatically bad — plenty of good products are made this way — but
+            it tells you the brand name carries no information, so the reviews have to carry all of
+            it.
+          </p>
+
+          <h2>6. Be wary of a new listing that already has hundreds of five-star ratings</h2>
+          <p>
+            Genuine reviews accumulate at roughly the speed of sales. A listing that is a few weeks
+            old with four hundred ratings and a 4.9 average did not get there the slow way.
+          </p>
+
+          <h2>7. Check what your shopping extensions can reach</h2>
+          <p>
+            Worth doing once, for everything you have installed. Open
+            <code>chrome://extensions</code> (or <code>about:addons</code> in Firefox), find each
+            extension, and read its permissions. A coupon or review tool that can read every site
+            you visit is a tool that <em>is</em> reading every site you visit.
+          </p>
+          <p class="callout">
+            Apply this to Winnow too. It asks for one permission — <code>storage</code> — plus
+            access to Amazon storefronts, and nothing else. It cannot read your passwords, your
+            logins, or any other site. You can check that in the
+            <a href="https://github.com/Cristians68/Winnow">public source</a> before installing, and
+            on the store listing after.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap prose">
+          <h2>What none of this can tell you</h2>
+          <p>
+            No method on this page, and no tool including Winnow, can tell you that a particular
+            review is fake. What is actually being measured is <em>patterns</em> — text that repeats
+            across reviews, ratings arriving in bursts, a missing negative tail — and patterns give
+            you odds, not proof.
+          </p>
+          <p>
+            Be suspicious of any tool that gives you a confident score for everything you point it
+            at. A checker that returns roughly the same reassuring number for every listing is not
+            detecting anything; it is decorating the page. The useful signal is a tool that
+            sometimes says <em>I could not tell</em>.
+          </p>
+          <p>
+            It is also worth separating two different questions. "Are these reviews trustworthy?"
+            and "is this product good?" are not the same question, and a tool that answers the first
+            should not pretend to answer the second.
+          </p>
+        </div>
+      </section>
+
+      <section id="install" class="wrap section-install">
+        <div class="callout callout-centered">
+          <h2>Or have the checks run for you</h2>
+          <p class="lede-narrow lede">
+            Winnow runs seven checks over the reviews already on the page and shows the rating the
+            product would have without the ones that failed — plus what each check found, so you can
+            disagree with it.
+          </p>
+          <div class="cta cta-centered">
+            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+            <a class="btn btn-secondary" href="/">How it works</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <div class="foot-links">
+          <a href="/">Home</a>
+          <a href="/fakespot-alternative">Fakespot alternative</a>
+          <a href="/reviewmeta-alternative">ReviewMeta alternative</a>
+          <a href="https://github.com/Cristians68/Winnow">Source code</a>
+          <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">Privacy policy</a>
+        </div>
+        <p class="m0">
+          Winnow is an independent project and is not affiliated with, endorsed by, or connected to
+          Amazon. Amazon and the Amazon logo are trademarks of Amazon.com, Inc. or its affiliates.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

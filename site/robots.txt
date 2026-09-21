@@ -1,0 +1,5 @@
+# Winnow — https://github.com/Cristians68/Winnow
+User-agent: *
+Allow: /
+
+Sitemap: https://winnow-reviews.vercel.app/sitemap.xml
