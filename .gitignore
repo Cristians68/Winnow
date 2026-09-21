@@ -7,3 +7,6 @@ dist/
 *.db-wal
 *.db-shm
 .tmp-test/
+
+# Agent worktrees: a second checkout of this repo, not part of it.
+.claude/
