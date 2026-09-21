@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What happened to Fakespot? Why it shut down, and what replaced it</title>
+    <meta
+      name="description"
+      content="Mozilla shut Fakespot down on 1 July 2025, saying it didn't fit a model it could sustain. No replacement shipped. Here's what happened, why, and what works now."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="canonical" href="https://winnow-reviews.vercel.app/what-happened-to-fakespot" />
+    <meta property="og:title" content="What happened to Fakespot?" />
+    <meta property="og:description" content="Shut down 1 July 2025 by Mozilla, with no replacement. What happened, and what works now." />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://winnow-reviews.vercel.app/what-happened-to-fakespot" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "When did Fakespot shut down?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Mozilla shut the Fakespot extensions, apps and website on 1 July 2025. The Firefox Review Checker feature, which was built on the same technology, closed earlier on 10 June 2025."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why did Mozilla shut Fakespot down?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Mozilla's public explanation was that while the idea resonated, it did not fit a model the company could sustain. Mozilla acquired Fakespot in 2023 and did not sell, open-source or transfer it to a successor."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a replacement for Fakespot?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Mozilla shipped none and pointed users toward unrelated Firefox features. Several independent tools exist. Winnow is one: it analyses review integrity locally in the browser, shows the reasoning behind every grade, and carries no affiliate links."
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site">
+      <div class="wrap">
+        <a class="brand" href="/">Winnow</a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-hide" href="/fakespot-alternative">Alternatives</a>
+          <a class="nav-hide" href="/spot-fake-amazon-reviews">Guide</a>
+          <a href="https://github.com/Cristians68/Winnow">Source</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="wrap">
+        <div class="hero">
+          <div>
+            <span class="eyebrow"><span class="dot"></span> Shut down 1 July 2025</span>
+            <h1>What happened to Fakespot?</h1>
+            <p class="lede">
+              Mozilla closed it. The extensions, the apps and the website all stopped on
+              <strong>1 July 2025</strong>, and the Firefox Review Checker built on the same
+              technology had already closed on <strong>10 June 2025</strong>. No replacement
+              shipped.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <section>
+        <div class="wrap prose">
+          <h2>The short version</h2>
+          <p>
+            Mozilla acquired Fakespot in 2023. In 2025 it announced the shutdown on its own blog,
+            and the reason it gave was one sentence: <em>"while the idea resonated, it didn't fit
+            a model we could sustain."</em>
+          </p>
+          <p>
+            Fakespot was not sold, not open-sourced, and not handed to anyone else. The
+            announcement directed readers toward unrelated Firefox features — tab groups and
+            bookmarks — rather than to any way of continuing to check reviews. ReviewMeta, the
+            other tool people leaned on, went dark separately.
+          </p>
+          <p class="callout">
+            Roughly ten million people had the habit of checking a listing before buying. None of
+            them were given anywhere to go.
+          </p>
+
+          <h2>Why nothing simply replaced it</h2>
+          <p>
+            It is tempting to assume someone would just rebuild it. Two things made that harder
+            than it looks.
+          </p>
+          <p>
+            <strong>The money.</strong> Mozilla is a large organisation and still could not make
+            the economics work. The obvious way to fund a shopping tool is affiliate commission —
+            you get paid when someone buys. That is exactly the wrong incentive for a tool whose
+            job is sometimes to say <em>don't buy this</em>, and several replacements took it
+            anyway.
+          </p>
+          <p>
+            <strong>The data.</strong> Since around May 2026, Amazon's <code>/product-reviews/</code>
+            pages return 404 without session cookies, and full review text left the public HTML.
+            Fakespot's model — you hand over a URL, a server fetches and analyses it — now sees far
+            less than a logged-in shopper does. A server-side checker built the old way is working
+            from a thinner sample than the one already on your screen.
+          </p>
+
+          <h2>What actually works now</h2>
+          <p>
+            An extension reads the page your browser has already rendered. That is not a
+            preference; it is where the reviews still are. It also means nothing needs to be
+            uploaded and no server needs to crawl anything.
+          </p>
+          <p>
+            Two things worth checking about any replacement you consider, including this one:
+          </p>
+          <ul>
+            <li>
+              <strong>Does it take affiliate money?</strong> A tool paid a commission when you buy
+              cannot credibly tell you not to buy. At least one widely-recommended Fakespot
+              replacement ships an undisclosed Amazon Associates tag on its "Buy Now" button.
+            </li>
+            <li>
+              <strong>What can it read?</strong> Every extension must declare this on its own store
+              listing, under <em>Privacy practices</em>. Open the listing before you install, and
+              compare. A review tool that wants to read every site you visit is reading every site
+              you visit.
+            </li>
+          </ul>
+
+          <h2>Where Winnow fits</h2>
+          <p>
+            Winnow was built after the shutdown, for the same job. It reads the reviews already on
+            an Amazon product page and shows the rating the product would have without the ones
+            that look manipulated, with every check shown so you can disagree with it.
+          </p>
+          <p>
+            It requests one permission — <code>storage</code> — plus the Amazon storefronts it runs
+            on. It carries no affiliate links and won't, as a binding clause in its
+            <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">privacy policy</a>
+            rather than a line in a README. The scoring engine is
+            <a href="https://github.com/Cristians68/Winnow">open source</a>, so a grade you doubt is
+            one you can go and read the reason for.
+          </p>
+          <p>
+            It also declines to answer when it cannot. Amazon shows only 8–13 featured reviews on a
+            product page — a small, biased sample — so when too little of it is trustworthy, Winnow
+            reports no adjusted rating rather than inventing a confident number.
+          </p>
+        </div>
+      </section>
+
+      <section id="install" class="wrap section-install">
+        <div class="callout callout-centered">
+          <h2>Get the habit back</h2>
+          <p class="lede lede-narrow">
+            Free, open source, and it runs on your device.
+          </p>
+          <div class="cta cta-centered">
+            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+            <a class="btn btn-secondary" href="/spot-fake-amazon-reviews">Or check by eye</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <div class="foot-links">
+          <a href="/">Home</a>
+          <a href="/fakespot-alternative">Fakespot alternative</a>
+          <a href="/reviewmeta-alternative">ReviewMeta alternative</a>
+          <a href="/spot-fake-amazon-reviews">Spot fake reviews</a>
+          <a href="/sponsor">Sponsor</a>
+          <a href="https://github.com/Cristians68/Winnow">Source code</a>
+        </div>
+        <p class="m0">
+          Winnow is an independent project and is not affiliated with, endorsed by, or connected to
+          Amazon, Mozilla or Fakespot. Amazon and the Amazon logo are trademarks of Amazon.com, Inc.
+          or its affiliates. Shutdown dates and the quoted reason are as published by Mozilla.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
