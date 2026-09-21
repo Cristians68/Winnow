@@ -23,10 +23,31 @@ footer carries an explicit non-affiliation disclaimer for the same reason.
 ## Short description (132 char limit)
 
 ```
-See what Amazon's reviews actually say. Adjusted ratings and fake-review analysis, computed in your browser. No affiliate links.
+Fake review checker for Amazon. See the adjusted rating without the manipulated reviews. No affiliate links, ever.
+```
+
+*(114 characters. Measured, not estimated — the first draft of this line was
+written as "133 characters" and was actually 135, which the field would have
+truncated in silence. Count before pasting.)*
+
+Longer alternate, still inside the limit:
+
+```
+Fake review checker for Amazon. See the adjusted rating without manipulated reviews. Runs in your browser. No affiliate links.
 ```
 
 *(126 characters)*
+
+**Why it leads with "fake review checker".** That is the phrase people type into
+store search. The previous line opened with "See what Amazon's reviews actually
+say" — good copy, and invisible to anyone searching, because it contains none of
+the words being searched for.
+
+**Why no competitor name here.** "Fakespot alternative" is the highest-intent
+query in this category, and it belongs on the website, where it is factual
+commentary. In a store Google polices, putting another product's trademark in
+your listing is a needless rejection risk. Win that query with the site, and let
+the site link here.
 
 ## Category
 
@@ -35,11 +56,16 @@ Shopping
 ## Detailed description
 
 ```
-Winnow tells you what a product's reviews actually say.
+Winnow shows you the rating a product would have without its fake reviews.
 
-It analyses the reviews on any Amazon product page and shows you an ADJUSTED RATING — the
-rating the product would have if apparently manipulated reviews were removed — along with a
-plain-English breakdown of exactly why.
+Open any Amazon product page and Winnow scores the reviews already on it, then shows an
+ADJUSTED RATING — what the stars would say if the manipulated reviews were removed — with a
+plain-English breakdown of exactly which checks fired and why.
+
+It also tells you when it cannot tell. Amazon usually shows 8-13 reviews per page, and those
+are featured reviews, so the sample is small and biased. When too little of it is trustworthy,
+Winnow reports no adjusted rating rather than inventing a confident number. A checker that
+returns a reassuring score for everything is not detecting anything.
 
 Everything that produces a grade runs on your own device. Winnow has no account, and the
 analysis makes no network requests — it reads the page your browser already rendered and
