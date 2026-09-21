@@ -66,9 +66,16 @@ export const AD_NETWORKS: readonly AdNetwork[] = [
     // in a released build. A host answering 200 proves somebody owns it, not
     // that we do.
     //
-    // To turn this on: deploy site/ to a project under our own account, put
-    // the origin here, set configured: true, rebuild. See docs/SPONSORSHIP.md.
-    origin: 'https://sponsors.winnow.invalid',
+    // Deployed and verified ours: `vercel project ls` lists winnow-reviews
+    // under this account. That check is the point — winnow.vercel.app also
+    // answers HTTP 200 and belongs to an unrelated AI writing product.
+    //
+    // Still configured:false. The origin is real now, but sponsors.json holds
+    // one example entry and no sponsor has been sold. Switching it on today
+    // would grant a host permission, re-enter Chrome Web Store review, and
+    // show an ad for nobody. Flip it in the same change that puts a real
+    // sponsor in that file. See docs/SPONSORSHIP.md.
+    origin: 'https://winnow-reviews.vercel.app',
     path: '/sponsors.json',
     label: 'Direct sponsor',
     transport: 'GET',

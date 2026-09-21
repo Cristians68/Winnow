@@ -37,13 +37,13 @@ worth more to the right sponsor than a CPM auction will ever pay for it.
 
 **What you need:** a static JSON file on a domain **you actually own**.
 
-1. Deploy `site/` to a Vercel project under your own account:
-   ```
-   cd site && npx vercel --prod
-   ```
-   Note the URL it gives you. Do **not** assume `winnow.vercel.app` — that is an unrelated AI
-   writing product owned by somebody else. Verify with `npx vercel project ls` that the project is
-   in your account before using its domain anywhere.
+1. **Done.** `site/` is deployed to `https://winnow-reviews.vercel.app`, in the `binaries68`
+   Vercel account, and the `direct` entry in the registry already points at it.
+
+   It was verified ours with `npx vercel project ls` rather than assumed. Keep that habit:
+   `winnow.vercel.app` also answers HTTP 200 and belongs to an unrelated AI writing product, and
+   an earlier Winnow build shipped a host permission to `api.winnow.app`, which was likewise
+   somebody else's. A host answering 200 proves somebody owns it, not that you do.
 
 2. Edit `site/sponsors.json` — it already exists with one example entry:
    ```json
@@ -73,11 +73,14 @@ worth more to the right sponsor than a CPM auction will ever pay for it.
    a three-entry file. There is deliberately no weight field: a number that silently changes what
    an advertiser paid for is worth less than a list you can read.
 
-3. In `src/shared/ads/registry.ts`, on the `direct` entry: set `origin` to your deployed domain
-   and `configured: true`.
+3. In `src/shared/ads/registry.ts`, on the `direct` entry, set `configured: true`. The origin is
+   already correct. **Do this in the same change that puts a real sponsor in `sponsors.json`** —
+   switching it on earlier grants a host permission, re-enters Chrome Web Store review, and shows
+   an ad for nobody.
 
-4. `npm test && npm run package`. The packaging guard will fail loudly if the manifest and the
-   registry disagree.
+4. `npm test && npm run package`. The packaging guard fails loudly if the manifest and the
+   registry disagree, and `tests/ads.test.ts` fails a network that is configured with an empty
+   required parameter.
 
 **Pricing anchor:** a flat monthly rate, quoted against active installs, is easier to sell and to
 honour than CPM at this scale. Whatever you quote, quote real numbers — the Chrome Web Store
