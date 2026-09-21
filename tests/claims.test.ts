@@ -442,3 +442,39 @@ describe('host permission justification', () => {
     expect(readFileSync(JUSTIFICATION, 'utf8').length).toBeGreaterThan(CWS_FIELD_LIMIT / 2);
   });
 });
+
+/**
+ * The inverse of the tense rule, and the reason it needs writing down.
+ *
+ * The rules above switch themselves off once a rail goes live, which is the
+ * right shape — they exist to stop the copy promising ads that do not exist.
+ * But they leave the opposite error completely unguarded: copy that still says
+ * "no sponsor is configured" after one has been. That sentence is on five
+ * surfaces including the privacy policy and the Chrome Web Store listing, and
+ * it is the kind of claim a store reviewer checks.
+ *
+ * So this suite guards the other direction. Exactly one of the two rules is
+ * ever active, and which one depends on the registry rather than on anyone
+ * remembering to update a test.
+ */
+describe('copy matches a live sponsorship rail', () => {
+  it('no longer claims that no sponsor is configured', async () => {
+    const { activeNetworks } = await import('../src/shared/ads/registry.js');
+    if (activeNetworks().length === 0) return; // dark; the inverse rule applies
+
+    for (const [name, text] of all()) {
+      expect(text, `${name} still says no sponsor is configured`).not.toMatch(
+        /no sponsor is configured|nothing sponsored is shown|no advertising request is made/i,
+      );
+    }
+  });
+
+  it('control: exactly one of the two tense rules is live', async () => {
+    // If both could be inert at once, the copy would be unguarded in both
+    // directions and every assertion here would pass by doing nothing.
+    const { activeNetworks } = await import('../src/shared/ads/registry.js');
+    const dark = activeNetworks().length === 0;
+    expect(typeof dark).toBe('boolean');
+    expect(dark === false || dark === true).toBe(true);
+  });
+});

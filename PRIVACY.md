@@ -162,11 +162,12 @@ and we will delete it.
   the sponsorship host named below
 - Ask for personal information
 
-Winnow can show one sponsored message inside its own two windows, described in full under
-[Sponsorship](#sponsorship) below, including what the sponsor is and is not told. As of 0.5.0 none
-is configured, so none is shown.
+Winnow shows one sponsored message inside its own two windows, described in full under
+[Sponsorship](#sponsorship) below, including what the sponsor is and is not told.
 
-Winnow requests no `tabs` permission and no broad host access. You can verify this in the manifest
+Winnow requests no `tabs` permission and no broad host access. Outside Amazon it can reach
+exactly one host, `winnow-reviews.vercel.app`, and only to fetch the sponsored message described
+below. You can verify this in the manifest
 before installing.
 
 ## Winnow will never crawl Amazon using your session
@@ -180,16 +181,16 @@ rather than exposing you to that. No future version will crawl your session.
 
 ## Sponsorship
 
-**Winnow can show one sponsored message, in its own two windows only.**
+**Winnow shows one sponsored message, in its own two windows only.**
 
-When it does, it appears in the toolbar popup and on the settings page. It **never appears on an
+It appears in the toolbar popup and on the settings page. It **never appears on an
 Amazon page**, never appears beside a grade, and never appears in the analysis panel. You can
 switch it off in Settings, and nothing else about Winnow changes when you do.
 
-**As of version 0.5.0 no sponsor is configured, so no sponsored message is shown and no
-advertising request is made at all.** This section describes what happens when one is, and the
-extension's host permissions will name the sponsorship host before it can be contacted. It is
-written now, in advance, rather than after the fact.
+**As of version 0.5.0 the sponsorship slot is live.** The only sponsorship host the extension
+can contact is `winnow-reviews.vercel.app`, which we run — it serves a static file, not a
+third-party ad network. That host is named in the extension's permissions, so you can see it
+before installing rather than discover it afterwards.
 
 ### What the sponsor is told
 
@@ -266,9 +267,9 @@ Material changes will be noted in the extension's changelog and reflected in the
 no-affiliate commitment above ever changes, it will be announced prominently before taking effect,
 never altered quietly in this document.
 
-**Changed in 0.5.0:** Winnow gained the ability to show one sponsored message in its own two
-windows, described under [Sponsorship](#sponsorship). None is configured in this release, so none
-is shown yet. Earlier versions of this document listed advertising among the
+**Changed in 0.5.0:** Winnow now shows one sponsored message in its own two windows, described
+under [Sponsorship](#sponsorship), and requests one new host permission — `winnow-reviews.vercel.app`,
+which we run — to fetch it. Earlier versions of this document listed advertising among the
 things Winnow does not do, and said Winnow made no money. Both statements were true when written
 and are no longer, so both were removed rather than reworded. The no-affiliate and no-merchant-
 payment commitments are unchanged.

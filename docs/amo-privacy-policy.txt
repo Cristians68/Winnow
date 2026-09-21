@@ -47,9 +47,11 @@ add-on's options page at any time. Uninstalling the add-on removes it.
 
 PERMISSIONS
 
-Winnow requests "storage" plus the Amazon storefront domains it runs on, and
-nothing else. It cannot read your logins, your passwords, or any site that is
-not Amazon. You can verify this in about:addons before or after installing.
+Winnow requests "storage", the Amazon storefront domains it runs on, and one
+further host — winnow-reviews.vercel.app — which it contacts only to fetch the
+sponsored message described below. Nothing else. It cannot read your logins,
+your passwords, or any other site. You can verify this in about:addons before
+or after installing.
 
 The add-on also declares optional loopback permissions (localhost and
 127.0.0.1). These are never requested at install and are unused by the
@@ -65,11 +67,12 @@ popup and the settings page. It never appears on an Amazon page, never appears
 beside a grade, and never appears in the analysis panel. It is labelled, and
 you can switch it off in Settings.
 
-NO SPONSOR IS CONFIGURED IN THIS VERSION, so nothing sponsored is shown and no
-advertising request is made at all. This section describes what happens if one
-ever is, written in advance rather than after the fact.
+The message is fetched from winnow-reviews.vercel.app, which we run. It is a
+static file, not a third-party ad network, so no advertising company is in the
+loop and none is trusted. That host is the only non-Amazon domain this add-on
+can contact, and it is named in the add-on's permissions.
 
-What a sponsor would be told: that a Winnow window opened. The request carries
+What a sponsor is told: that a Winnow window opened. The request carries
 a schema version, which of the two windows is asking, and the formats that
 window can draw. It carries no product, no page address, no search terms, no
 grade and no identifier of any kind — there is no field in it that could hold
@@ -112,7 +115,8 @@ WHAT WINNOW DOES NOT DO
 - Run analytics, telemetry, crash reporting or fingerprinting
 - Set cookies
 - Send anything about the product you are viewing to an advertiser
-- Read any site other than the Amazon domains listed in its manifest
+- Read any site other than the Amazon domains listed in its manifest (the
+  sponsorship host is contacted for one file; no page is read there)
 - Ask for personal information
 
 

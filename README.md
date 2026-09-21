@@ -21,13 +21,14 @@ It takes no affiliate money, in any mode.
 
 ## How we make money
 
-**Sponsorship, in Winnow's own windows only.** One sponsored message can appear in the toolbar
+**Sponsorship, in Winnow's own windows only.** One sponsored message appears in the toolbar
 popup and the settings page. It never appears on an Amazon page and never appears beside a grade,
 and it can be switched off in Settings.
 
-**No sponsor is configured in 0.5.0**, so nothing is shown and no advertising request is made —
-the build carries no advertising host permission at all. See [docs/SPONSORSHIP.md](docs/SPONSORSHIP.md)
-for what has to exist before a rail can be switched on, and why none was switched on speculatively.
+The slot is served from `winnow-reviews.vercel.app`, which we run — a static JSON file, not a
+third-party ad network, so no third party is involved and none is trusted. That host is the build's
+only non-Amazon permission. See [docs/SPONSORSHIP.md](docs/SPONSORSHIP.md) for how a sponsor is
+added, which is an edit to that file rather than a new release.
 
 The rule underneath it is: **no merchant pays us, ever.**
 

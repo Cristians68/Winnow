@@ -90,8 +90,8 @@ HOW WE MAKE MONEY
 
 Sponsorship, in Winnow's own two windows only: the toolbar popup and the settings page.
 
-No sponsor is configured in this version, so nothing sponsored is shown and no advertising
-request is made at all. This is what happens when one is.
+The message is fetched from winnow-reviews.vercel.app, which we run — a static file, not a
+third-party ad network. That host is the only non-Amazon permission this extension requests.
 
 A sponsored message never appears on an Amazon page, never appears beside a grade, and never
 appears in the analysis panel. It is labelled, and Settings turns it off.
@@ -136,8 +136,9 @@ PRIVACY
   rendered. Automated scraping through a logged-in session can put YOUR Amazon account at
   risk, and we will not do that to you.
 
-Winnow requests one permission — storage — plus the Amazon storefronts it runs on. It
-cannot read your logins, your passwords, or any site that is not Amazon. Don't take our
+Winnow requests one permission — storage — plus the Amazon storefronts it runs on and
+one host of ours, winnow-reviews.vercel.app, which it contacts only to fetch the sponsored
+message. It cannot read your logins, your passwords, or any other site. Don't take our
 word for it: open chrome://extensions (or about:addons in Firefox), find Winnow, and read
 the list. Every listing in this store shows what an extension requests. Compare before you
 install anything that watches you shop, this included.
@@ -179,8 +180,8 @@ Winnow does contain one network path, and this is not it: when a sponsor is conf
 background worker fetches a sponsored message for Winnow's own popup and settings page. That
 request is assembled from a fixed set of keys — a schema version, which of the two windows
 asked, and the formats it can draw — and carries none of the values above, no page address
-and no identifier. No sponsor is configured in this version, so the shipped build makes no
-such request and carries no advertising host permission.
+and no identifier. It is fetched from winnow-reviews.vercel.app, a static file on a host we
+operate, which is the build's only non-Amazon host permission.
 ```
 
 Note for future edits: item 3 is browsing history in substance, and this justification says
@@ -205,10 +206,10 @@ site and does not use the "tabs" permission. The content script makes no network
 all, so nothing read from an Amazon page is sent anywhere — which the test suite proves
 against the built bundle rather than asserting in prose.
 
-This permission has nothing to do with sponsorship. A sponsored message, when a sponsor is
-configured, is fetched by the background worker for Winnow's own popup and settings page, is
-drawn only there, and never appears on an Amazon page. No sponsor is configured in this
-version, so this build carries no advertising host permission at all.
+This permission has nothing to do with sponsorship. A sponsored message is fetched by the
+background worker from winnow-reviews.vercel.app, drawn only in Winnow's own popup and
+settings page, and never appears on an Amazon page. That host is requested separately and is
+the build's only non-Amazon host permission.
 ```
 
 ### Optional host permissions (`http://localhost/*`, `http://127.0.0.1/*`)
@@ -249,15 +250,16 @@ is now a network path in the extension, so "no code path can send it" is no long
 argument. The argument is the request's contents: a sponsorship request carries a schema
 version, a window name and a format list, and `tests/ads-policy.test.ts` pins that key set so
 a field added later fails the suite rather than leaking quietly. None of it is user data, so
-nothing is collected. It is moot in this build, which configures no sponsor and makes no
-request at all.
+nothing is collected.
 
-Two things to revisit before submitting a build where that is no longer true:
+**The rail is live as of 0.5.0**, so item 1 below is no longer hypothetical. It has been
+applied to every surface rather than noted for later:
 
-1. A live sponsorship rail means the sponsor's server observes the connection itself — the IP
+1. A live sponsorship rail means the host serving it observes the connection itself — the IP
    address, and approximate location from it. That is not one of Chrome's collection
    categories and is not something Winnow transmits, but it is the honest limit of "nothing
-   leaves your machine", and any surface using that phrase should say so.
+   leaves your machine". PRIVACY.md carries a "What a sponsor can see anyway" section saying
+   exactly that, and no surface claims the request cannot be used to recognise you.
 2. A hosted deep-analysis endpoint — anything beyond the loopback developer setup — would
    move "Website content" from not-collected to collected. That answer is attested to Google.
 
@@ -299,8 +301,9 @@ live Amazon.
 - [ ] Zips rebuilt from the exact commit being submitted. The 0.5.0 archives in the repo root
       were built before three later commits, one of them a fix, and an archive that is merely
       *near* the tag is the kind of thing nobody notices until a bug report fails to reproduce
-- [ ] Money section re-read against `activeNetworks()` in `src/shared/ads/registry.ts`. If a
-      rail is live, the "no sponsor is configured" sentences here are false, and the Data usage
-      disclosures section above has two items to revisit first
-- [ ] Generated `dist/manifest.json` inspected for advertising hosts in `host_permissions` —
-      and for their absence while no rail is configured
+- [ ] Money section re-read against `activeNetworks()` in `src/shared/ads/registry.ts`. The
+      direct rail is live, so this file must not claim otherwise — `tests/claims.test.ts` fails
+      the build in whichever direction is wrong, but the wording still needs a human read
+- [ ] Generated `dist/manifest.json` inspected: `host_permissions` should hold the 20 Amazon
+      patterns plus exactly `https://winnow-reviews.vercel.app/*`, and `content_scripts[].matches`
+      must stay Amazon-only — an ad host there would mean code running on the ad host

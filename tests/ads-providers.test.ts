@@ -213,15 +213,13 @@ describe('site/sponsors.json', () => {
     expect(comment).toMatch(/80/);
     expect(comment).toMatch(/140/);
     expect(comment).toMatch(/40/);
-    expect(comment).toMatch(/same origin/i);
+    expect(comment).toMatch(/winnow-reviews\.vercel\.app/i);
   });
 
-  it('would validate if its placeholder origin were the configured one', () => {
-    // The template's clickUrl points at example.invalid, which no registry
-    // will ever allow — so validate it against a fixture network standing at
-    // that origin. This proves the shape is right without pretending the
-    // placeholder is a real host.
-    useTestNetwork([{ ...TEST_NETWORK, id: 'direct', origin: 'https://example.invalid' }]);
+  it('every entry validates against the live registry origin', () => {
+    // This file is fetched by the shipped extension now, so an entry that
+    // fails validation is a slot that silently shows nothing in production.
+    useTestNetwork([{ ...TEST_NETWORK, id: 'direct', origin: 'https://winnow-reviews.vercel.app' }]);
     try {
       const entry = { ...(raw[0] as Record<string, unknown>) };
       delete entry._comment; // stripped so the field-count check below is honest
@@ -232,7 +230,7 @@ describe('site/sponsors.json', () => {
   });
 
   it('control: a template breaking a limit would be caught', () => {
-    useTestNetwork([{ ...TEST_NETWORK, id: 'direct', origin: 'https://example.invalid' }]);
+    useTestNetwork([{ ...TEST_NETWORK, id: 'direct', origin: 'https://winnow-reviews.vercel.app' }]);
     try {
       const entry: Record<string, unknown> = {
         ...(raw[0] as Record<string, unknown>),

@@ -1,10 +1,10 @@
 [
   {
-    "_comment": "EXAMPLE — not served as sponsorship until the `direct` network in src/shared/ads/registry.ts is configured with the domain this is deployed to. LIMITS ARE ENFORCED BY REJECTION, NOT TRUNCATION: an entry that breaks one is skipped entirely and the slot shows the next valid entry, or nothing. That is deliberate (truncating would change copy an advertiser approved) but it is silent, so check the slot actually fills after editing. headline <= 80 chars, body <= 140, advertiser <= 40. headline, advertiser and clickUrl are required. clickUrl and imageUrl must be https AND on the same origin this file is served from. body, imageUrl and viewUrl may be null.",
-    "headline": "Your sponsor's one-line pitch",
-    "body": "One sentence of supporting copy.",
-    "advertiser": "Sponsor Name",
-    "clickUrl": "https://example.invalid/go/sponsor-name",
+    "_comment": "LIVE sponsor file, fetched by the extension. LIMITS ARE ENFORCED BY REJECTION, NOT TRUNCATION: an entry that breaks one is skipped and the slot shows the next valid entry, or nothing. headline <= 80 chars, body <= 140, advertiser <= 40. headline, advertiser and clickUrl are required. clickUrl and imageUrl must be https AND on https://winnow-reviews.vercel.app. body, imageUrl and viewUrl may be null. A list rotates: one entry is chosen per render. Check the popup actually fills after editing — a rejected entry looks exactly like no sponsor.",
+    "headline": "Seven ways to spot a fake Amazon review",
+    "body": "The checks Winnow runs, explained so you can do them yourself in a minute.",
+    "advertiser": "Winnow",
+    "clickUrl": "https://winnow-reviews.vercel.app/go/guide",
     "imageUrl": null,
     "viewUrl": null
   }

@@ -56,9 +56,9 @@ describe('generated manifest', () => {
     }
   });
 
-  it('ships with no advertising reach while no network is configured', () => {
-    expect(adMatchPatterns()).toEqual([]);
-    expect([...manifest.host_permissions].sort()).toEqual([...matchPatterns()].sort());
+  it('ships exactly one advertising host, and it is ours', () => {
+    expect(adMatchPatterns()).toEqual(['https://winnow-reviews.vercel.app/*']);
+    expect([...manifest.host_permissions].sort()).toEqual([...allHosts()].sort());
   });
 
   it('gives every content script the same host list', () => {

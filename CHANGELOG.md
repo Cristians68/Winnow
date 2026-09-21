@@ -13,13 +13,20 @@ release can change a grade — that is the central design constraint of the feat
 - **Sponsorship, in Winnow's own windows only.** One sponsored message can appear in the toolbar
   popup and on the settings page.
 
-  **No sponsor is configured in this release.** Every network in the registry ships
-  `configured: false`, so the build carries no advertising host permission and makes no
-  advertising request at all. EthicalAds has no publisher account yet; the direct-sponsor host is
-  not deployed; PlayYield does not resolve as a service. A host permission granted "for later" is
-  a permission granted, and this project has already shipped one to a domain owned by someone else
-  (`api.winnow.app`). `docs/SPONSORSHIP.md` documents what must exist before each rail is switched
-  on. It **never appears on an Amazon page** and never appears beside a
+  **The direct rail is live.** The message is fetched from `winnow-reviews.vercel.app`, a host we
+  operate serving a static JSON file — not a third-party ad network, so no advertising company is
+  in the loop and none is trusted. That host is the build's **only** non-Amazon permission, and it
+  never appears in `content_scripts[].matches`, so no ad code can execute on a page.
+
+  It was switched on alongside a real entry rather than ahead of one, so the slot has never
+  shipped empty. The operational reason it is on: selling a sponsor is now an edit to a JSON file
+  on our own host — no new extension version, no store review, no multi-day wait between agreeing
+  a sponsorship and running it.
+
+  The other two adapters stay `configured: false` and carry no permission. EthicalAds has no
+  publisher account; PlayYield does not resolve as a service at all. A host permission granted
+  "for later" is a permission granted, and this project already shipped one to a domain owned by
+  somebody else (`api.winnow.app`). It **never appears on an Amazon page** and never appears beside a
   grade. Settings → *Show sponsorship in Winnow's own windows* turns it off.
 
   The sponsor is told that a Winnow window opened, and nothing else. The request carries a schema

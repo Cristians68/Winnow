@@ -35,9 +35,10 @@
       /* Sponsorship slot. Visually quieter than the grade above it — an ad
          that competes with the verdict for attention is an ad that looks like
          part of the verdict. */
-      /* Collapses entirely when the slot is empty. No sponsor is configured in
-         this release, and an unexplained 14px gap under the grade is a worse
-         default than no gap at all. */
+      /* Collapses entirely when the slot is empty. A sponsor may be absent for
+         a moment — the fetch is slow, offline, or the reader switched
+         sponsorship off — and an unexplained 14px gap under the grade is a
+         worse default than no gap at all. */
       .ad-wrap:has(> :not(:empty)) { padding: 0 16px 14px; }
       .ad-slot {
         border: 1px solid #eceef2; border-radius: 9px; padding: 10px 11px;

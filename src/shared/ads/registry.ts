@@ -70,17 +70,20 @@ export const AD_NETWORKS: readonly AdNetwork[] = [
     // under this account. That check is the point — winnow.vercel.app also
     // answers HTTP 200 and belongs to an unrelated AI writing product.
     //
-    // Still configured:false. The origin is real now, but sponsors.json holds
-    // one example entry and no sponsor has been sold. Switching it on today
-    // would grant a host permission, re-enter Chrome Web Store review, and
-    // show an ad for nobody. Flip it in the same change that puts a real
-    // sponsor in that file. See docs/SPONSORSHIP.md.
+    // Live. Enabled alongside a real entry in sponsors.json rather than ahead
+    // of one, so the slot has never shipped empty.
+    //
+    // The operational reason this is on: with the rail live, selling a sponsor
+    // is an edit to a JSON file on our own host. Nothing about the extension
+    // changes, so no new version, no store review, and no multi-day wait
+    // between agreeing a sponsorship and running it. Dark, every sponsor would
+    // have cost a release cycle.
     origin: 'https://winnow-reviews.vercel.app',
     path: '/sponsors.json',
     label: 'Direct sponsor',
     transport: 'GET',
     params: {},
-    configured: false,
+    configured: true,
   },
   {
     id: 'playyield',

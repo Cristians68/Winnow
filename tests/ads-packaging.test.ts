@@ -38,14 +38,16 @@ describe('generated manifest', () => {
     expect([...(manifest.host_permissions ?? [])].sort()).toEqual(expected);
   });
 
-  it('grants no ad host at all while no network is configured', () => {
-    // The shipped state today. Every network in the registry has
-    // configured:false — EthicalAds has no publisher account yet, the direct
-    // sponsor host is not deployed, and PlayYield does not exist — so the
-    // build grants no advertising reach whatsoever. The slot is wired and
-    // dark rather than pointed at a host nobody verified.
-    expect(adMatchPatterns()).toEqual([]);
-    expect(manifest.host_permissions ?? []).toEqual(matchPatterns());
+  it('grants exactly one ad host, on a domain we control', () => {
+    // The direct sponsor rail is live. One host, ours, serving a static JSON
+    // file — not a third-party network. If this list ever grows, it should be
+    // because someone decided to add a network, not because a placeholder was
+    // switched on by accident.
+    expect(adMatchPatterns()).toEqual(['https://winnow-reviews.vercel.app/*']);
+    expect(manifest.host_permissions ?? []).toEqual([
+      ...matchPatterns(),
+      ...adMatchPatterns(),
+    ]);
   });
 
   it('would place a configured ad host in host_permissions only', () => {
