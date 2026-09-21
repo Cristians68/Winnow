@@ -6,21 +6,19 @@
     <title>Winnow — What the reviews actually say</title>
     <meta
       name="description"
-      content="Amazon review-integrity analysis computed locally in your browser. See the adjusted rating a product would have without its manipulated reviews. No affiliate links, ever."
+      content="See the rating an Amazon product would have without its manipulated reviews. Computed in your browser, with every check shown. No affiliate links, ever."
     />
-    <meta name="color-scheme" content="light dark" />
-
-    <meta property="og:title" content="Winnow — What the reviews actually say" />
-    <meta property="og:description" content="Amazon review-integrity analysis, computed locally in your browser. No affiliate links, ever." />
-    <meta property="og:type" content="website" />
-
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23125c33'/%3E%3Ctext x='50' y='50' font-family='system-ui,sans-serif' font-size='62' font-weight='700' fill='%23e3f5ea' text-anchor='middle' dominant-baseline='central'%3EW%3C/text%3E%3C/svg%3E" />
-
+    <meta name="color-scheme" content="dark light" />
     <link rel="canonical" href="https://winnow-reviews.vercel.app/" />
+    <meta property="og:title" content="Winnow — What the reviews actually say" />
+    <meta property="og:description" content="The rating an Amazon product would have without its manipulated reviews. Computed in your browser." />
+    <meta property="og:type" content="website" />
     <meta property="og:url" content="https://winnow-reviews.vercel.app/" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Winnow — What the reviews actually say" />
-    <meta name="twitter:description" content="Amazon review-integrity analysis, computed locally in your browser. No affiliate links, ever." />
+    <meta name="twitter:description" content="The rating an Amazon product would have without its manipulated reviews. Computed in your browser." />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -35,154 +33,194 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
     }
     </script>
-    <link rel="stylesheet" href="/style.css" />
   </head>
-
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
     <header class="site">
       <div class="wrap">
-        <div class="brand"><span class="mark" aria-hidden="true">W</span> Winnow</div>
-        <nav class="site" aria-label="Primary">
-          <a href="#how">How it works</a>
-          <a href="#money">How we make money</a>
-          <a href="#privacy">Privacy</a>
+        <a class="brand" href="/">Winnow</a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-hide" href="#how">How it works</a>
+          <a class="nav-hide" href="#money">How it's paid for</a>
+          <a class="nav-hide" href="/spot-fake-amazon-reviews">Guide</a>
           <a href="https://github.com/Cristians68/Winnow">Source</a>
         </nav>
       </div>
     </header>
 
     <main id="main">
-      <div class="hero wrap">
-        <h1>What the reviews actually say.</h1>
-        <p class="lede">
-          Winnow analyses the reviews on an Amazon product page and shows you the rating that
-          product would have if its manipulated reviews were removed — along with exactly why.
-        </p>
-        <div class="cta">
-          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
-          <a class="btn btn-secondary" href="#how">See how it works</a>
+      <div class="wrap">
+        <div class="hero">
+          <div>
+            <span class="eyebrow"><span class="dot"></span> Fakespot shut down. This replaces it.</span>
+            <h1>What the reviews actually say.</h1>
+            <p class="lede">
+              Winnow reads the reviews already on an Amazon product page and shows the rating that
+              product would have without the ones that look manipulated — along with exactly which
+              checks fired, and how sure it is.
+            </p>
+            <div class="cta">
+              <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+              <a class="btn btn-secondary" href="#how">See how it works</a>
+            </div>
+            <p class="cta-note">
+              Works in Chrome, Edge, Brave and Opera. No account, no tracking, no affiliate links.
+              The scoring engine is <a href="https://github.com/Cristians68/Winnow">open source</a>,
+              so you can check a grade rather than trust it.
+            </p>
+          </div>
+
+          <!-- A reproduction of the panel, built in CSS rather than shipped as a
+               screenshot: it stays sharp at any size and cannot go stale the way
+               a PNG of an older build does. -->
+          <div class="mock" role="img" aria-label="Winnow's panel on an Amazon page: grade A, reviews look genuine, adjusted rating 4.6 stars, trust score 96 out of 100, moderate confidence.">
+            <div class="mock-head">
+              <div class="mock-grade">A</div>
+              <div>
+                <p class="mock-title">Winnow — Reviews look genuine</p>
+                <p class="mock-sub">No review was set aside, but 2 checks raised concerns.</p>
+              </div>
+            </div>
+            <div class="mock-stats">
+              <div class="mock-stat">
+                <span class="k">Adjusted rating</span>
+                <span class="h">The stars with the doubtful reviews set aside.</span>
+                <span class="v">4.6 ★</span>
+              </div>
+              <div class="mock-stat">
+                <span class="k">Trust score</span>
+                <span class="h">How much of what we could read held up.</span>
+                <span class="v">96/100</span>
+              </div>
+              <div class="mock-stat">
+                <span class="k">Confidence</span>
+                <span class="h">How much evidence this is based on.</span>
+                <span class="v sm">Moderate confidence</span>
+              </div>
+            </div>
+            <div class="mock-verdict">
+              <b>4.6★ is broadly believable</b>
+              <span>
+                2 checks flagged something, but not enough to move the overall picture. Whether the
+                product suits you is a separate question, and one Winnow does not try to answer —
+                it reads review integrity, not quality.
+              </span>
+            </div>
+            <p class="mock-basis">
+              Based on the 13 reviews visible on this page and the rating breakdown across all
+              49,059 ratings. This is an estimate, not proof.
+            </p>
+            <div class="mock-foot">No affiliate links. No merchant pays for a grade.</div>
+          </div>
         </div>
-        <p class="mt-18 cta-note">
-          Works in Chrome, Edge, Brave and Opera. No account, no tracking, no affiliate links.
-          <a href="https://github.com/Cristians68/Winnow">Read the source</a> — the scoring engine is
-          open so you can check the grade rather than trust it.
-        </p>
+
+        <dl class="stats">
+          <div><dt>7</dt><dd>checks run on every listing</dd></div>
+          <div><dt>1</dt><dd>permission requested: storage</dd></div>
+          <div><dt>20</dt><dd>Amazon storefronts supported</dd></div>
+          <div><dt>0</dt><dd>affiliate links, permanently</dd></div>
+        </dl>
       </div>
 
       <section id="why">
-        <div class="wrap prose">
-          <h2>Why this exists</h2>
-          <p>
-            Mozilla shut Fakespot down in July 2025, and ReviewMeta went dark in early 2026. Ten
-            million people lost the tools they used to sanity-check reviews, and nothing credible
-            replaced them.
-          </p>
-          <p>
-            Meanwhile the problem got worse. AI-generated fake reviews nearly doubled as a share of
-            fake reviews in a single year, and 74% of them are five stars — against 59% of genuine
-            reviews.
-          </p>
-          <div class="callout">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>Why this exists</h2>
             <p>
-              The replacements have their own problems. The most-recommended Fakespot alternative
-              ships an <strong>undisclosed Amazon affiliate tag</strong> on its "Buy Now" button. And
-              Honey lost roughly eight million users after being caught overwriting creators'
-              affiliate links. A tool that earns a commission when you buy cannot credibly tell you
-              not to buy.
+              Mozilla shut Fakespot down on 1 July 2025, saying it "didn't fit a model we could
+              sustain", and shipped no replacement — the announcement pointed people at tab groups
+              and bookmarks. ReviewMeta went dark separately. Millions of people who checked a
+              listing before buying were left with nothing to check it with.
             </p>
+          </div>
+          <div class="bento">
+            <div class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
+              <h3>The old model stopped working</h3>
+              <p>
+                Since May 2026 Amazon's review pages return 404 without session cookies, and full
+                review text left the public HTML. A server fetching a listing from outside now sees
+                a fraction of what you see logged in.
+              </p>
+            </div>
+            <div class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></div>
+              <h3>So it reads your page instead</h3>
+              <p>
+                Winnow scores the page your browser already rendered. Nothing is crawled and nothing
+                is uploaded — which is why the analysis happens on your device rather than in a
+                data centre.
+              </p>
+            </div>
+            <div class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.4-3.1 8.3-8 9-4.9-.7-8-4.6-8-9V7z"/></svg></div>
+              <h3>And never with your session</h3>
+              <p>
+                Winnow makes no automated requests to Amazon, ever. Scraping through a logged-in
+                session puts <strong>your</strong> account at risk of suspension. It accepts a
+                shallower read instead.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       <section id="how">
         <div class="wrap">
-          <div class="prose">
-            <h2>How it works</h2>
+          <div class="section-head">
+            <h2>What it checks</h2>
             <p>
-              Winnow scores every review it can see on the page, then recomputes the product's
-              rating with the suspicious ones down-weighted. Nothing is hidden behind a number —
-              every signal shows its reasoning.
+              Seven signals, each reported with what it found and whether it changed the grade. A
+              verdict you cannot inspect is one you have to take on faith.
             </p>
           </div>
-          <div class="grid">
-            <div class="card">
-              <h3>Rating distribution</h3>
-              <p>
-                Genuine products keep a one-star tail from damage and defects. Campaigns can add
-                five-star reviews but cannot remove organic one-star ones, so a perfect spread with
-                no negative tail is a tell.
-              </p>
-            </div>
-            <div class="card">
-              <h3>Review language</h3>
-              <p>
-                Disclosed incentives, template-farm boilerplate, and the uniform rhythm and missing
-                specifics that mark generated text.
-              </p>
-            </div>
-            <div class="card">
-              <h3>Duplicate text</h3>
-              <p>
-                Review farms paraphrase from templates. Character-level comparison catches what
-                word matching misses.
-              </p>
-            </div>
-            <div class="card">
-              <h3>Review timing</h3>
-              <p>
-                Paid campaigns land in waves. Organic reviews trickle in with sales.
-              </p>
-            </div>
-            <div class="card">
-              <h3>Substance and response</h3>
-              <p>
-                Five-star ratings carrying six generic words. Featured reviews months old that
-                nobody ever found helpful.
-              </p>
-            </div>
-            <div class="card">
-              <h3>Cross-product patterns</h3>
-              <p>
-                Optional deeper analysis spots phrasing reused across unrelated products, reviewer
-                accounts that move together, and listings that swapped product while keeping their
-                reviews.
-              </p>
-            </div>
-          </div>
+          <ul class="checks">
+            <li><span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span><b>Rating distribution.</b> Genuine products keep a 1-star tail from damage and defects. A campaign can add 5-star reviews but cannot remove organic 1-star ones.</span></li>
+            <li><span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span><b>Verified purchases.</b> Unverified reviews are down-weighted, more so at 5 stars.</span></li>
+            <li><span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span><b>Review language.</b> Disclosed incentives, template-farm boilerplate, and patterns consistent with generated text.</span></li>
+            <li><span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span><b>Duplicate text.</b> Reviews paraphrased from a shared template.</span></li>
+            <li><span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span><b>Review timing.</b> Bursts of reviews landing together inside a months-long history.</span></li>
+            <li><span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span><b>Review substance.</b> Five-star ratings carrying six generic words and no specifics.</span></li>
+            <li><span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span><b>Community response.</b> Featured reviews months old that nobody ever found helpful.</span></li>
+          </ul>
         </div>
       </section>
 
-      <section id="money">
-        <div class="wrap prose">
-          <h2>How we make money</h2>
-          <div class="pledge">
-            <p><strong>Sponsorship, in Winnow's own windows only.</strong></p>
-            <p>
-              One sponsored message appears in Winnow's toolbar popup and settings page. It
-              never appears on an Amazon page and never appears beside a grade. You can switch it
-              off in Settings, and nothing else changes when you do.
-            </p>
-            <p>
-              <strong>A sponsor is told that a Winnow window opened, and nothing else.</strong>
-              The request carries no product, no page address, no search term, no grade and no
-              identifier — there is no field in it that could hold one. So a sponsor cannot buy
-              placement against a particular product, because it cannot know which one you are
-              looking at.
-            </p>
-            <p>
-              Still true, still binding in our privacy policy: no affiliate links, no referral tags,
-              no merchant relationships, and no payment from any seller, brand or marketplace to
-              influence a grade.
-            </p>
+      <section id="limits">
+        <div class="wrap">
+          <div class="bento">
+            <div class="card wide">
+              <h3>It tells you when it cannot tell</h3>
+              <p>
+                Amazon usually shows 8–13 reviews on a product page, and those are <em>featured</em>
+                reviews — a small, biased sample. Winnow shrinks its adjustment to account for that,
+                and when too little of the sample is trustworthy it reports <strong>no adjusted
+                rating at all</strong> rather than inventing a confident number.
+              </p>
+              <p>
+                Be suspicious of any checker that returns a reassuring score for everything you
+                point it at. That is not detection, it is decoration. "Couldn't read this page" is
+                never a verdict about the product.
+              </p>
+            </div>
+            <div class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div>
+              <h3>Estimates, not proof</h3>
+              <p>
+                Winnow cannot know that any individual review is fake. It identifies patterns that
+                manipulated reviews tend to produce, and always shows what a judgement rests on.
+              </p>
+            </div>
+            <div class="card">
+              <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 10-8 8"/><path d="M12 7v5l3 2"/></svg></div>
+              <h3>Integrity, not quality</h3>
+              <p>
+                It never reads whether the reviews say the product is good, and never tells you
+                whether to buy. Those are different questions.
+              </p>
+            </div>
           </div>
-          <p class="mt-26">
-            The scoring engine is open source specifically so you can verify that no merchant is
-            paying for a better grade. You don't have to take our word for it, which is the point.
-            A tool that earns a commission when you buy cannot credibly tell you not to buy — which
-            is exactly why the money comes from a slot that cannot see what you are buying.
-          </p>
         </div>
       </section>
 
@@ -190,126 +228,119 @@
         <div class="wrap prose">
           <h2>What leaves your browser</h2>
           <p>
-            Everything happens on your device. The extension you can install makes <strong>no
-            network requests at all</strong> — it holds no permission to contact any server, which
-            you can check in its manifest.
+            The grade is computed on your device from the page you already loaded. The reviews, the
+            product and the page address never leave your machine, and there is no account, no
+            analytics and no telemetry of any kind.
           </p>
           <p>
-            A future optional feature would send data about a product listing — never about you, and
-            only when you click a button to ask for it. It is not part of the current release, and
-            turning it on would require a new permission you would see and approve first. The table
-            below describes that feature's limits, so they are on the record before it exists.
-          </p>
-          <div class="scroller">
-            <table>
-              <caption class="sr-only">What Winnow sends and never sends</caption>
-              <thead>
-                <tr><th scope="col">Sent, only on request</th><th scope="col">Never sent</th></tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>The product's public Amazon ID, its rating, and the reviews already shown on the page</td>
-                  <td>Any identifier for you — no account, user ID, device ID or cookie</td>
-                </tr>
-                <tr>
-                  <td>A hash of the product title, never the title</td>
-                  <td>Your Amazon session, orders, addresses or payment details</td>
-                </tr>
-                <tr>
-                  <td>Amazon's public reviewer IDs, hashed before storage</td>
-                  <td>Your browsing history or any page you didn't ask about</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="mt-26">
-            The server <strong>rejects</strong> any request carrying a field it doesn't expect,
-            rather than ignoring it. If a future version were changed to send something extra, the
-            request would fail rather than quietly succeed.
-          </p>
-          <p>
-            Winnow also never crawls Amazon using your session. Automated scraping through a
-            logged-in session can get <em>your</em> Amazon account suspended, so Winnow reads only
-            what your browser already loaded. That costs some depth, and it's a trade we make on
-            purpose.
+            Winnow requests <strong>one permission — storage</strong> — plus the Amazon storefronts
+            it runs on and one host of ours that serves the sponsored message below. It cannot read
+            your logins, your passwords, or any other site. Every extension has to declare this on
+            its own store listing, so don't take our word for it: open
+            <code>chrome://extensions</code>, find Winnow, and read the list. Then do the same for
+            anything else you have installed that watches you shop.
           </p>
         </div>
       </section>
 
-      <section id="limits">
-        <div class="wrap prose">
-          <h2>What Winnow doesn't claim</h2>
-          <p>
-            Every result is an <strong>estimate, not proof</strong>. Winnow cannot know that any
-            individual review is fake — it identifies patterns that manipulated reviews tend to
-            produce, and it tells you what each judgement rested on.
-          </p>
-          <p>
-            Usually only 8–13 reviews are visible on a product page, and those are <em>featured</em>
-            reviews — a biased sample. Winnow shrinks its adjustment to account for that, and
-            declines to state an adjusted rating at all when too little of the sample looks
-            trustworthy. "Couldn't read this page" is never a verdict about the product.
-          </p>
+      <section id="money">
+        <div class="wrap">
+          <div class="callout">
+            <p class="pledge">
+              <span aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+              </span>
+              No affiliate links. No merchant pays for a grade.
+            </p>
+            <h2 class="mt-18">How it's paid for</h2>
+            <div class="prose mt-18">
+              <p>
+                One sponsored message appears in Winnow's toolbar popup and settings page. It never
+                appears on an Amazon page and never appears beside a grade, and you can switch it
+                off in Settings.
+              </p>
+              <p>
+                <strong>A sponsor is told that a Winnow window opened, and nothing else.</strong>
+                The request carries no product, no page address, no search term, no grade and no
+                identifier — there is no field in it that could hold one. So a sponsor cannot buy
+                placement against a particular product, because it cannot know which one you are
+                looking at.
+              </p>
+              <p>
+                Still true, and binding in the privacy policy: no affiliate links, no referral tags,
+                no merchant relationships, and no payment from any seller, brand or marketplace to
+                influence a grade. A tool that earns a commission when you buy cannot credibly tell
+                you not to buy — which is exactly why the money comes from a slot that cannot see
+                what you are buying.
+              </p>
+              <p class="mt-26"><a href="/sponsor">Sponsoring Winnow →</a></p>
+            </div>
+          </div>
         </div>
       </section>
 
       <section id="faq">
-        <div class="wrap prose">
-          <h2>Questions</h2>
-          <dl class="faq">
-            <dt>Why an extension instead of a website?</dt>
-            <dd>
-              Because a website can't do this any more. Since May 2026, Amazon returns "Page Not
-              Found" to any server requesting review pages without session cookies, and full review
-              text left the public HTML. Every tool that analyses from a server is now working blind
-              — which is why they all return roughly the same score for everything. An extension
-              reads the page you're already looking at.
-            </dd>
+        <div class="wrap">
+          <div class="section-head"><h2>Questions</h2></div>
+          <div class="faq">
+            <details>
+              <summary>Is it really free?</summary>
+              <p>
+                Yes, and there is nothing to unlock. Sponsorship covers the work, and it is confined
+                to Winnow's own two windows.
+              </p>
+            </details>
+            <details>
+              <summary>Does it work on my Amazon?</summary>
+              <p>
+                Twenty storefronts, including the US, UK, Canada, Australia, Germany, France, Spain,
+                Italy, Japan, India, Brazil and more. The panel is localised, and when Winnow cannot
+                read a page's language it says so rather than guessing.
+              </p>
+            </details>
+            <details>
+              <summary>Can a seller pay to change their grade?</summary>
+              <p>
+                No. Grades are computed on your device by an engine you can read, before any
+                sponsorship request is made, and no part of a sponsored message reaches the scoring
+                code. That is why the engine being open source matters more than any promise here.
+              </p>
+            </details>
+            <details>
+              <summary>What about Firefox?</summary>
+              <p>
+                A Firefox build exists and is in review at addons.mozilla.org. Firefox asks for site
+                permission separately, so after installing you will need to allow Winnow on
+                amazon.com from the extensions menu.
+              </p>
+            </details>
+            <details>
+              <summary>Why should I trust a tool that grades trust?</summary>
+              <p>
+                You shouldn't, on its word. The scoring engine is open source, the permission list
+                is published by Google rather than by us, and the panel shows its reasoning and its
+                confidence on every verdict. Those are three things you can check.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
 
-            <dt>Does it slow down Amazon?</dt>
-            <dd>
-              No. The grade is computed from the page your browser already rendered, in about a
-              millisecond, with no extra requests.
-            </dd>
-
-            <dt>Will this get my Amazon account banned?</dt>
-            <dd>
-              No. Winnow makes no automated requests to Amazon at all. It only reads what your
-              browser already loaded for a page you chose to visit.
-            </dd>
-
-            <dt>What if it says a good product is bad?</dt>
-            <dd>
-              Open the breakdown and check the reasoning — every flag shows why it fired. If it
-              looks wrong, it may well be. Amazon changes its page markup often, and a parsing
-              failure can produce a bad grade. Winnow tries to detect that and say so, and we'd
-              rather hear about it: report it on GitHub.
-            </dd>
-
-            <dt>Which sites does it work on?</dt>
-            <dd>
-              Amazon storefronts only, in fifteen countries. Doing one marketplace properly beats
-              doing several badly, which is the failing of every current alternative.
-            </dd>
-          </dl>
+      <section id="install" class="wrap section-install">
+        <div class="callout callout-centered">
+          <h2>Check a listing before you buy it</h2>
+          <p class="lede lede-narrow">
+            Winnow reads the reviews already on the page and shows the rating the product would have
+            without the manipulated ones. It never uploads the page, and it never sends you anywhere
+            to buy anything.
+          </p>
+          <div class="cta cta-centered">
+            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+            <a class="btn btn-secondary" href="/spot-fake-amazon-reviews">Spot fakes by eye</a>
+          </div>
         </div>
       </section>
     </main>
-
-    <section id="install" class="wrap section-install">
-      <div class="callout callout-centered">
-        <h2>Check a listing before you buy it</h2>
-        <p class="lede-narrow lede">
-          Winnow reads the reviews already on the page and shows the rating the product would have
-          without the manipulated ones. It never uploads the page, and it never sends you anywhere
-          to buy anything.
-        </p>
-        <div class="cta cta-centered">
-          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
-          <a class="btn btn-secondary" href="https://github.com/Cristians68/Winnow">Read the source</a>
-        </div>
-      </div>
-    </section>
 
     <footer class="site">
       <div class="wrap">
@@ -321,12 +352,12 @@
           <a href="https://github.com/Cristians68/Winnow">Source code</a>
           <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">Privacy policy</a>
           <a href="https://github.com/Cristians68/Winnow/blob/main/SECURITY.md">Security</a>
-          <a href="https://github.com/Cristians68/Winnow#methodology">Methodology</a>
           <a href="https://github.com/Cristians68/Winnow/issues">Report an issue</a>
         </div>
         <p class="m0">
           Winnow is an independent project and is not affiliated with, endorsed by, or connected to
-          Amazon. Amazon and the Amazon logo are trademarks of Amazon.com, Inc. or its affiliates.
+          Amazon, Mozilla or Fakespot. Amazon and the Amazon logo are trademarks of Amazon.com, Inc.
+          or its affiliates. Shutdown dates are as published by Mozilla.
         </p>
       </div>
     </footer>
