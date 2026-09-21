@@ -254,7 +254,13 @@ export const STYLES = `
 .mark-fg { fill: var(--good-bg); }
 .headline p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 
-.ratings { display: flex; gap: 22px; margin: 16px 0 2px; flex-wrap: wrap; }
+/* align-items: stretch (the default) plus a column layout per stat is what
+   keeps the three numbers on one line. Each stat stacks label, gloss, value,
+   and the glosses wrap to different heights — "The stars with the doubtful
+   reviews set aside." takes two lines where the others take one — so without
+   this the values sat at three different heights and read as three unrelated
+   boxes rather than one row. */
+.ratings { display: flex; gap: 22px; margin: 16px 0 2px; flex-wrap: wrap; align-items: stretch; }
 .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .stat .value { font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
 .stat .value.muted { color: var(--muted); font-weight: 600; font-size: 15px; }
@@ -262,8 +268,11 @@ export const STYLES = `
 /* Plain-English gloss under each number. "Adjusted rating" and "Trust score"
    are obvious to whoever built them and opaque to a first-time buyer, who is
    the person with the most to lose on a bad listing. */
-.stat { max-width: 23ch; }
+.stat { max-width: 23ch; display: flex; flex-direction: column; }
 .stat .hint { font-size: 11px; line-height: 1.35; color: var(--muted); margin: 2px 0 4px; }
+/* Pushes every value to the bottom of its equal-height column, so a gloss that
+   wraps to two lines moves the gloss, not the number underneath it. */
+.stat .value { margin-top: auto; }
 
 .selfcheck { margin: 13px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--surface); }
 .selfcheck-head { margin: 0 0 5px; font-size: 13.5px; font-weight: 700; color: var(--text); }
