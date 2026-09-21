@@ -270,8 +270,98 @@ rank for anything, and treat the launch posts as a one-off spike rather than a t
 - [ ] Paste the updated short description and detailed description from `docs/store-listing.md`.
 - [ ] Paste the host-permission justification from `docs/host-permission-justification.txt`
       (951 characters; the field truncates at 1000 without telling you).
-- [ ] Submit the Firefox build to AMO.
+- [ ] Submit the Firefox build to AMO — see "Submitting to Firefox" below. Source upload is
+      required (the build is minified); skipping it is the usual rejection cause.
 - [ ] Verify `winnow-reviews.vercel.app` in Google Search Console, submit the sitemap.
 - [ ] Post Show HN. Be available to reply for four hours.
 - [ ] Send ten outreach emails. Ten, not a hundred — personalised ones work and a blast does not.
 - [ ] Write down the install count so week two has something to compare against.
+
+---
+
+# Submitting to Firefox (AMO)
+
+`winnow-0.5.0-firefox.zip` is built and passes `web-ext lint` with **zero errors**. The two
+remaining warnings are expected and explained at the bottom of this section.
+
+## Install it in your own Firefox first (2 minutes)
+
+Before submitting, load it and click through it once. AMO review is a queue; finding a broken
+panel after submitting costs days.
+
+1. Open `about:debugging#/runtime/this-firefox`
+2. **Load Temporary Add-on…**
+3. Pick `winnow-0.5.0-firefox.zip` (or `dist/manifest.json` after `node build.mjs --target=firefox`)
+4. Open any Amazon product page, scroll to the reviews
+
+It disappears when Firefox restarts — that is what "temporary" means, and it is the right way to
+test. Do not sign it yourself to make it stick.
+
+**Expect to grant access.** Firefox MV3 treats `host_permissions` as *optional*: the extension
+is installed but does nothing until you allow it on the site. Click the extensions (puzzle-piece)
+button in the toolbar, find Winnow, and choose **Always Allow on amazon.com**. Chrome grants these
+at install; Firefox does not, and a user who does not know that will think the add-on is broken.
+Worth saying plainly in the AMO listing description.
+
+## Submitting
+
+1. Create a Firefox Account and sign in at
+   <https://addons.mozilla.org/developers/>
+2. **Submit a New Add-on** → **On this site** (listed, so it is publicly findable — that is the
+   entire point of doing this).
+3. Upload `winnow-0.5.0-firefox.zip`. Validation runs immediately; it should report no errors.
+4. **Source code: you must upload it.** The build minifies with esbuild, and AMO requires source
+   for any reviewable code that is minified, obfuscated or machine-generated. Provide the repo as
+   a zip, plus these build instructions in the notes field:
+
+   ```
+   Build:
+     npm ci
+     node build.mjs --target=firefox
+   Output: dist/
+   Node: 24.x   esbuild: 0.28.x (pinned in package-lock.json)
+   Source: https://github.com/Cristians68/Winnow
+   The scoring engine in src/core is dependency-free and readable on its own.
+   ```
+
+   Skipping this is the most common cause of a rejection for an extension like this.
+5. **Listing details** — reuse the copy in `docs/store-listing.md`. Add one Firefox-specific line
+   near the top of the description:
+
+   ```
+   Firefox asks for permission per site. After installing, click the extensions button in the
+   toolbar, choose Winnow, and select "Always Allow on amazon.com" — otherwise Firefox keeps
+   the add-on installed but idle.
+   ```
+6. **Categories:** Shopping, Privacy & Security.
+7. **Licence:** MIT (matches the repository).
+8. **Privacy policy:** link the same file the Chrome listing uses —
+   <https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md>
+9. **Data collection:** the manifest already declares
+   `data_collection_permissions: { required: ["none"] }`, so Firefox will show users "doesn't
+   collect any data" in its own words. Answer the form consistently: no data collected, no
+   analytics, no third-party transmission.
+
+Review is human and typically takes days rather than weeks. An add-on with clean source, no
+obfuscation, one permission and a real privacy policy is the easy case.
+
+## The two lint warnings, and why they stay
+
+```
+KEY_FIREFOX_UNSUPPORTED_BY_MIN_VERSION
+KEY_FIREFOX_ANDROID_UNSUPPORTED_BY_MIN_VERSION
+```
+
+`data_collection_permissions` arrived in **Firefox 140** (Android 142), and
+`strict_min_version` is **128**. The key is simply ignored on older versions; AMO still accepts
+the package with zero errors, and it is required for new listings.
+
+**Do not silence these by raising the minimum version.** Firefox 128 is an ESR release, so
+raising the floor to 140 would drop every ESR user to make a lint line green. The warning is
+informational and the trade is a bad one.
+
+## After it is live
+
+- Add the AMO link to the site's install buttons alongside the Chrome one.
+- Update `docs/store-listing.md` and `README.md` with the Firefox URL.
+- The gecko id `winnow@winnow.tools` is fixed forever, exactly like the Chrome extension id.

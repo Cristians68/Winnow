@@ -93,17 +93,35 @@ async function copyStatic() {
   }
 
   if (target === 'firefox') {
-    // Firefox needs an explicit, stable add-on id, and accepts `scripts`
-    // alongside `service_worker` for the background context. Chrome ignores
-    // `scripts`, but there is no reason to ship a key to a browser that has no
-    // use for it, so the two manifests are generated rather than shared.
+    // Firefox needs an explicit, stable add-on id, and a declaration of what
+    // the add-on collects. `data_collection_permissions` is required for all
+    // new Firefox listings; web-ext lint warns MISSING_DATA_COLLECTION_PERMISSIONS
+    // without it.
+    //
+    // `required: ['none']` is the whole point of this product rather than a
+    // formality. Firefox renders it to the user as "doesn't collect any data",
+    // which is the same claim PRIVACY.md makes, now made in the place a
+    // browser will repeat it. 'none' is only valid alone, which is correct
+    // here: there is no second entry to add.
+    //
+    // The key landed in Firefox 140 (Android 142) and strict_min_version is
+    // 128, so web-ext lint reports KEY_FIREFOX_UNSUPPORTED_BY_MIN_VERSION.
+    // That is informational and deliberate: 128 is an ESR release, the key is
+    // simply ignored below 140, and AMO accepts the package with zero errors.
+    // Do not "fix" the warning by raising the floor — that trades every ESR
+    // user for a clean lint line.
     manifest.browser_specific_settings = {
-      gecko: { id: 'winnow@winnow.tools', strict_min_version: '128.0' },
+      gecko: {
+        id: 'winnow@winnow.tools',
+        strict_min_version: '128.0',
+        data_collection_permissions: { required: ['none'] },
+      },
     };
-    manifest.background = {
-      service_worker: 'background/index.js',
-      scripts: ['background/index.js'],
-    };
+    // Firefox uses an event page, not a service worker, and ignores the
+    // `service_worker` key while warning about it (BACKGROUND_SERVICE_WORKER_IGNORED).
+    // Shipping a key the target browser ignores is noise in a review queue, so
+    // the Firefox build declares only what Firefox reads.
+    manifest.background = { scripts: ['background/index.js'] };
   }
 
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));

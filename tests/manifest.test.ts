@@ -109,9 +109,20 @@ describe('firefox target', () => {
     expect(firefox.browser_specific_settings.gecko.strict_min_version).toBeTruthy();
   });
 
-  it('declares a background script alongside the service worker', () => {
+  it('declares a background script and no service worker', () => {
+    // Firefox runs an event page and ignores `service_worker` entirely, while
+    // web-ext lint flags it (BACKGROUND_SERVICE_WORKER_IGNORED). Shipping a
+    // key the target browser ignores is noise in a review queue, so the
+    // Firefox build declares only what Firefox reads. Chrome's build is
+    // asserted separately and still carries the worker.
     expect(firefox.background.scripts).toEqual(['background/index.js']);
-    expect(firefox.background.service_worker).toBe('background/index.js');
+    expect(firefox.background.service_worker).toBeUndefined();
+  });
+
+  it('still gives Chrome its service worker', () => {
+    // Control: proves the assertion above reflects a per-target decision
+    // rather than the key having been dropped from both builds.
+    expect(chromeManifest.background.service_worker).toBe('background/index.js');
   });
 
   // Proves the two builds are actually different documents. Every assertion
@@ -137,5 +148,36 @@ describe('firefox target', () => {
     for (const script of firefox.content_scripts) {
       expect([...script.matches].sort()).toEqual([...matchPatterns()].sort());
     }
+  });
+});
+
+/**
+ * The Firefox listing's data-collection declaration.
+ *
+ * Firefox requires `data_collection_permissions` on new listings and shows it
+ * to the user in its own words. Winnow's answer is "none", which is the same
+ * claim PRIVACY.md makes — so this is the one place a browser repeats our
+ * privacy claim back to a user, and it must not drift from the policy.
+ */
+describe('firefox data collection declaration', () => {
+  let gecko: { data_collection_permissions?: { required?: string[] } };
+
+  beforeAll(async () => {
+    const OUT = '.tmp-test/manifest-datacollection';
+    execFileSync(process.execPath, ['build.mjs', '--target=firefox', `--outdir=${OUT}`], {
+      stdio: 'pipe',
+    });
+    gecko = JSON.parse(await readFile(`${OUT}/manifest.json`, 'utf8')).browser_specific_settings
+      .gecko;
+  });
+
+  it('declares that the add-on collects no data', () => {
+    expect(gecko.data_collection_permissions?.required).toEqual(['none']);
+  });
+
+  it('declares nothing alongside none, which would contradict it', () => {
+    // Firefox only accepts 'none' on its own. A second entry would both fail
+    // validation and mean the policy had stopped being true.
+    expect(gecko.data_collection_permissions?.required).toHaveLength(1);
   });
 });
