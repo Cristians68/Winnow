@@ -469,6 +469,21 @@ describe('copy matches a live sponsorship rail', () => {
     }
   });
 
+  it('describes sponsorship in the present tense, not as a plan', async () => {
+    const { activeNetworks } = await import('../src/shared/ads/registry.js');
+    if (activeNetworks().length === 0) return;
+
+    // The first version of the inverse rule only caught "no sponsor is
+    // configured", so the popup shipped saying sponsorship "will pay for
+    // itself" — the same stale claim in a different grammar, on the surface
+    // a reader meets first. Seen in a screenshot, not caught by a test.
+    for (const [name, text] of all()) {
+      expect(text, `${name} still describes sponsorship as future`).not.toMatch(
+        /will pay for itself|will pay for the work|how the work will pay/i,
+      );
+    }
+  });
+
   it('control: exactly one of the two tense rules is live', async () => {
     // If both could be inert at once, the copy would be unguarded in both
     // directions and every assertion here would pass by doing nothing.

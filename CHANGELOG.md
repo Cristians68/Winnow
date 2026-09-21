@@ -4,6 +4,16 @@ All notable changes to Winnow are recorded here. The scoring engine carries its 
 (`ENGINE_VERSION` in `src/core/score.ts`), shown in the on-page panel, so a grade can always be
 traced to the logic that produced it.
 
+## [0.5.1]
+
+`ENGINE_VERSION` stays at `0.3.0`. Scoring did not change.
+
+### Fixed
+- **The popup said sponsorship "will pay for itself"** — future tense, for something live since
+  0.5.0. The inverse claim rule added in 0.5.0 only looked for the sentence "no sponsor is
+  configured", so this passed: the same stale claim in a different grammar, on the surface a
+  reader meets first. Found in a screenshot. The rule now also rejects the future-tense form.
+
 ## [0.5.0]
 
 `ENGINE_VERSION` stays at `0.3.0`. **Scoring did not change in this release.** Nothing in this
