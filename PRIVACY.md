@@ -199,13 +199,28 @@ The request contains three values: a schema version, which of the two windows is
 creative formats that window can display. There is no field in it that could carry anything else —
 not the product, not the page address, not your search terms, not the grade, not a trust score, not
 a review, and not an identifier of any kind. Two different people opening the same window send
-byte-identical requests, so the request cannot be used to recognise you or to count you twice.
+byte-identical requests, so nothing inside the request distinguishes you from anyone else.
 
 It is sent with no cookies, no credentials and no referrer.
 
 Because the sponsor is never told which product you are viewing, **a sponsor cannot buy placement
 against a particular product, listing or seller** — not as a matter of our restraint, but because
 the information needed to do it never leaves your machine.
+
+### What a sponsor can see anyway
+
+The connection itself. Any request shows the server receiving it an IP address, and approximate
+location follows from that.
+
+This is a property of making a request at all, rather than of what Winnow puts inside one. The
+body still says nothing about you or about what you are looking at, so a sponsor cannot ask "who
+is looking at this product" — the request never carried a product to ask about. But "nothing
+leaves your machine" stops being true the moment a request is made, and this is where it stops,
+so it is written here rather than left for someone to discover.
+
+It is also the reason [switching it off](#switching-it-off) prevents the request instead of
+discarding the response. A request sent from your address and then thrown away would already
+have shown that address to the sponsor.
 
 ### What the sponsor can do to a grade
 
