@@ -373,3 +373,72 @@ describe('the honest limit of a request that leaves the machine', () => {
     );
   });
 });
+
+/**
+ * The on-page panel, and the store field that silently truncates.
+ *
+ * PANEL is deliberately not in FILES. It is TypeScript, not prose, and the
+ * whole-document rules above would match its explanatory comments — which
+ * legitimately discuss networks, servers and transmission — rather than
+ * anything a user reads.
+ */
+const PANEL = 'src/content/ui.ts';
+const JUSTIFICATION = 'docs/host-permission-justification.txt';
+
+/**
+ * The Chrome Web Store permission-justification field caps at 1000 characters
+ * and truncates without warning. It has already bitten this project once: a
+ * paste died mid-word at 992 characters and nobody noticed until the listing
+ * was read back.
+ */
+const CWS_FIELD_LIMIT = 1000;
+
+describe('the on-page panel', () => {
+  it('makes no revenue claim that sponsorship would falsify', () => {
+    // "nobody pays us" is true only while no sponsor is configured. A promise
+    // whose truth depends on a config flag will go false quietly, on the
+    // surface more people see than any other.
+    expect(read(PANEL)).not.toMatch(/nobody pays us|no( one|body) pays/i);
+  });
+
+  it('still promises no affiliate links', () => {
+    expect(read(PANEL)).toMatch(/no affiliate links/i);
+  });
+
+  it('makes the durable promise instead: no merchant buys a grade', () => {
+    expect(read(PANEL)).toMatch(/merchant/i);
+  });
+});
+
+describe('host permission justification', () => {
+  const paragraphs = () =>
+    readFileSync(JUSTIFICATION, 'utf8')
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+  it('fits the store field, paragraph group by paragraph group', () => {
+    // The file holds the required-host justification followed by the optional
+    // loopback one, which go in separate fields. The first group is the one
+    // that has to fit on its own.
+    const parts = paragraphs();
+    expect(parts.length).toBeGreaterThan(1);
+
+    const required = parts.slice(0, -1).join('\n\n');
+    const optional = parts[parts.length - 1]!;
+
+    expect(required.length, `required-host justification is ${required.length} chars`)
+      .toBeLessThanOrEqual(CWS_FIELD_LIMIT);
+    expect(optional.length, `optional-host justification is ${optional.length} chars`)
+      .toBeLessThanOrEqual(CWS_FIELD_LIMIT);
+  });
+
+  it('no longer claims the extension makes no network requests', () => {
+    expect(read(JUSTIFICATION)).not.toMatch(/no network requests of any kind|no server to send/i);
+  });
+
+  it('control: the limit is small enough to actually reject something', () => {
+    // A cap the file could never exceed would make the check decorative.
+    expect(readFileSync(JUSTIFICATION, 'utf8').length).toBeGreaterThan(CWS_FIELD_LIMIT / 2);
+  });
+});

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fakespot alternative — Winnow reads Amazon reviews locally</title>
+    <meta
+      name="description"
+      content="Mozilla shut Fakespot down on 1 July 2025 and offered no replacement. Winnow analyses Amazon review integrity in your browser, shows its reasoning, and carries no affiliate links."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="canonical" href="https://winnow-reviews.vercel.app/fakespot-alternative" />
+    <meta property="og:title" content="Fakespot alternative — Winnow" />
+    <meta property="og:description" content="Fakespot shut down on 1 July 2025. Winnow analyses Amazon review integrity locally, and shows its reasoning." />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://winnow-reviews.vercel.app/fakespot-alternative" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Why did Fakespot shut down?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Mozilla, which acquired Fakespot in 2023, shut the Fakespot extensions, apps and website on 1 July 2025, and the Firefox Review Checker on 10 June 2025. Mozilla's stated reason was that while the idea resonated, it did not fit a model it could sustain."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a replacement for Fakespot?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Mozilla did not ship one and pointed users to unrelated Firefox features. Several third-party tools exist. Winnow is one of them: it analyses review integrity locally in the browser, shows the reasoning behind every grade, and carries no affiliate links."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Winnow send my browsing to a server?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Grades are computed on your device from the page your browser already loaded. The shipped extension requests permission for Amazon storefronts and nothing else."
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site">
+      <div class="wrap">
+        <a class="brand" href="/">Winnow</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="hero wrap">
+        <h1>Looking for a Fakespot alternative?</h1>
+        <p class="lede">
+          Mozilla shut Fakespot down on <strong>1 July 2025</strong> and did not replace it. Winnow
+          does the same job a different way: it reads the reviews already on the Amazon page you are
+          looking at, and shows the rating that product would have without the ones that look
+          manipulated.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+          <a class="btn btn-secondary" href="/">What Winnow does</a>
+        </div>
+      </div>
+
+      <section>
+        <div class="wrap prose">
+          <h2>What actually happened to Fakespot</h2>
+          <p>
+            Mozilla acquired Fakespot in 2023. On its own blog it announced that the Fakespot
+            extensions, apps and website closed on <strong>1 July 2025</strong>, and that the
+            Firefox Review Checker feature closed on <strong>10 June 2025</strong>. The reason
+            Mozilla gave was that "while the idea resonated, it didn't fit a model we could
+            sustain".
+          </p>
+          <p>
+            No replacement shipped. The announcement pointed readers toward unrelated Firefox
+            features — tab groups and bookmarks. ReviewMeta, the other tool people relied on, went
+            dark separately. Millions of people who had a habit of checking a listing before buying
+            were left with nothing to check it with.
+          </p>
+          <p class="callout">
+            That gap is the only reason Winnow exists. It is not a fork of Fakespot and shares no
+            code with it; it is an independent tool built after the shutdown, for the same job.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap prose">
+          <h2>How Winnow differs from how Fakespot worked</h2>
+          <p>
+            Fakespot analysed listings on its own servers. That model stopped being viable for a
+            second reason beyond Mozilla's: since <strong>May 2026</strong>, Amazon's
+            <code>/product-reviews/</code> pages return 404 without session cookies, and full review
+            bodies left the public HTML. A server that crawls Amazon from the outside can no longer
+            see the reviews it needs.
+          </p>
+          <p>
+            Winnow reads the page <em>your</em> browser already rendered. Nothing is crawled and
+            nothing is uploaded, which is why the analysis happens on your device rather than in a
+            data centre. It also means Winnow will never make automated requests to Amazon using
+            your session — that would put your own Amazon account at risk of suspension, and no
+            future version will do it.
+          </p>
+
+          <h2>What you actually get</h2>
+          <ul>
+            <li>
+              <strong>An adjusted rating.</strong> The star average the product would have without
+              the reviews that failed Winnow's checks — or an honest refusal, when too little of
+              the sample is trustworthy to say.
+            </li>
+            <li>
+              <strong>The reasoning, not just a score.</strong> Seven checks, each shown with what it
+              found and whether it changed the grade. A verdict you cannot inspect is a verdict you
+              have to take on faith.
+            </li>
+            <li>
+              <strong>Its own limits, stated.</strong> Amazon usually shows only 8–13 reviews on a
+              product page, and those are <em>featured</em> reviews — a biased sample. Winnow shrinks
+              its adjustment to account for that and says so on screen.
+            </li>
+          </ul>
+
+          <h2>What it deliberately does not do</h2>
+          <ul>
+            <li>
+              <strong>No affiliate links, ever.</strong> No referral tags, no "buy now" button
+              carrying a commission. A tool that earns money when you buy cannot credibly tell you
+              not to buy. This is written into the
+              <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">privacy policy</a>
+              as a binding commitment rather than a current policy.
+            </li>
+            <li>
+              <strong>No claim about the product itself.</strong> Winnow measures review integrity.
+              It never reads whether the reviews say the product is good, and it never tells you
+              whether to buy.
+            </li>
+            <li>
+              <strong>No account, no sign-in, no tracking.</strong> There is nothing to register for.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap prose">
+          <h2>Check the permissions yourself</h2>
+          <p>
+            Every Chrome extension has to declare, on its own store listing, what data it handles.
+            Google shows that declaration under <em>Privacy practices</em>, and the developer is
+            accountable for it. It is the fastest way to judge any review-checking tool, including
+            this one.
+          </p>
+          <p>
+            <strong>Winnow declares one permission: <code>storage</code></strong> — used to keep your
+            settings and the grades you have already seen, on your device. It asks for access to
+            Amazon storefronts and no other site. You can read the exact manifest in the
+            <a href="https://github.com/Cristians68/Winnow">public repository</a> before installing.
+          </p>
+          <p>
+            Open the store listing of any alternative you are considering, scroll to
+            <em>Privacy practices</em>, and compare. If a review-integrity tool collects more about
+            you than it needs to read a page you are already on, that is worth knowing before you
+            install it — whichever tool you end up choosing.
+          </p>
+        </div>
+      </section>
+
+      <section id="install" class="wrap" style="padding:44px 0 8px">
+        <div class="callout" style="text-align:center">
+          <h2 style="margin-top:0">Put it back in your browser</h2>
+          <p class="lede" style="margin:10px auto 20px;max-width:56ch">
+            Free, open source, and it runs on your device.
+          </p>
+          <div class="cta" style="justify-content:center">
+            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+            <a class="btn btn-secondary" href="/spot-fake-amazon-reviews">Spot fakes by eye</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <div class="foot-links">
+          <a href="/">Home</a>
+          <a href="/reviewmeta-alternative">ReviewMeta alternative</a>
+          <a href="/spot-fake-amazon-reviews">Spot fake reviews</a>
+          <a href="https://github.com/Cristians68/Winnow">Source code</a>
+          <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">Privacy policy</a>
+        </div>
+        <p style="margin:0">
+          Winnow is an independent project and is not affiliated with, endorsed by, or connected to
+          Amazon, Mozilla or Fakespot. Amazon and the Amazon logo are trademarks of Amazon.com, Inc.
+          or its affiliates. Shutdown dates are as published by Mozilla.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

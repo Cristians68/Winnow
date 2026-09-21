@@ -16,138 +16,26 @@
 
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23125c33'/%3E%3Ctext x='50' y='50' font-family='system-ui,sans-serif' font-size='62' font-weight='700' fill='%23e3f5ea' text-anchor='middle' dominant-baseline='central'%3EW%3C/text%3E%3C/svg%3E" />
 
-    <style>
-      :root {
-        --bg: #ffffff;
-        --surface: #f5f6f8;
-        --text: #16181d;
-        --muted: #4a525e;
-        --line: #e2e6ec;
-        --accent: #125c33;
-        --accent-soft: #e3f5ea;
-        --link: #0a4f9c;
-        --bad: #8c1f19;
-        --bad-soft: #fdeaea;
-        --radius: 14px;
-        --measure: 68ch;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0f1115;
-          --surface: #16181d;
-          --text: #e9ebee;
-          --muted: #a8b0ba;
-          --line: #2a2f38;
-          --accent: #74e3a2;
-          --accent-soft: #0e2f1c;
-          --link: #7cb8f5;
-          --bad: #f79a94;
-          --bad-soft: #371411;
-        }
-      }
-
-      * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
-      @media (prefers-reduced-motion: reduce) {
-        html { scroll-behavior: auto; }
-        * { animation: none !important; transition: none !important; }
-      }
-
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-        font-size: 17px;
-        line-height: 1.65;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      .skip {
-        position: absolute; left: -9999px; top: 0;
-        background: var(--accent); color: var(--bg);
-        padding: 10px 16px; border-radius: 0 0 8px 0; z-index: 10;
-      }
-      .skip:focus { left: 0; }
-
-      a { color: var(--link); }
-      a:focus-visible, button:focus-visible {
-        outline: 3px solid var(--link); outline-offset: 3px; border-radius: 4px;
-      }
-
-      .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
-      .prose { max-width: var(--measure); }
-
-      header.site {
-        border-bottom: 1px solid var(--line);
-        padding: 18px 0;
-      }
-      header.site .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
-      .mark {
-        width: 30px; height: 30px; border-radius: 8px;
-        background: var(--accent-soft); color: var(--accent);
-        display: grid; place-items: center; font-weight: 700; font-size: 17px;
-      }
-      nav.site a { margin-left: 22px; color: var(--muted); text-decoration: none; font-size: 15px; }
-      nav.site a:hover { color: var(--text); text-decoration: underline; }
-      @media (max-width: 620px) { nav.site { display: none; } }
-
-      .hero { padding: 84px 0 64px; }
-      h1 {
-        font-size: clamp(34px, 6vw, 54px);
-        line-height: 1.08; letter-spacing: -.025em;
-        margin: 0 0 20px; max-width: 20ch;
-      }
-      .lede { font-size: clamp(18px, 2.2vw, 21px); color: var(--muted); max-width: 56ch; margin: 0 0 32px; }
-
-      .cta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
-      .btn {
-        display: inline-block; padding: 13px 22px; border-radius: 10px;
-        font-weight: 600; font-size: 16px; text-decoration: none;
-        min-height: 44px; border: 1px solid transparent;
-      }
-      .btn-primary { background: var(--accent); color: var(--bg); }
-      .btn-primary:hover { opacity: .9; }
-      .btn-secondary { border-color: var(--line); color: var(--text); }
-      .btn-secondary:hover { border-color: var(--link); }
-      .cta-note { font-size: 14px; color: var(--muted); }
-
-      section { padding: 56px 0; border-top: 1px solid var(--line); }
-      h2 { font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -.02em; margin: 0 0 14px; }
-      h3 { font-size: 18px; margin: 0 0 6px; }
-      p { margin: 0 0 18px; }
-
-      .pledge {
-        background: var(--accent-soft); color: var(--accent);
-        border-radius: var(--radius); padding: 26px 28px; margin: 26px 0 0;
-      }
-      .pledge p { margin: 0; color: inherit; }
-      .pledge strong { font-size: 21px; display: block; margin-bottom: 8px; }
-
-      .grid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-top: 30px; }
-      .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
-      .card p { margin: 0; color: var(--muted); font-size: 15px; }
-
-      dl.faq { margin: 26px 0 0; }
-      dl.faq dt { font-weight: 700; margin-top: 26px; }
-      dl.faq dd { margin: 6px 0 0; color: var(--muted); }
-
-      table { border-collapse: collapse; width: 100%; margin-top: 22px; font-size: 15px; }
-      .scroller { overflow-x: auto; }
-      th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
-      th { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
-
-      .callout {
-        border-left: 3px solid var(--bad); background: var(--bad-soft);
-        padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 26px 0 0;
-      }
-      .callout p { margin: 0; }
-
-      footer.site { border-top: 1px solid var(--line); padding: 40px 0 60px; color: var(--muted); font-size: 15px; }
-      footer.site a { color: var(--link); }
-      .foot-links { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 14px; }
-    </style>
+    <link rel="canonical" href="https://winnow-reviews.vercel.app/" />
+    <meta property="og:url" content="https://winnow-reviews.vercel.app/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Winnow — What the reviews actually say" />
+    <meta name="twitter:description" content="Amazon review-integrity analysis, computed locally in your browser. No affiliate links, ever." />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Winnow",
+      "applicationCategory": "BrowserApplication",
+      "operatingSystem": "Chrome, Edge, Brave, Opera",
+      "description": "Analyses Amazon review integrity locally in your browser and shows the rating a product would have without its manipulated reviews.",
+      "url": "https://winnow-reviews.vercel.app/",
+      "downloadUrl": "https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
+    <link rel="stylesheet" href="/style.css" />
   </head>
 
   <body>
@@ -173,11 +61,13 @@
           product would have if its manipulated reviews were removed — along with exactly why.
         </p>
         <div class="cta">
-          <a class="btn btn-primary" href="https://github.com/Cristians68/Winnow">Get the extension</a>
+          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
           <a class="btn btn-secondary" href="#how">See how it works</a>
         </div>
         <p class="cta-note" style="margin-top:18px">
-          Free. Runs on your device. No account, no tracking, no affiliate links.
+          Works in Chrome, Edge, Brave and Opera. No account, no tracking, no affiliate links.
+          <a href="https://github.com/Cristians68/Winnow">Read the source</a> — the scoring engine is
+          open so you can check the grade rather than trust it.
         </p>
       </div>
 
@@ -407,9 +297,27 @@
       </section>
     </main>
 
+    <section id="install" class="wrap" style="padding:44px 0 8px">
+      <div class="callout" style="text-align:center">
+        <h2 style="margin-top:0">Check a listing before you buy it</h2>
+        <p class="lede" style="margin:10px auto 20px;max-width:56ch">
+          Winnow reads the reviews already on the page and shows the rating the product would have
+          without the manipulated ones. It never uploads the page, and it never sends you anywhere
+          to buy anything.
+        </p>
+        <div class="cta" style="justify-content:center">
+          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+          <a class="btn btn-secondary" href="https://github.com/Cristians68/Winnow">Read the source</a>
+        </div>
+      </div>
+    </section>
+
     <footer class="site">
       <div class="wrap">
         <div class="foot-links">
+          <a href="/fakespot-alternative">Fakespot alternative</a>
+          <a href="/reviewmeta-alternative">ReviewMeta alternative</a>
+          <a href="/spot-fake-amazon-reviews">Spot fake reviews</a>
           <a href="https://github.com/Cristians68/Winnow">Source code</a>
           <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">Privacy policy</a>
           <a href="https://github.com/Cristians68/Winnow/blob/main/SECURITY.md">Security</a>

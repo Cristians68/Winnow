@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ReviewMeta alternative — see the adjusted Amazon rating again</title>
+    <meta
+      name="description"
+      content="ReviewMeta stopped serving analyses and Fakespot shut down in July 2025. Winnow computes an adjusted Amazon rating in your browser and shows every check behind it."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="canonical" href="https://winnow-reviews.vercel.app/reviewmeta-alternative" />
+    <meta property="og:title" content="ReviewMeta alternative — Winnow" />
+    <meta property="og:description" content="An adjusted Amazon rating, computed in your browser, with the reasoning shown." />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://winnow-reviews.vercel.app/reviewmeta-alternative" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site">
+      <div class="wrap">
+        <a class="brand" href="/">Winnow</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="hero wrap">
+        <h1>Looking for a ReviewMeta alternative?</h1>
+        <p class="lede">
+          ReviewMeta's appeal was one number: the rating a product would have once the reviews that
+          failed its tests were set aside. Winnow computes that number too — in your browser, on the
+          page you are already looking at, with every check shown.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+          <a class="btn btn-secondary" href="/">What Winnow does</a>
+        </div>
+      </div>
+
+      <section>
+        <div class="wrap prose">
+          <h2>Why the old tools stopped working</h2>
+          <p>
+            Both ReviewMeta and Fakespot worked the same way: you pasted a product URL, their
+            servers fetched the reviews, and they returned an analysis. Mozilla shut Fakespot down
+            on <strong>1 July 2025</strong>, saying it "didn't fit a model we could sustain".
+            ReviewMeta stopped serving analyses separately.
+          </p>
+          <p>
+            There is a structural reason the paste-a-URL model is hard to revive. Since
+            <strong>May 2026</strong>, Amazon's <code>/product-reviews/</code> pages return 404
+            without session cookies, and full review text left the public HTML. A server fetching a
+            listing from outside sees far less than a logged-in shopper does — so an analysis built
+            that way is working from a thinner sample than the one on your screen.
+          </p>
+          <p class="callout">
+            An extension reads the page your browser already rendered. That is not a preference for
+            extensions; it is the only place the reviews still are.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap prose">
+          <h2>The adjusted rating, and when Winnow refuses to give one</h2>
+          <p>
+            Winnow runs seven checks over the reviews on the page — rating distribution, verified
+            purchases, phrasing, duplicated text, posting bursts, review substance, and helpful
+            votes — and reports the star average that remains once the ones that failed are set
+            aside.
+          </p>
+          <p>
+            It also refuses, out loud, when it should. Amazon typically shows 8–13 reviews on a
+            product page and those are <em>featured</em> reviews, chosen by Amazon — a biased
+            sample, and a small one. Winnow shrinks its adjustment to reflect that, and when too
+            little of the sample is trustworthy it reports <em>no adjusted rating</em> rather than
+            inventing one. "Couldn't read this page" is shown as exactly that, never as a verdict
+            about the seller.
+          </p>
+
+          <h2>What is different from ReviewMeta</h2>
+          <ul>
+            <li>
+              <strong>No URL to paste.</strong> Open a product page and the panel is already there.
+            </li>
+            <li>
+              <strong>Nothing is uploaded.</strong> The grade is computed on your device. The page
+              you are reading never leaves your browser.
+            </li>
+            <li>
+              <strong>The engine is open source.</strong> The
+              <a href="https://github.com/Cristians68/Winnow">scoring code</a> is public, so a grade
+              you disagree with is something you can go and read the reason for.
+            </li>
+            <li>
+              <strong>No affiliate links.</strong> Not now and not later — it is written into the
+              <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">privacy policy</a>
+              as a binding commitment. A tool paid a commission when you buy cannot credibly tell
+              you not to buy.
+            </li>
+          </ul>
+
+          <h2>What it will not tell you</h2>
+          <p>
+            Winnow measures <em>review integrity</em>, not product quality. It never reads whether
+            the reviews say the product is good, and it never recommends buying or not buying. It
+            also cannot see the seller, the price, the shipping origin or the item itself — so the
+            panel includes a short list of things worth checking yourself, which it is honest enough
+            to say it cannot check for you.
+          </p>
+        </div>
+      </section>
+
+      <section id="install" class="wrap" style="padding:44px 0 8px">
+        <div class="callout" style="text-align:center">
+          <h2 style="margin-top:0">Get the adjusted rating back</h2>
+          <div class="cta" style="justify-content:center;margin-top:16px">
+            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/hfmnhfjodjkikmablooefiooimpboecb" rel="noopener">Add to Chrome — free</a>
+            <a class="btn btn-secondary" href="/fakespot-alternative">Coming from Fakespot?</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <div class="foot-links">
+          <a href="/">Home</a>
+          <a href="/fakespot-alternative">Fakespot alternative</a>
+          <a href="/spot-fake-amazon-reviews">Spot fake reviews</a>
+          <a href="https://github.com/Cristians68/Winnow">Source code</a>
+          <a href="https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md">Privacy policy</a>
+        </div>
+        <p style="margin:0">
+          Winnow is an independent project and is not affiliated with, endorsed by, or connected to
+          Amazon, ReviewMeta or Fakespot. Amazon and the Amazon logo are trademarks of Amazon.com,
+          Inc. or its affiliates.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
