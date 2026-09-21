@@ -1,0 +1,143 @@
+Winnow Privacy Policy
+Last updated: 20 September 2026
+
+Winnow has no account, no analytics, no telemetry and no tracking of any kind.
+It collects no personal data, and the add-on declares this to Firefox in its
+manifest as data_collection_permissions: none.
+
+The full policy, kept in the public repository, is at:
+https://github.com/Cristians68/Winnow/blob/main/PRIVACY.md
+
+
+WHAT WINNOW READS
+
+When you open an Amazon product page, Winnow reads content your browser has
+already rendered: the product's rating, the rating breakdown, and the reviews
+visible on the page.
+
+That content is scored in memory, on your device, and produces the grade you
+see. It is not written to disk, not transmitted, and not retained after you
+close the page. The analysis makes no network requests at all.
+
+Winnow never crawls Amazon using your session. It reads only what your browser
+already loaded for a page you chose to visit. Automated scraping through a
+logged-in session can put YOUR Amazon account at risk of suspension, and no
+future version will do it.
+
+
+WHAT WINNOW STORES, ON YOUR DEVICE
+
+1. Your settings — whether the panel is enabled, whether the breakdown starts
+   expanded, the theme, and whether sponsorship is shown.
+
+2. Grades you marked as wrong. If you click "Too harsh" or "Too lenient",
+   Winnow saves the grade, the trust score, how many reviews were visible, and
+   which checks drove the result. It does NOT store the product's name, URL or
+   ASIN — the listing is identified by a one-way hash, and the entry carries a
+   date rather than a timestamp. Capped at 200 entries.
+
+3. Grades already computed — the product identifier, letter grade, score,
+   engine version and date, so the same grade can be shown beside that product
+   on Amazon search pages. Capped at 500 entries and expired after 90 days.
+
+None of this is ever uploaded. There is no "send feedback" button and no code
+path capable of transmitting it. You can export or erase all of it from the
+add-on's options page at any time. Uninstalling the add-on removes it.
+
+
+PERMISSIONS
+
+Winnow requests "storage" plus the Amazon storefront domains it runs on, and
+nothing else. It cannot read your logins, your passwords, or any site that is
+not Amazon. You can verify this in about:addons before or after installing.
+
+The add-on also declares optional loopback permissions (localhost and
+127.0.0.1). These are never requested at install and are unused by the
+published add-on. They exist only so a developer can run Winnow's optional
+open-source analysis server on their own machine; any non-loopback address is
+rejected and never stored.
+
+
+SPONSORSHIP
+
+Winnow can show one sponsored message inside its own two windows — the toolbar
+popup and the settings page. It never appears on an Amazon page, never appears
+beside a grade, and never appears in the analysis panel. It is labelled, and
+you can switch it off in Settings.
+
+NO SPONSOR IS CONFIGURED IN THIS VERSION, so nothing sponsored is shown and no
+advertising request is made at all. This section describes what happens if one
+ever is, written in advance rather than after the fact.
+
+What a sponsor would be told: that a Winnow window opened. The request carries
+a schema version, which of the two windows is asking, and the formats that
+window can draw. It carries no product, no page address, no search terms, no
+grade and no identifier of any kind — there is no field in it that could hold
+one. Two different installations send byte-identical requests, so nothing
+inside the request distinguishes you from anyone else. It is sent with no
+cookies, no credentials and no referrer.
+
+Because a sponsor is never told what you are looking at, a sponsor cannot buy
+placement against a particular product, listing or seller. The information
+needed to do that never leaves your machine.
+
+What a sponsor can see anyway: the connection itself. Any request shows the
+receiving server an IP address, and approximate location follows from that.
+This is a property of making a request at all rather than of what Winnow puts
+inside one, and it is stated here rather than left for you to discover. It is
+also why switching sponsorship off prevents the request being made rather than
+discarding the response — a request sent from your address and then thrown
+away would already have shown that address.
+
+Grades are computed locally, before any sponsorship request is made. No part
+of a sponsored message reaches the scoring code.
+
+
+HOW WINNOW IS PAID FOR
+
+Winnow carries no affiliate links, no referral tags, no commissions and no
+merchant relationships. Winnow does not and will not accept payment, in any
+form, from any seller, brand, marketplace or advertiser to influence, alter,
+suppress or promote any rating, grade or result it produces.
+
+This is a binding commitment, not a description of current practice. A tool
+that earns a commission when you buy cannot credibly tell you not to buy. The
+scoring engine is open source so that this claim can be verified rather than
+merely trusted.
+
+
+WHAT WINNOW DOES NOT DO
+
+- Sell, rent or share data with third parties
+- Run analytics, telemetry, crash reporting or fingerprinting
+- Set cookies
+- Send anything about the product you are viewing to an advertiser
+- Read any site other than the Amazon domains listed in its manifest
+- Ask for personal information
+
+
+AUTOMATED DECISION-MAKING
+
+Winnow's grades are produced by statistical analysis, not human review. They
+are estimates about products, not decisions about people, and have no legal or
+similarly significant effect on anyone within the meaning of GDPR Article 22.
+The reasoning behind every grade is shown so you can judge it yourself, and
+Winnow states plainly when its confidence is low.
+
+
+CHILDREN
+
+Winnow is not directed at children and collects no data from anyone, including
+children under 13.
+
+
+CHANGES
+
+Material changes are noted in the add-on's changelog and reflected in the date
+above. If the no-affiliate commitment changes, it will be announced prominently
+before taking effect, never altered quietly.
+
+
+CONTACT
+
+https://github.com/Cristians68/Winnow/issues
